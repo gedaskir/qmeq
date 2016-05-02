@@ -1,0 +1,1 @@
+void digamma(double *x, double *y, double *psr, double *psi);

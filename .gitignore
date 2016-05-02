@@ -1,0 +1,50 @@
+### Files
+
+# Library files .o
+*.o
+
+# Python byte files *.pyc
+*.pyc
+
+# Cython compiled libraries on Windows *.pyd
+*.pyd
+
+# Text files *.txt
+*.txt
+
+# Sublime workspace files
+*.sublime-workspace
+
+# Corel Draw files
+*.cdr
+
+# Specific files
+neumann/neumannc.c
+neumann/neumann2c.c
+#
+neumann/neumann2c_setupc.py
+neumann/neumannc_setupc.py
+#
+neumann/neumannc_makefile.bat
+neumann/neumann2c_makefile.bat
+#
+neumann/pylintrc
+#
+neumann/neumannpy_linblad.py
+neumann/neumannpy_complex.py
+#
+neumann/docs/index.html.lnk
+neumann/docs/source/conf_scipy.py
+neumann/docs/source/conf_standard.py
+neumann/docs/source/neumann.neumannpy_complex.rst
+
+### Directories
+
+# Build directories
+neumann.egg-info/
+neumann/build
+neumann/docs/build
+
+# Specific directories
+neumann/tests
+tutorial/.ipynb_checkpoints

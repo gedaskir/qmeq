@@ -1,0 +1,9 @@
+"""Module for defining types used in neumann package."""
+
+import numpy as np
+
+boolnp = np.uint8 #np.bool
+intnp = np.int
+longnp = np.long
+doublenp = np.double
+complexnp = np.complex128
