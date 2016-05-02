@@ -48,3 +48,8 @@ neumann/docs/build
 # Specific directories
 neumann/tests
 tutorial/.ipynb_checkpoints
+#
+tutorial/Lecture-0-Introduction-to-QuTiP.ipynb
+tutorial/example_anderson.ipynb
+tutorial/example_anderson.py
+tutorial/tutorial - Copy.ipynb
