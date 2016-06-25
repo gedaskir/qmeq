@@ -1,7 +1,7 @@
-neumann.neumannpy module
+qmeq.constructxba module
 ========================
 
-.. automodule:: neumann.neumannpy
+.. automodule:: qmeq.constructxba
     :members:
     :undoc-members:
     :show-inheritance:

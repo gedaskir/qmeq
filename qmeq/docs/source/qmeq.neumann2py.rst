@@ -1,7 +1,7 @@
-neumann.manyham module
+qmeq.neumann2py module
 ======================
 
-.. automodule:: neumann.manyham
+.. automodule:: qmeq.neumann2py
     :members:
     :undoc-members:
     :show-inheritance:

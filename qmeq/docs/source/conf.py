@@ -22,7 +22,7 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 master_doc = 'index'
 
-project = u'neumann'
+project = u'qmeq'
 copyright = u'2016, Gediminas Kirsanskas'
 author = u'Gediminas Kirsanskas'
 
@@ -55,7 +55,7 @@ pngmath_latex_preamble = r"""
 pngmath_use_preview = True
 pngmath_dvipng_args = ['-gamma 1.5', '-D 96', '-bg Transparent']
 
-htmlhelp_basename = 'neumanndoc'
+htmlhelp_basename = 'qmeqdoc'
 
 
 #------------------------------------------------------------------------------
@@ -95,20 +95,20 @@ plot_rcparams = {
 # -- Options for LaTeX output ---------------------------------------------
 latex_elements = { }
 latex_documents = [
-  (master_doc, 'neumann.tex', u'neumann Documentation',
+  (master_doc, 'qmeq.tex', u'qmeq Documentation',
    u'Gediminas Kirsanskas', 'manual'),
 ]
 
 # -- Options for manual page output ---------------------------------------
 man_pages = [
-    (master_doc, 'neumann', u'neumann Documentation',
+    (master_doc, 'qmeq', u'qmeq Documentation',
      [author], 1)
 ]
 
 
 # -- Options for Texinfo output -------------------------------------------
 texinfo_documents = [
-  (master_doc, 'neumann', u'neumann Documentation',
-   author, 'neumann', 'One line description of project.',
+  (master_doc, 'qmeq', u'qmeq Documentation',
+   author, 'qmeq', 'One line description of project.',
    'Miscellaneous'),
 ]
