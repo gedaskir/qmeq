@@ -24,13 +24,13 @@ def construct_Xba(tleads, stateind, mtype=complex, Xba_=None):
     mtype : type
         Defines type of Xba matrix. For example, float, complex, etc.
     Xba_ : None or array
-        nmany by nmany numpy array containing old values of Xba.
+        nbaths by nmany by nmany numpy array containing old values of Xba.
         The values in tleads are added to Xba\_.
 
     Returns
     -------
     Xba : array
-        nmany by nmany numpy array containing many-body tunneling amplitudes.
+        nleads by nmany by nmany numpy array containing many-body tunneling amplitudes.
         The returned Xba corresponds to Fock basis.
     """
     if Xba_ is None:
@@ -114,7 +114,7 @@ def rotate_Xba(Xba0, vecslst, stateind, indexing='n', mtype=complex):
     Parameters
     ----------
     Xba0 : array
-        nmany by nmany numpy array, giving tunneling amplitudes in Fock basis.
+        nleads by nmany by nmany numpy array, giving tunneling amplitudes in Fock basis.
     stateind : StateIndexing
         StateIndexing or StateIndexingDM object.
     indexing : string
@@ -125,7 +125,7 @@ def rotate_Xba(Xba0, vecslst, stateind, indexing='n', mtype=complex):
     Returns
     -------
     Xba : array
-        nmany by nmany numpy array containing many-body tunneling amplitudes.
+        nleads by nmany by nmany numpy array containing many-body tunneling amplitudes.
         The returned Xba corresponds to the quantum dot eigenbasis.
     """
     if indexing == 'n':
@@ -143,8 +143,11 @@ def rotate_Xba(Xba0, vecslst, stateind, indexing='n', mtype=complex):
     elif indexingp == 'sz':
         for l, charge in itertools.product(range(stateind.nleads), range(stateind.ncharge-1)):
             szrng = szrange(charge, stateind.nsingle)
+            # Lead labels from 0 to nleads//2 correspond to spin up
+            # and nleads//2+1 to nleads-1 correspond to spin down
             if charge >= stateind.ncharge//2:
                 szrng = szrng[0:-1] if l < stateind.nleads//2 else szrng[1:]
+            # s=+1/-1 add/remove spin up/donw
             s = +1 if l < stateind.nleads//2 else -1
             for sz in szrng:
                 szind = sz_to_ind(sz, charge, stateind.nsingle)
@@ -158,8 +161,11 @@ def rotate_Xba(Xba0, vecslst, stateind, indexing='n', mtype=complex):
     elif indexingp == 'ssq':
         for l, charge in itertools.product(range(stateind.nleads), range(stateind.ncharge-1)):
             szrng = szrange(charge, stateind.nsingle)
+            # Lead labels from 0 to nleads//2 correspond to spin up
+            # and nleads//2+1 to nleads-1 correspond to spin down
             if charge >= stateind.ncharge//2:
                 szrng = szrng[0:-1] if l < stateind.nleads//2 else szrng[1:]
+            # s=+1/-1 add/remove spin up/donw
             s = +1 if l < stateind.nleads//2 else -1
             for sz in szrng:
                 szind = sz_to_ind(sz, charge, stateind.nsingle)
@@ -267,9 +273,9 @@ class LeadsTunneling(object):
     mtype : type
         Defines type of Xba0 and Xba matrices. For example, float, complex, etc.
     Xba0 : array
-        nmany by nmany array, which contains many-body tunneling amplitude matrix in Fock basis.
+        nleads by nmany by nmany array, which contains many-body tunneling amplitude matrix in Fock basis.
     Xba : list
-        nmany by nmany array, which contains many-body tunneling amplitude matrix,
+        nleads by nmany by nmany array, which contains many-body tunneling amplitude matrix,
         which is used in calculations.
     """
 

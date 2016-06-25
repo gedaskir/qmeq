@@ -43,6 +43,18 @@ from indexing import StateIndexingDMc
 from manyham import QuantumDot
 from constructxba import LeadsTunneling
 
+'''
+from neumann.neumannpy_lindblad import generate_tLba
+from neumann.neumannpy_lindblad import generate_kern_lindblad
+from neumann.neumannpy_lindblad import generate_current_lindblad
+from neumann.neumannpy_lindblad import generate_vec_lindblad
+
+from neumann.neumannc_lindblad import c_generate_tLba
+from neumann.neumannc_lindblad import c_generate_kern_lindblad
+from neumann.neumannc_lindblad import c_generate_current_lindblad
+from neumann.neumannc_lindblad import c_generate_vec_lindblad
+'''
+
 def builder(nsingle, hsingle, coulomb,
             nleads, tleads, mulst, tlst, dlst,
             indexing='charge', Ek_grid=None,
@@ -219,12 +231,18 @@ class Transport(object):
         elif kerntype == '1vN':
             self.phi1fct, self.phi1fct_energy = c_generate_phi1fct(self)
             self.kern, self.bvec = c_generate_kern_1vN(self)
+        elif kerntype == 'Lindblad':
+            self.tLba = c_generate_tLba(self)
+            self.kern, self.bvec = c_generate_kern_lindblad(self)
         elif kerntype == 'pyPauli':
             self.paulifct = generate_paulifct(self)
             self.kern, self.bvec = generate_kern_pauli(self)
         elif kerntype == 'py1vN':
             self.phi1fct, self.phi1fct_energy = generate_phi1fct(self)
             self.kern, self.bvec = generate_kern_1vN(self)
+        elif kerntype == 'pyLindblad':
+            self.tLba = generate_tLba(self)
+            self.kern, self.bvec = generate_kern_lindblad(self)
 
     def solve_kern(self):
         """Finds the stationary state using least squares or by inverting the matrix."""
@@ -267,17 +285,25 @@ class Transport(object):
         kerntype = self.funcp.kerntype
         phi0_init = self.funcp.phi0_init
         solmethod = solmethod if solmethod != 'n' else 'krylov'
+        self.sol0 = None
         if kerntype == 'Redfield':
             self.phi1fct, self.phi1fct_energy = c_generate_phi1fct(self)
             self.sol0 = optimize.root(c_generate_vec_redfield, phi0_init, args=(self), method=solmethod)
         elif kerntype == '1vN':
             self.phi1fct, self.phi1fct_energy = c_generate_phi1fct(self)
             self.sol0 = optimize.root(c_generate_vec_1vN, phi0_init, args=(self), method=solmethod)
+        elif kerntype == 'Lindblad':
+            self.tLba = c_generate_tLba(self)
+            self.sol0 = optimize.root(c_generate_vec_lindblad, phi0_init, args=(self), method=solmethod)
         elif kerntype == 'py1vN':
             self.phi1fct, self.phi1fct_energy = generate_phi1fct(self)
             self.sol0 = optimize.root(generate_vec_1vN, phi0_init, args=(self), method=solmethod)
+        elif kerntype == 'pyLindblad':
+            self.tLba = generate_tLba(self)
+            self.sol0 = optimize.root(generate_vec_lindblad, phi0_init, args=(self), method=solmethod)
         #
-        if self.phi0q: self.phi0 = self.sol0.x
+        if not self.sol0 is None:
+            self.phi0 = self.sol0.x
         self.funcp.solmethod = solmethod
 
     def calc_current(self):
@@ -293,10 +319,14 @@ class Transport(object):
             self.phi1, self.current, self.energy_current = c_generate_phi1_redfield(self)
         elif kerntype == '1vN':
             self.phi1, self.current, self.energy_current = c_generate_phi1_1vN(self)
+        elif kerntype == 'Lindblad':
+            self.current, self.energy_current = c_generate_current_lindblad(self)
         elif kerntype == 'pyPauli':
             self.current, self.energy_current = generate_current_pauli(self)
         elif kerntype == 'py1vN':
             self.phi1, self.current, self.energy_current = generate_phi1_1vN(self)
+        elif kerntype == 'pyLindblad':
+            self.current, self.energy_current = generate_current_lindblad(self)
         self.heat_current = self.energy_current - self.leads.mulst*self.current
 
     def solve(self, solve_qdq=True, solve_ratesq=True, currentq=True):
