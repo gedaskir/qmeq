@@ -19,6 +19,7 @@
 *.cdr
 
 # Specific files
+qmeq/lindbladc.c
 qmeq/neumannc.c
 qmeq/neumann2c.c
 #

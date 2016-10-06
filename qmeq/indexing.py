@@ -43,7 +43,7 @@ def integer_to_binarylist(num, binlen=0):
         A list containing digits of a binary number.
     """
     value = format(num, '0'+str(binlen)+'b')
-    return map(int, str(value))
+    return list(map(int, str(value)))
 
 def construct_chargelst(nsingle):
     """
