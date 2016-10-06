@@ -1,7 +1,9 @@
 """Module containing cython functions, which generate first order kernels (Pauli, 1vN, Redfield).
    For docstrings see documentation of module neumannpy."""
 
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
 import numpy as np
 import itertools
 #import mytypes
@@ -78,7 +80,7 @@ cdef complexnp func_1vN(doublenp E, doublenp T, doublenp D, doublenp eta, intnp 
         pvalint(&a, &b, &c, &epsabs, &epsrel, &result, &ier, &limit)
         rez.real = result
         if ier != 0:
-            print "WARNING: The fortran integration routine dqawc returned an error: ier =", ier
+            print("WARNING: The fortran integration routine dqawc returned an error: ier =", ier)
     #-------------------------
     rez.imag = -pi*1/(exp(-alpha)+1)*eta
     return rez
@@ -542,7 +544,7 @@ def c_generate_vec_redfield(np.ndarray[doublenp, ndim=1] phi0p, sys):
                             i_dphi0_dt[bbp] = i_dphi0_dt[bbp] + fct_ccp*phi0ccp
                     #--------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
-    #print np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real))
+    #print(np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real)))
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real))
 
 #---------------------------------------------------------------------------------------------------------
@@ -851,6 +853,6 @@ def c_generate_vec_1vN(np.ndarray[doublenp, ndim=1] phi0p, sys):
                             i_dphi0_dt[bbp] = i_dphi0_dt[bbp] + fct_ccp*phi0ccp
                     #--------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
-    #print np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real))
+    #print(np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real)))
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real))
 #---------------------------------------------------------------------------------------------------------

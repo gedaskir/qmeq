@@ -22,9 +22,11 @@
 qmeq/neumannc.c
 qmeq/neumann2c.c
 #
+qmeq/lindbladc_setupc.py
 qmeq/neumann2c_setupc.py
 qmeq/neumannc_setupc.py
 #
+qmeq/lindbladc_makefile.bat
 qmeq/neumannc_makefile.bat
 qmeq/neumann2c_makefile.bat
 #
@@ -48,6 +50,7 @@ qmeq/docs/build
 # Specific directories
 qmeq/tests
 tutorial/.ipynb_checkpoints
+tutorial/various
 #
 tutorial/Lecture-0-Introduction-to-QuTiP.ipynb
 tutorial/example_anderson.ipynb

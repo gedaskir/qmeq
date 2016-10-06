@@ -1,59 +1,58 @@
 """Module for solving different master equations."""
 
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
 import numpy as np
 import scipy as sp
 import scipy.sparse.linalg
 from scipy import optimize
 import os
 
-from neumannpy import generate_phi1fct
-from neumannpy import generate_paulifct
-from neumannc import c_generate_phi1fct
-from neumannc import c_generate_paulifct
+from .lindbladpy import generate_tLba
+from .lindbladpy import generate_kern_lindblad
+from .lindbladpy import generate_current_lindblad
+from .lindbladpy import generate_vec_lindblad
+from .lindbladc import c_generate_tLba
+from .lindbladc import c_generate_kern_lindblad
+from .lindbladc import c_generate_current_lindblad
+from .lindbladc import c_generate_vec_lindblad
 
-from neumannpy import generate_kern_pauli
-from neumannpy import generate_current_pauli
-from neumannpy import generate_kern_1vN
-from neumannpy import generate_phi1_1vN
-from neumannpy import generate_vec_1vN
+from .neumannpy import generate_phi1fct
+from .neumannpy import generate_paulifct
+from .neumannc import c_generate_phi1fct
+from .neumannc import c_generate_paulifct
 
-from neumannc import c_generate_kern_pauli
-from neumannc import c_generate_current_pauli
-from neumannc import c_generate_kern_redfield
-from neumannc import c_generate_phi1_redfield
-from neumannc import c_generate_vec_redfield
-from neumannc import c_generate_kern_1vN
-from neumannc import c_generate_phi1_1vN
-from neumannc import c_generate_vec_1vN
+from .neumannpy import generate_kern_pauli
+from .neumannpy import generate_current_pauli
+from .neumannpy import generate_kern_1vN
+from .neumannpy import generate_phi1_1vN
+from .neumannpy import generate_vec_1vN
 
-from neumann2py import get_phi1_phi0_2vN
-from neumann2py import kern_phi0_2vN
-from neumann2py import generate_current_2vN
-from neumann2py import iterate_2vN
+from .neumannc import c_generate_kern_pauli
+from .neumannc import c_generate_current_pauli
+from .neumannc import c_generate_kern_redfield
+from .neumannc import c_generate_phi1_redfield
+from .neumannc import c_generate_vec_redfield
+from .neumannc import c_generate_kern_1vN
+from .neumannc import c_generate_phi1_1vN
+from .neumannc import c_generate_vec_1vN
 
-from neumann2c import c_get_phi1_phi0_2vN
-from neumann2c import c_iterate_2vN
+from .neumann2py import get_phi1_phi0_2vN
+from .neumann2py import kern_phi0_2vN
+from .neumann2py import generate_current_2vN
+from .neumann2py import iterate_2vN
 
-from mytypes import doublenp
-from mytypes import complexnp
+from .neumann2c import c_get_phi1_phi0_2vN
+from .neumann2c import c_iterate_2vN
 
-from indexing import StateIndexingDM
-from indexing import StateIndexingDMc
-from manyham import QuantumDot
-from constructxba import LeadsTunneling
+from .mytypes import doublenp
+from .mytypes import complexnp
 
-'''
-from neumann.neumannpy_lindblad import generate_tLba
-from neumann.neumannpy_lindblad import generate_kern_lindblad
-from neumann.neumannpy_lindblad import generate_current_lindblad
-from neumann.neumannpy_lindblad import generate_vec_lindblad
-
-from neumann.neumannc_lindblad import c_generate_tLba
-from neumann.neumannc_lindblad import c_generate_kern_lindblad
-from neumann.neumannc_lindblad import c_generate_current_lindblad
-from neumann.neumannc_lindblad import c_generate_vec_lindblad
-'''
+from .indexing import StateIndexingDM
+from .indexing import StateIndexingDMc
+from .manyham import QuantumDot
+from .constructxba import LeadsTunneling
 
 def builder(nsingle, hsingle, coulomb,
             nleads, tleads, mulst, tlst, dlst,
@@ -250,7 +249,7 @@ class Transport(object):
         symq = self.funcp.symq
         if solmethod == 'n': solmethod = 'solve' if symq else 'lsqr'
         if not symq and solmethod != 'lsqr' and solmethod != 'lsmr':
-            print "WARNING: Using solmethod=lsqr, because the kernel is not symmetric, symq=False."
+            print("WARNING: Using solmethod=lsqr, because the kernel is not symmetric, symq=False.")
             solmethod = 'lsqr'
         self.sol0 = [None]
         if not self.kern is None:
@@ -272,14 +271,14 @@ class Transport(object):
                 elif solmethod == 'qmr':      self.sol0 = sp.sparse.linalg.qmr(self.kern, self.bvec)
             '''
         else:
-            print "WARNING: kern is not generated for calculation of phi0."
+            print("WARNING: kern is not generated for calculation of phi0.")
         self.phi0 = self.sol0[0]
         self.funcp.solmethod = solmethod
 
     def solve_matrix_free(self):
         """Finds the stationary state using matrix free methods like broyden, krylov, etc."""
         if self.funcp.phi0_init is None:
-            print "WARNING: The initial guess phi0_init is not specified."
+            print("WARNING: The initial guess phi0_init is not specified.")
             return 0
         solmethod = self.funcp.solmethod
         kerntype = self.funcp.kerntype
@@ -311,7 +310,7 @@ class Transport(object):
         # First order approaches
         kerntype = self.funcp.kerntype
         if self.phi0 is None:
-            print "WARNING: phi0 is not calculated yet for calculation of current."
+            print("WARNING: phi0 is not calculated yet for calculation of current.")
             return 0
         if kerntype == 'Pauli':
             self.current, self.energy_current = c_generate_current_pauli(self)
@@ -327,9 +326,10 @@ class Transport(object):
             self.phi1, self.current, self.energy_current = generate_phi1_1vN(self)
         elif kerntype == 'pyLindblad':
             self.current, self.energy_current = generate_current_lindblad(self)
+        self.current, self.energy_current = self.current.real, self.energy_current.real
         self.heat_current = self.energy_current - self.leads.mulst*self.current
 
-    def solve(self, solve_qdq=True, solve_ratesq=True, currentq=True):
+    def solve(self, solve_qdq=True, solve_ratesq=True, currentq=True, *args, **kwargs):
         """
         Solves the master equation.
 
@@ -431,7 +431,7 @@ class Transport2vN(object):
         symq = self.funcp.symq
         if solmethod == 'n': solmethod = 'solve' if symq else 'lsqr'
         if not symq and solmethod != 'lsqr':
-            print "WARNING: Using solmethod=lsqr, because the kernel is not symmetric, symq=False."
+            print("WARNING: Using solmethod=lsqr, because the kernel is not symmetric, symq=False.")
             solmethod = 'lsqr'
         self.sol0 = [None]
         if   solmethod == 'solve': self.sol0 = [np.linalg.solve(self.kern, self.bvec)]
@@ -530,7 +530,7 @@ class Transport2vN(object):
         self.niter = npzfile['niter']
 
     def solve(self, solve_qdq=True, solve_ratesq=True, saveq=False, savekq=False, restartq=True,
-                    niter=None, dir_name='./iterations/'):
+                    niter=None, dir_name='./iterations/', *args, **kwargs):
         """
         Solves the 2vN approach integral equations iteratively.
 
@@ -565,10 +565,10 @@ class Transport2vN(object):
                 raise ValueError('Number of iterations niter needs to be specified')
             #
             for it in range(niter):
-                #print self.niter+1
+                #print(self.niter+1)
                 self.iterate()
                 if saveq: self.save_data(dir_name, savekq)
-                #print self.current
+                #print(self.current)
 
 class Iterations2vN(object):
 

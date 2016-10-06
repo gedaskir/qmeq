@@ -1,6 +1,8 @@
 """Module containing various special functions."""
 
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
 import numpy as np
 from numpy.fft import fft, ifft
 from numpy import sign
@@ -11,9 +13,9 @@ from scipy import exp
 from scipy import sqrt
 from scipy.special import psi as digamma
 
-from mytypes import complexnp
-from mytypes import doublenp
-from mytypes import intnp
+from .mytypes import complexnp
+from .mytypes import doublenp
+from .mytypes import intnp
 
 def fermi_func(x):
     """Fermi function."""

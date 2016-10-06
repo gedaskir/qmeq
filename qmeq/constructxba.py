@@ -1,13 +1,15 @@
 """Module for defining tunneling amplitudes from quantum dot to leads."""
 
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
 import numpy as np
 import itertools
 
-from indexing import szrange
-from indexing import ssqrange
-from indexing import sz_to_ind
-from indexing import ssq_to_ind
+from .indexing import szrange
+from .indexing import ssqrange
+from .indexing import sz_to_ind
+from .indexing import ssq_to_ind
 
 def construct_Xba(tleads, stateind, mtype=complex, Xba_=None):
     """

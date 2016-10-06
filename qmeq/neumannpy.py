@@ -1,15 +1,17 @@
 """Module containing python functions, which generate first order kernels (Pauli, 1vN, Redfield)."""
 
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
 import numpy as np
 import itertools
 
-from mytypes import complexnp
-from mytypes import doublenp
-from mytypes import intnp
+from .mytypes import complexnp
+from .mytypes import doublenp
+from .mytypes import intnp
 
-from specfunc import func_pauli
-from specfunc import func_1vN
+from .specfunc import func_pauli
+from .specfunc import func_1vN
 
 def generate_phi1fct(sys): #E, si, mulst, tlst, dlst
     """
@@ -422,6 +424,6 @@ def generate_vec_1vN(phi0p, sys): #phi0p, E, Xba, phi1fct, si, norm_row=0
                             i_dphi0_dt[bbp] += fct_ccp*phi0ccp
                     #--------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
-    #print np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[si.npauli:si.ndm0].real))
+    #print(np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[si.npauli:si.ndm0].real)))
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[si.npauli:si.ndm0].real))
 #---------------------------------------------------------------------------------------------------------

@@ -1,16 +1,18 @@
 """Module containing python functions, which solve 2vN approach integral equations."""
 
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
 import numpy as np
 from scipy import pi
 import itertools
 
-from mytypes import complexnp
-from mytypes import doublenp
-from mytypes import intnp
+from .mytypes import complexnp
+from .mytypes import doublenp
+from .mytypes import intnp
 
-from specfunc import kernel_fredriksen
-from specfunc import hilbert_fredriksen
+from .specfunc import kernel_fredriksen
+from .specfunc import hilbert_fredriksen
 
 def func_2vN(Ek, Ek_grid, l, eta, hfk):
     """
@@ -83,7 +85,7 @@ def get_at_k1(Ek, Ek_grid, l, cb, conj, phi1k, hphi1k):
     if b_idx == len(Ek_grid): b_idx -= 1
     a_idx = b_idx - 1
     b, a = Ek_grid[b_idx], Ek_grid[a_idx]
-    #print a_idx, b_idx, a, Ek, b
+    #print(a_idx, b_idx, a, Ek, b)
     #
     fb = phi1k[b_idx, l, cb]
     fa = phi1k[a_idx, l, cb]
@@ -236,12 +238,12 @@ def phi1k_iterate_2vN(ind, Ek_grid, phi1k, hphi1k, fk, kern1, E, Xba, si):
                 for a1 in si.statesdm[acharge]:
                     ba1 = si.get_ind_dm1(b, a1, acharge)
                     for b1, l1 in itertools.product(si.statesdm[bcharge], range(si.nleads)):
-                        #print '1'
+                        #print('1')
                         hu, u = get_at_k1(+(Ek-E[b1]+E[b]), Ek_grid, l1, ba1, True, phi1k, hphi1k)
                         term += -Xba[l1, c, b1]*Xba[l, b1, a1]*fp*(hu - 1j*u)
                 # 2nd and 5th terms
                 for b1, c1 in itertools.product(si.statesdm[bcharge], si.statesdm[ccharge]):
-                    #print '2 and 5'
+                    #print('2 and 5')
                     c1b1 = si.get_ind_dm1(c1, b1, bcharge)
                     for l1 in range(si.nleads):
                         # 2nd term
@@ -254,12 +256,12 @@ def phi1k_iterate_2vN(ind, Ek_grid, phi1k, hphi1k, fk, kern1, E, Xba, si):
                 for c1 in si.statesdm[ccharge]:
                     c1b = si.get_ind_dm1(c1, b, bcharge)
                     for d1, l1 in itertools.product(si.statesdm[dcharge], range(si.nleads)):
-                        #print '3'
+                        #print('3')
                         hu, u = get_at_k1(-(Ek-E[d1]+E[b]), Ek_grid, l1, c1b, False, phi1k, hphi1k)
                         term += +Xba[l1, c, d1]*Xba[l, d1, c1]*fp*(hu + 1j*u)
                 # 4th term
                 for d1, c1 in itertools.product(si.statesdm[dcharge], si.statesdm[ccharge]):
-                    #print '4'
+                    #print('4')
                     d1c1 = si.get_ind_dm1(d1, c1, ccharge)
                     for l1 in range(si.nleads):
                         hu, u = get_at_k1(-(Ek-E[d1]+E[b]), Ek_grid, l1, d1c1, False, phi1k, hphi1k)
@@ -268,12 +270,12 @@ def phi1k_iterate_2vN(ind, Ek_grid, phi1k, hphi1k, fk, kern1, E, Xba, si):
                 for d1 in si.statesdm[dcharge]:
                     d1c = si.get_ind_dm1(d1, c, ccharge)
                     for c1, l1 in itertools.product(si.statesdm[ccharge], range(si.nleads)):
-                        #print '6'
+                        #print('6')
                         hu, u = get_at_k1(+(Ek-E[c]+E[c1]), Ek_grid, l1, d1c, True, phi1k, hphi1k)
                         term += -(hu - 1j*u)*fm*Xba[l, d1, c1]*Xba[l1, c1, b]
                 # 7th term
                 for b1, a1 in itertools.product(si.statesdm[bcharge], si.statesdm[acharge]):
-                    #print '7'
+                    #print('7')
                     b1a1 = si.get_ind_dm1(b1, a1, acharge)
                     for l1 in range(si.nleads):
                         hu, u = get_at_k1(-(Ek-E[c]+E[a1]), Ek_grid, l1, b1a1, False, phi1k, hphi1k)
@@ -282,7 +284,7 @@ def phi1k_iterate_2vN(ind, Ek_grid, phi1k, hphi1k, fk, kern1, E, Xba, si):
                 for b1 in si.statesdm[bcharge]:
                     cb1 = si.get_ind_dm1(c, b1, bcharge)
                     for a1, l1 in itertools.product(si.statesdm[acharge], range(si.nleads)):
-                        #print '8'
+                        #print('8')
                         hu, u = get_at_k1(-(Ek-E[c]+E[a1]), Ek_grid, l1, cb1, False, phi1k, hphi1k)
                         term += +(hu + 1j*u)*fm*Xba[l, b1, a1]*Xba[l1, a1, b]
                 kern0[l, cb] = term
@@ -526,7 +528,7 @@ def get_htransf_phi1k(phi1k, funcp):
     # Make the Hilbert transformation
     hphi1k = np.zeros(phi1k.shape, dtype=complexnp)
     for l, cb, bbp in itertools.product(range(nleads), range(ndm1), range(ndm0)):
-        #print l, cb, bbp
+        #print(l, cb, bbp)
         hphi1k[:, l, cb, bbp] = hilbert_fredriksen(phi1k[:, l, cb, bbp], funcp.ht_ker)
     return phi1k, hphi1k
 
@@ -637,9 +639,9 @@ def iterate_2vN(sys):
         pass
     else:
         # Hilbert transform phi1k_delta_old on extended grid Ek_grid_ext
-        #print 'Hilbert transforming'
+        #print('Hilbert transforming')
         phi1k_delta_old, hphi1k_delta = get_htransf_phi1k(phi1k_delta_old, funcp)
-        #print 'Making an iteration'
+        #print('Making an iteration')
         phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
         for j1 in range(Eklen):
             ind = j1 + funcp.Ek_left

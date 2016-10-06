@@ -4,7 +4,9 @@ import subprocess
 import shutil
 from glob import glob
 
-dirs = ['./qmeq.egg-info',
+dirs = ['./build',
+        './dist',
+        './qmeq.egg-info',
         './qmeq/build',
         './qmeq/docs/build']
 

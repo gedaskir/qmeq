@@ -1,3 +1,6 @@
+#from __future__ import absolute_import
+#from __future__ import division
+from __future__ import print_function
 from setuptools import setup
 
 import os
@@ -6,15 +9,15 @@ import subprocess
 
 cwd = os.path.abspath(os.path.dirname(__file__))
 
-print "Entering", os.path.join(cwd, 'qmeq')
+print("Entering", os.path.join(cwd, 'qmeq'))
 os.chdir('qmeq')
 if os.name == 'nt':
-    print "Running makefile.bat"
+    print("Running makefile.bat")
     subprocess.call(['makefile.bat'])
 else:
-    print "Running make"
+    print("Running make")
     subprocess.call(['make'])
-print "Going back to", cwd
+print("Going back to", cwd)
 os.chdir('..')
 
 setup(name='qmeq',

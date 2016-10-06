@@ -1,14 +1,16 @@
 """Module for constructing many-body quantum dot Hamiltonian and diagonalising it."""
 
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
 import numpy as np
 
-from indexing import empty_szlst
-from indexing import empty_ssqlst
-from indexing import szrange
-from indexing import ssqrange
-from indexing import sz_to_ind
-from indexing import ssq_to_ind
+from .indexing import empty_szlst
+from .indexing import empty_ssqlst
+from .indexing import szrange
+from .indexing import ssqrange
+from .indexing import sz_to_ind
+from .indexing import ssq_to_ind
 
 def construct_ham_coulomb(coulomb, statelst, stateind, mtype=float, hamq=False, ham_=None):
     """
@@ -345,7 +347,7 @@ def ssquare_eigenstates(charge, sz, stateind, prnt=False):
         ssq_eigvec[ssqind] gives the eigenstate matrix for :math:`S^{2}` =ssq.
     """
     if charge%2 != sz%2:
-        print "WARNING: charge and sz need to have the same parity. Return 0."
+        print("WARNING: charge and sz need to have the same parity. Return 0.")
         return 0
     ssq_eigvec = [0 for j in ssqrange(charge, sz, stateind.nsingle)]
     ssquare = operator_ssquare(charge, sz, stateind)
@@ -356,9 +358,9 @@ def ssquare_eigenstates(charge, sz, stateind, prnt=False):
         ssqind = ssq_to_ind(ssq, sz)
         ssq_eigvec[ssqind] = eigvec[:][:, v[0][0]:v[0][-1]+1]
         if prnt:
-            print '-'*30
-            print 'charge =', charge, ', sz =', sz, ', ssq =', ssq
-            print ssq_eigvec[ssqind]
+            print('-'*30)
+            print('charge =', charge, ', sz =', sz, ', ssq =', ssq)
+            print(ssq_eigvec[ssqind])
     return ssq_eigvec
 
 def ssquare_all_szlow(stateind, prnt=False):
@@ -384,9 +386,9 @@ def ssquare_all_szlow(stateind, prnt=False):
     if prnt:
         for charge in range(stateind.ncharge):
             for ssq in ssqrange(charge, -(charge%2), stateind.nsingle):
-                print '-'*30
-                print 'charge =', charge, ', sz =', -(charge%2), ', ssq =', ssq
-                print ssq_eigvec_all_szlow[charge][ssq//2]
+                print('-'*30)
+                print('charge =', charge, ', sz =', -(charge%2), ', ssq =', ssq)
+                print(ssq_eigvec_all_szlow[charge][ssq//2])
     return ssq_eigvec_all_szlow
 
 def construct_manybody_eigenstates_ssq(charge, sz, ssq, hsingle, coulomb, stateind, mtype=float, hamq=False, ham_=None):
@@ -671,6 +673,8 @@ class QuantumDot(object):
             self.hamlst = [None]*stateind.ncharge
         if hamq: self.add(self.hsingle, self.coulomb, False)
         self.Ea = np.zeros(stateind.nmany, dtype=float)
+        self.Ea_ext = None
+        self.states_order = range(stateind.nmany)
 
     def add(self, hsingle={}, coulomb={}, updateq=True):
         """
@@ -809,7 +813,7 @@ class QuantumDot(object):
                                                                                                                          self.hamq, self.hamlst[charge][szind])
             return self.valslst[charge][szind][ssqind], self.vecslst[charge][szind][ssqind]
         else:
-            print "WARNING: No indexing by 'sz' or 'ssq'. Return None."
+            print("WARNING: No indexing by 'sz' or 'ssq'. Return None.")
             return None
 
     def diagonalise(self):

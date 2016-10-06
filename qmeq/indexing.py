@@ -1,12 +1,14 @@
 """Module for indexing many-body states using Lin tables."""
 
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
 import numpy as np
 import itertools
 from scipy.misc import factorial
 
-from mytypes import boolnp
-from mytypes import longnp
+from .mytypes import boolnp
+from .mytypes import longnp
 
 def binarylist_to_integer(lst):
     """
@@ -462,7 +464,7 @@ class StateIndexing(object):
             if indexing == 'ssq':
                 self.ssqlst = construct_ssqlst(self.szlst, nsingle)
         elif (indexing == 'sz' or indexing == 'ssq') and self.nsingle%2 != 0:
-            print "WARNING: For 'sz' or 'ssq' indexing, nsingle has to be even. Using 'Lin' indexing."
+            print("WARNING: For 'sz' or 'ssq' indexing, nsingle has to be even. Using 'Lin' indexing.")
             self.indexing = 'Lin'
             self.chargelst = construct_chargelst(nsingle)
             self.i = range(self.nmany)
@@ -470,7 +472,7 @@ class StateIndexing(object):
             self.chargelst = construct_chargelst(nsingle)
             self.i = range(self.nmany)
         else:
-            print "WARNING: The indexing has to be 'Lin', 'charge', or 'sz'. Using 'Lin' indexing."
+            print("WARNING: The indexing has to be 'Lin', 'charge', or 'sz'. Using 'Lin' indexing.")
             self.indexing = 'Lin'
             self.chargelst = construct_chargelst(nsingle)
             self.i = range(self.nmany)
@@ -553,7 +555,7 @@ class StateIndexing(object):
             ssqind = ssq_to_ind(ssq, sz)
             return self.ssqlst[charge][szind][ssqind]
         else:
-            print "WARNING: No indexing by 'sz' or 'ssq'. Returning charge list."
+            print("WARNING: No indexing by 'sz' or 'ssq'. Returning charge list.")
             return self.chargelst[charge]
 
 class StateIndexingPauli(StateIndexing):
@@ -864,7 +866,7 @@ class StateIndexingDM(StateIndexing):
         # i = self.dictdm[b]
         # j = self.dictdm[bp]
         # shiftas = self.shiftlst0[charge]
-        # print 'index is', l*i + j + shiftas
+        # print('index is', l*i + j + shiftas)
         if maptype == 0:
             return self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp] + self.shiftlst0[charge]
         elif maptype == 1:
@@ -894,7 +896,7 @@ class StateIndexingDM(StateIndexing):
         # i = self.dictdm[c]
         # j = self.dictdm[b]
         # shiftas = self.shiftlst1[charge]
-        # print 'index is', l*i + j + shiftas
+        # print('index is', l*i + j + shiftas)
         #       b
         #     -----
         #   c |   |
@@ -1044,7 +1046,7 @@ class StateIndexingDMc(StateIndexing):
         # i = self.dictdm[b]
         # j = self.dictdm[bp]
         # shiftas = self.shiftlst0[charge]
-        # print 'index is', l*i + j + shiftas
+        # print('index is', l*i + j + shiftas)
         if maptype == 0:
             return self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp] + self.shiftlst0[charge]
         elif maptype == 1:
@@ -1072,7 +1074,7 @@ class StateIndexingDMc(StateIndexing):
         # i = self.dictdm[c]
         # j = self.dictdm[b]
         # shiftas = self.shiftlst1[charge]
-        # print 'index is', l*i + j + shiftas
+        # print('index is', l*i + j + shiftas)
         #       b
         #     -----
         #   c |   |

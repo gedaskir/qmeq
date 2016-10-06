@@ -3,16 +3,18 @@
 
 # cython: profile=True
 
+from __future__ import absolute_import
 from __future__ import division
+from __future__ import print_function
 import numpy as np
 import itertools
 
-from specfunc import kernel_fredriksen
-from specfunc import hilbert_fredriksen
-from neumann2py import get_emin_emax
-from neumann2py import get_grid_ext
-from neumann2py import get_htransf_phi1k
-from neumann2py import get_htransf_fk
+from .specfunc import kernel_fredriksen
+from .specfunc import hilbert_fredriksen
+from .neumann2py import get_emin_emax
+from .neumann2py import get_grid_ext
+from .neumann2py import get_htransf_phi1k
+from .neumann2py import get_htransf_fk
 
 cimport numpy as np
 cimport cython
@@ -220,12 +222,12 @@ def c_phi1k_iterate_2vN(longnp ind,
                 for a1 in si.statesdm[acharge]:
                     ba1 = lenlst[acharge]*dictdm[b] + dictdm[a1] + shiftlst1[acharge]
                     for b1, l1 in itertools.product(si.statesdm[bcharge], range(nleads)):
-                        #print '1'
+                        #print('1')
                         get_at_k1(+(Ek-E[b1]+E[b]), Ek_grid, l1, ba1, True, phi1k, hphi1k,
                                   ndm0, -fp*Xba[l1, c, b1]*Xba[l, b1, a1], -1, term) #*
                 # 2nd and 5th terms
                 for b1, c1 in itertools.product(si.statesdm[bcharge], si.statesdm[ccharge]):
-                    #print '2 and 5'
+                    #print('2 and 5')
                     c1b1 = lenlst[bcharge]*dictdm[c1] + dictdm[b1] + shiftlst1[bcharge]
                     for l1 in range(nleads):
                         # 2nd term
@@ -238,12 +240,12 @@ def c_phi1k_iterate_2vN(longnp ind,
                 for c1 in si.statesdm[ccharge]:
                     c1b = lenlst[bcharge]*dictdm[c1] + dictdm[b] + shiftlst1[bcharge]
                     for d1, l1 in itertools.product(si.statesdm[dcharge], range(nleads)):
-                        #print '3'
+                        #print('3')
                         get_at_k1(-(Ek-E[d1]+E[b]), Ek_grid, l1, c1b, False, phi1k, hphi1k,
                                   ndm0, +fp*Xba[l1, c, d1]*Xba[l, d1, c1], +1, term)
                 # 4th term
                 for d1, c1 in itertools.product(si.statesdm[dcharge], si.statesdm[ccharge]):
-                    #print '4'
+                    #print('4')
                     d1c1 = lenlst[ccharge]*dictdm[d1] + dictdm[c1] + shiftlst1[ccharge]
                     for l1 in range(nleads):
                         get_at_k1(-(Ek-E[d1]+E[b]), Ek_grid, l1, d1c1, False, phi1k, hphi1k,
@@ -252,12 +254,12 @@ def c_phi1k_iterate_2vN(longnp ind,
                 for d1 in si.statesdm[dcharge]:
                     d1c = lenlst[ccharge]*dictdm[d1] + dictdm[c] + shiftlst1[ccharge]
                     for c1, l1 in itertools.product(si.statesdm[ccharge], range(nleads)):
-                        #print '6'
+                        #print('6')
                         get_at_k1(+(Ek-E[c]+E[c1]), Ek_grid, l1, d1c, True, phi1k, hphi1k,
                                   ndm0, -fm*Xba[l, d1, c1]*Xba[l1, c1, b], -1, term)
                 # 7th term
                 for b1, a1 in itertools.product(si.statesdm[bcharge], si.statesdm[acharge]):
-                    #print '7'
+                    #print('7')
                     b1a1 = lenlst[acharge]*dictdm[b1] + dictdm[a1] + shiftlst1[acharge]
                     for l1 in range(nleads):
                         get_at_k1(-(Ek-E[c]+E[a1]), Ek_grid, l1, b1a1, False, phi1k, hphi1k,
@@ -266,7 +268,7 @@ def c_phi1k_iterate_2vN(longnp ind,
                 for b1 in si.statesdm[bcharge]:
                     cb1 = lenlst[bcharge]*dictdm[c] + dictdm[b1] + shiftlst1[bcharge]
                     for a1, l1 in itertools.product(si.statesdm[acharge], range(nleads)):
-                        #print '8'
+                        #print('8')
                         get_at_k1(-(Ek-E[c]+E[a1]), Ek_grid, l1, cb1, False, phi1k, hphi1k,
                                   ndm0, +fm*Xba[l, b1, a1]*Xba[l1, a1, b], +1, term)
                 for bbp in range(ndm0):
@@ -342,9 +344,9 @@ def c_iterate_2vN(sys):
         pass
     else:
         # Hilbert transform phi1k_delta_old on extended grid Ek_grid_ext
-        #print 'Hilbert transforming'
+        #print('Hilbert transforming')
         phi1k_delta_old, hphi1k_delta = get_htransf_phi1k(phi1k_delta_old, funcp)
-        #print 'Making an iteration'
+        #print('Making an iteration')
         phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=np.complex)
         Ek_left = funcp.Ek_left
         for j1 in range(Eklen):

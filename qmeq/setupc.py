@@ -5,7 +5,8 @@ from distutils.extension import Extension
 from Cython.Build import cythonize
 import numpy as np
 
-ext = [Extension("neumannc",
+ext = [# Pauli, Redfield, 1vN approaches
+       Extension("neumannc",
                  ["neumannc.pyx"],
                  #libraries = ["test"],
                  #extra_compile_args = ["-O3"],
@@ -22,6 +23,10 @@ ext = [Extension("neumannc",
                                   "./fortran/d1mach.o",
                                   "./fortran/pvalint.o"
                                   ]),
+      # Lindblad approach
+      Extension("lindbladc",
+                 ["lindbladc.pyx"]),
+      # 2vN approach
       Extension("neumann2c",
                 ["neumann2c.pyx"])]
 
