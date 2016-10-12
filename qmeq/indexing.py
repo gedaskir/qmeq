@@ -26,7 +26,7 @@ def binarylist_to_integer(lst):
     """
     return int(''.join(map(str, lst)), 2)
 
-def integer_to_binarylist(num, binlen=0):
+def integer_to_binarylist(num, binlen=0, strq=False):
     """
     Convert an integer number to a binary number in a form of a list.
 
@@ -43,7 +43,8 @@ def integer_to_binarylist(num, binlen=0):
         A list containing digits of a binary number.
     """
     value = format(num, '0'+str(binlen)+'b')
-    return list(map(int, str(value)))
+    rez = value if strq else list(map(int, str(value)))
+    return rez
 
 def construct_chargelst(nsingle):
     """
@@ -429,6 +430,10 @@ class StateIndexing(object):
         Indices of states for different charges for chosen indexing.
     szlst : list of lists
         Indices of states for different sz values for chosen indexing.
+    qn_ind : dictionary
+        Maps quantum number to state index
+    ind_qn : dictionary
+        Maps state index to quantum numbers
     """
 
     def __init__(self, nsingle, indexing='Lin'):
@@ -480,8 +485,9 @@ class StateIndexing(object):
         # Note that these quantum numbers to state and state to quantum numbers dictionaries
         # are necessary only for ssq indexing
         self.qn_ind, self.ind_qn = make_quantum_numbers(self)
+        self.states_order = range(self.nmany)
 
-    def get_state(self, ind, linq=False):
+    def get_state(self, ind, linq=False, strq=False):
         """
         Returns a list containing digits of a binary number corresponding to a state index.
 
@@ -498,9 +504,9 @@ class StateIndexing(object):
             List containing digits of a binary number corresponding to a state index.
         """
         if linq:
-            return integer_to_binarylist(ind, self.nsingle)
+            return integer_to_binarylist(ind, self.nsingle, strq)
         else:
-            return integer_to_binarylist(self.i[ind], self.nsingle)
+            return integer_to_binarylist(self.i[ind], self.nsingle, strq)
 
     def get_ind(self, state, linq=False):
         """
@@ -762,7 +768,7 @@ class StateIndexingDM(StateIndexing):
         statesdm: list
             List containing indices of many-body state under consideration.
         """
-        self.statesdm = statesdm
+        self.statesdm = list(statesdm)
         self.statesdm.append([])
         self.ndm0_, self.ndm1_, self.npauli_ = 0, 0, 0
         for j1 in range(self.ncharge):

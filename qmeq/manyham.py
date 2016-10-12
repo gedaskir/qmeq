@@ -674,7 +674,6 @@ class QuantumDot(object):
         if hamq: self.add(self.hsingle, self.coulomb, False)
         self.Ea = np.zeros(stateind.nmany, dtype=float)
         self.Ea_ext = None
-        self.states_order = range(stateind.nmany)
 
     def add(self, hsingle={}, coulomb={}, updateq=True):
         """
