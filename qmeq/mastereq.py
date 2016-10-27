@@ -112,8 +112,7 @@ class FunctionProperties(object):
         Type of integral for first order method calculations.
         itype=0: the principal parts are neglected.
         itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
-        itype=2: the principal parts are evaluated using Fortran integration package quadpack routine dqawc.
-                 Works just for cython compiled methods.
+        itype=2: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
     dqawc_limit : int
         For itype=2 dqawc_limit determines the maximum number of subintervals
         in the partition of the given integration interval.

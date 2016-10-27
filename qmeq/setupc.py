@@ -10,19 +10,7 @@ ext = [# Pauli, Redfield, 1vN approaches
                  ["neumannc.pyx"],
                  #libraries = ["test"],
                  #extra_compile_args = ["-O3"],
-                 extra_link_args=[#"./fortran/libgfortran.a"
-                                  "./fortran/digamma.o",
-                                  "./fortran/cpsi.o",
-                                  "./quadpack/dqc25c.o",
-                                  "./quadpack/dqcheb.o",
-                                  "./quadpack/dqk15w.o",
-                                  "./quadpack/dqwgtc.o",
-                                  "./quadpack/dqawc.o",
-                                  "./quadpack/dqawce.o",
-                                  "./quadpack/dqpsrt.o",
-                                  "./fortran/d1mach.o",
-                                  "./fortran/pvalint.o"
-                                  ]),
+                 extra_link_args=[]),
       # Lindblad approach
       Extension("lindbladc",
                  ["lindbladc.pyx"]),

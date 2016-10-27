@@ -13,10 +13,10 @@ print("Entering", os.path.join(cwd, 'qmeq'))
 os.chdir('qmeq')
 if os.name == 'nt':
     print("Running makefile.bat")
-    subprocess.call(['makefile.bat'])
+    subprocess.check_output(['makefile.bat'])
 else:
     print("Running make")
-    subprocess.call(['make'])
+    subprocess.check_output(['make'])
 print("Going back to", cwd)
 os.chdir('..')
 
@@ -28,7 +28,5 @@ setup(name='qmeq',
       author_email='gediminas.kirsanskas@teorfys.lu.se',
       license='MIT',
       packages=['qmeq'],
-      package_data={'qmeq': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so',
-                                os.path.join('fortran', '*.*'),
-                                os.path.join('quadpack', '*.*')]},
+      package_data={'qmeq': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so']},
       zip_safe=False)

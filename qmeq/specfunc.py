@@ -38,11 +38,11 @@ def func_pauli(E, T, D):
     -------
     float
     """
-    #NOTE: Also finite bandwidth can be included as a cut-off
     alpha = E/T
-    return 2*pi*fermi_func(-alpha)
+    R = D/T
+    return 2*pi*fermi_func(-alpha) * (1 if alpha < R and alpha > -R else 0)
 
-def func_1vN(E, T, D, eta):
+def func_1vN(E, T, D, eta, itype, limit):
     """
     Function used when generating 1vN, Redfield approach kernel.
 
@@ -54,6 +54,14 @@ def func_1vN(E, T, D, eta):
         Temperature.
     D : float
         Bandwidth.
+    itype : int
+        Type of integral for first order method calculations.
+        itype=0: the principal parts are neglected.
+        itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
+        itype=2: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
+    limit : int
+        For itype=2 dqawc_limit determines the maximum number of subintervals
+        in the partition of the given integration interval.
 
     Returns
     -------
@@ -61,7 +69,14 @@ def func_1vN(E, T, D, eta):
     """
     alpha = E/T
     R = D/T
-    rez = digamma(1/2+alpha/(2*pi*1j)).real - log(R/(2*pi)) - 1j*pi*fermi_func(-alpha)*sign(eta)
+    if itype == 0:
+        rez = 0.0
+    elif itype == 1:
+        rez = digamma(0.5-1.0j*alpha/(2*pi)).real - log(R/(2*pi))
+    elif itype == 2:
+        (rez, err) = quad(fermi_func, -R, +R, weight='cauchy', wvar=-alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
+    rez = rez - 1.0j*pi*fermi_func(-alpha)*sign(eta) * (1 if alpha < R and alpha > -R else 0)
+    #-------------------------
     return rez
 
 def kernel_fredriksen(n):

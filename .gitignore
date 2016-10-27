@@ -52,6 +52,7 @@ qmeq/docs/build
 qmeq/tests
 tutorial/.ipynb_checkpoints
 tutorial/various
+tutorial/papers
 #
 tutorial/example_anderson.ipynb
 tutorial/example_anderson.py

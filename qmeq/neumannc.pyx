@@ -1,10 +1,14 @@
 """Module containing cython functions, which generate first order kernels (Pauli, 1vN, Redfield).
    For docstrings see documentation of module neumannpy."""
 
+# cython: profile=True
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import numpy as np
+from scipy.special import psi as digamma
+from scipy.integrate import quad
 import itertools
 #import mytypes
 
@@ -34,55 +38,33 @@ from libc.math cimport log
 #cdef extern from "math.h":
 #    doublenp log(doublenp)
 
-cdef extern from "fortran/digamma.h":
-    void digamma(doublenp* x, doublenp* y, doublenp* psr, doublenp* psi)
-
-cdef extern from "fortran/pvalint.h":
-    void pvalint(doublenp* a, doublenp* b, doublenp* c, doublenp* epsabs, doublenp* epsrel, doublenp* result, intnp* ier, intnp* limit)
-
 @cython.cdivision(True)
 cdef doublenp fermi_func(doublenp x):
     return 1/(exp(x)+1)
 
 @cython.cdivision(True)
 cdef doublenp func_pauli(doublenp E, doublenp T, doublenp D):
-    # Also finite bandwidth can be included as a cut-off
     cdef doublenp alpha
     alpha = E/T
+    R = D/T
     #return 2*pi*fermi_func(-alpha)
-    return 2*pi*1/(exp(-alpha)+1)
+    return 2*pi*1/(exp(-alpha)+1) * (1.0 if alpha < R and alpha > -R else 0.0)
 
 @cython.cdivision(True)
 cdef complexnp func_1vN(doublenp E, doublenp T, doublenp D, doublenp eta, intnp itype, intnp limit):
-    cdef doublenp alpha, R
+    cdef doublenp alpha, R, err
     cdef complexnp rez
     alpha = E/T
     R = D/T
     #-------------------------
-    cdef doublenp x, y, psr, psi
-    cdef doublenp a, b, c, result, epsabs, epsrel
-    cdef intnp ier
     if itype == 0:
         rez.real = 0
     elif itype == 1:
-        x = 0.5
-        y = -alpha/(2*pi)
-        digamma(&x, &y, &psr, &psi)
-        #rez = psr - log(R/(2*pi)) - 1j*pi*fermi_func(-alpha)*eta
-        rez.real = psr - log(R/(2*pi))
+        rez.real = digamma(0.5-1.0j*alpha/(2*pi)).real - log(R/(2*pi))
     elif itype == 2:
-        epsabs = 1.0e-6
-        epsrel = 1.0e-6
-        ier = 0
-        a = -D
-        b = +D
-        c = -alpha
-        pvalint(&a, &b, &c, &epsabs, &epsrel, &result, &ier, &limit)
-        rez.real = result
-        if ier != 0:
-            print("WARNING: The fortran integration routine dqawc returned an error: ier =", ier)
+        (rez.real, err) = quad(fermi_func, -R, +R, weight='cauchy', wvar=-alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
     #-------------------------
-    rez.imag = -pi*1/(exp(-alpha)+1)*eta
+    rez.imag = -pi*1/(exp(-alpha)+1)*eta * (1.0 if alpha < R and alpha > -R else 0.0)
     return rez
 
 @cython.boundscheck(False)
@@ -146,7 +128,7 @@ def c_generate_paulifct(sys):
             for l in range(nleads):
                 xcb = (Xba[l, b, c]*Xba[l, c, b]).real
                 paulifct[l, cb, 0] = xcb*func_pauli(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l])
-                paulifct[l, cb, 1] = 2*pi*xcb - paulifct[l, cb, 0]
+                paulifct[l, cb, 1] = xcb*func_pauli(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l]) #2*pi*xcb - paulifct[l, cb, 0]
     return paulifct
 
 #---------------------------------------------------------------------------------------------------------

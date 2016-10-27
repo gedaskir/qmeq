@@ -17,11 +17,7 @@ for dr in dirs:
 files = ( glob('./qmeq/*.pyd')
          +glob('./qmeq/*.pyc')
          +glob('./qmeq/*.c')
-         +glob('./qmeq/fortran/*.o')
-         +glob('./qmeq/quadpack/*.o')
          +glob('./qmeq/*.html') )
 
 for f in files:
     os.remove(f)
-
-

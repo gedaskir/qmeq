@@ -30,6 +30,7 @@ def generate_phi1fct(sys): #E, si, mulst, tlst, dlst
         Factors used to calculate energy and heat currents in 1vN, Redfield methods.
     """
     (E, si, mulst, tlst, dlst) = (sys.qd.Ea, sys.si, sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
+    (itype, limit) = (sys.funcp.itype, sys.funcp.dqwac_limit)
     phi1fct = np.zeros((si.nleads, si.ndm1, 2), dtype=complexnp)
     phi1fct_energy = np.zeros((si.nleads, si.ndm1, 2), dtype=complexnp)
     for charge in range(si.ncharge-1):
@@ -38,8 +39,8 @@ def generate_phi1fct(sys): #E, si, mulst, tlst, dlst
         for c, b in itertools.product(si.statesdm[ccharge], si.statesdm[bcharge]):
             cb = si.get_ind_dm1(c, b, bcharge)
             for l in range(si.nleads):
-                phi1fct[l, cb, 0] = +func_1vN(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l], +1)
-                phi1fct[l, cb, 1] = +func_1vN(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l], -1)
+                phi1fct[l, cb, 0] = +func_1vN(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l], +1, itype, limit)
+                phi1fct[l, cb, 1] = +func_1vN(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l], -1, itype, limit)
                 phi1fct_energy[l, cb, 0] = +dlst[l]-(E[b]-E[c])*phi1fct[l, cb, 0] # (E[b]-E[c]+mulst[l])
                 phi1fct_energy[l, cb, 1] = -dlst[l]-(E[b]-E[c])*phi1fct[l, cb, 1] # (E[b]-E[c]+mulst[l])
     return phi1fct, phi1fct_energy
@@ -68,7 +69,7 @@ def generate_paulifct(sys): #E, Xba, si, mulst, tlst, dlst
             for l in range(si.nleads):
                 xcb = (Xba[l, b, c]*Xba[l, c, b]).real
                 paulifct[l, cb, 0] = xcb*func_pauli(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l])
-                paulifct[l, cb, 1] = 2*np.pi*xcb - paulifct[l, cb, 0]
+                paulifct[l, cb, 1] = xcb*func_pauli(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l]) #2*np.pi*xcb - paulifct[l, cb, 0]
     return paulifct
 
 #---------------------------------------------------------------------------------------------------------
