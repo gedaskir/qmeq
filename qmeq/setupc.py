@@ -1,5 +1,8 @@
 """Module which build extensions written in cython."""
 
+import sys
+sys.argv[1:] = ['build_ext', '--inplace']
+
 from distutils.core import setup
 from distutils.extension import Extension
 from Cython.Build import cythonize

@@ -7,18 +7,18 @@ import os
 import sys
 import subprocess
 
+# Save the command line arguments, because sys.argv will be modified by 'qmeq/setupc.py'
+argv = list(sys.argv)
+# Build Cython extensions
 cwd = os.path.abspath(os.path.dirname(__file__))
-
 print("Entering", os.path.join(cwd, 'qmeq'))
 os.chdir('qmeq')
-if os.name == 'nt':
-    print("Running makefile.bat")
-    subprocess.check_output(['makefile.bat'])
-else:
-    print("Running make")
-    subprocess.check_output(['make'])
+sys.path.append("./")
+import setupc
 print("Going back to", cwd)
 os.chdir('..')
+# Restore the initial command line arguments
+sys.argv = argv
 
 setup(name='qmeq',
       version='0.0',

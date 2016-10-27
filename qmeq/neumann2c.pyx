@@ -16,36 +16,36 @@ from .neumann2py import get_grid_ext
 from .neumann2py import get_htransf_phi1k
 from .neumann2py import get_htransf_fk
 
+from .mytypes import doublenp
+from .mytypes import complexnp
+
 cimport numpy as np
 cimport cython
 
-ctypedef np.uint8_t boolnp
-#ctypedef bint boolnp
-ctypedef np.int_t intnp
-ctypedef np.long_t longnp
-ctypedef np.double_t doublenp
-#ctypedef double doublenp
-ctypedef np.complex128_t complexnp
-#ctypedef complex complexnp
+ctypedef np.uint8_t bool_t
+ctypedef np.int_t int_t
+ctypedef np.int64_t long_t
+ctypedef np.float64_t double_t
+ctypedef np.complex128_t complex_t
 
 #from scipy import pi as scipy_pi
-#cdef doublenp pi = scipy_pi
-cdef doublenp pi = 3.14159265358979323846
+#cdef double_t pi = scipy_pi
+cdef double_t pi = 3.14159265358979323846
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cdef complexnp func_2vN(doublenp Ek,
-                        np.ndarray[doublenp, ndim=1] Ek_grid,
-                        intnp l,
-                        intnp eta,
-                        np.ndarray[complexnp, ndim=2] hfk):
-    cdef longnp b_idx, a_idx
-    cdef doublenp a, b
-    cdef complexnp fa, fb, rez
+cdef complex_t func_2vN(double_t Ek,
+                        np.ndarray[double_t, ndim=1] Ek_grid,
+                        int_t l,
+                        int_t eta,
+                        np.ndarray[complex_t, ndim=2] hfk):
+    cdef long_t b_idx, a_idx
+    cdef double_t a, b
+    cdef complex_t fa, fb, rez
     if Ek<Ek_grid[0] or Ek>Ek_grid[-1]:
         return 0
     #
-    b_idx = (<longnp>((Ek-Ek_grid[0])/(Ek_grid[1]-Ek_grid[0])))+1
+    b_idx = (<long_t>((Ek-Ek_grid[0])/(Ek_grid[1]-Ek_grid[0])))+1
     #if b_idx == len(Ek_grid): b_idx -= 1
     if b_idx == Ek_grid.shape[0]: b_idx -= 1
     a_idx = b_idx - 1
@@ -58,25 +58,25 @@ cdef complexnp func_2vN(doublenp Ek,
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cdef intnp get_at_k1(doublenp Ek,
-                     np.ndarray[doublenp, ndim=1] Ek_grid,
-                     intnp l,
-                     longnp cb,
+cdef int_t get_at_k1(double_t Ek,
+                     np.ndarray[double_t, ndim=1] Ek_grid,
+                     int_t l,
+                     long_t cb,
                      bint conj,
-                     np.ndarray[complexnp, ndim=4] phi1k,
-                     np.ndarray[complexnp, ndim=4] hphi1k,
-                     longnp ndm0,
-                     complexnp fct,
-                     intnp eta,
-                     np.ndarray[complexnp, ndim=1] term):
+                     np.ndarray[complex_t, ndim=4] phi1k,
+                     np.ndarray[complex_t, ndim=4] hphi1k,
+                     long_t ndm0,
+                     complex_t fct,
+                     int_t eta,
+                     np.ndarray[complex_t, ndim=1] term):
     #
-    cdef longnp b_idx, a_idx, bbp
-    cdef doublenp a, b
-    cdef complexnp fa, fb, u, hu
+    cdef long_t b_idx, a_idx, bbp
+    cdef double_t a, b
+    cdef complex_t fa, fb, u, hu
     if Ek<Ek_grid[0] or Ek>Ek_grid[-1]:
         return 0
     #
-    b_idx = (<longnp>((Ek-Ek_grid[0])/(Ek_grid[1]-Ek_grid[0])))+1
+    b_idx = (<long_t>((Ek-Ek_grid[0])/(Ek_grid[1]-Ek_grid[0])))+1
     #NOTE This line needs to be optimized
     #if b_idx == len(Ek_grid): b_idx -= 1
     if b_idx == Ek_grid.shape[0]: b_idx -= 1
@@ -105,28 +105,28 @@ cdef intnp get_at_k1(doublenp Ek,
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
-def c_phi1k_local_2vN(longnp ind,
-                      np.ndarray[doublenp, ndim=1] Ek_grid,
-                      np.ndarray[doublenp, ndim=2] fk,
-                      np.ndarray[complexnp, ndim=2] hfkp,
-                      np.ndarray[complexnp, ndim=2] hfkm,
-                      np.ndarray[doublenp, ndim=1] E,
-                      np.ndarray[complexnp, ndim=3] Xba,
+def c_phi1k_local_2vN(long_t ind,
+                      np.ndarray[double_t, ndim=1] Ek_grid,
+                      np.ndarray[double_t, ndim=2] fk,
+                      np.ndarray[complex_t, ndim=2] hfkp,
+                      np.ndarray[complex_t, ndim=2] hfkm,
+                      np.ndarray[double_t, ndim=1] E,
+                      np.ndarray[complex_t, ndim=3] Xba,
                       si):
-    cdef intnp acharge, bcharge, ccharge, dcharge, charge, l, l1, nleads, itype, dqawc_limit
-    cdef longnp c, b, cb, a1, b1, c1, d1, b1a1, b1b, cb1, c1b, cc1, d1c1
-    cdef doublenp fp, fm
-    cdef doublenp Ek = Ek_grid[ind]
+    cdef int_t acharge, bcharge, ccharge, dcharge, charge, l, l1, nleads, itype, dqawc_limit
+    cdef long_t c, b, cb, a1, b1, c1, d1, b1a1, b1b, cb1, c1b, cc1, d1c1
+    cdef double_t fp, fm
+    cdef double_t Ek = Ek_grid[ind]
     nleads = si.nleads
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[longnp, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
     #
-    cdef np.ndarray[complexnp, ndim=3] kern0 = np.zeros((nleads, si.ndm1, si.ndm0), dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=3] kern1 = np.zeros((nleads, si.ndm1, si.ndm1), dtype=np.complex)
+    cdef np.ndarray[complex_t, ndim=3] kern0 = np.zeros((nleads, si.ndm1, si.ndm0), dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=3] kern1 = np.zeros((nleads, si.ndm1, si.ndm1), dtype=complexnp)
     for charge in range(si.ncharge-1):
         dcharge = charge+2
         ccharge = charge+1
@@ -182,31 +182,31 @@ def c_phi1k_local_2vN(longnp ind,
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
-def c_phi1k_iterate_2vN(longnp ind,
-                        np.ndarray[doublenp, ndim=1] Ek_grid,
-                        np.ndarray[complexnp, ndim=4] phi1k,
-                        np.ndarray[complexnp, ndim=4] hphi1k,
-                        np.ndarray[doublenp, ndim=2] fk,
-                        np.ndarray[complexnp, ndim=3] kern1,
-                        np.ndarray[doublenp, ndim=1] E,
-                        np.ndarray[complexnp, ndim=3] Xba,
+def c_phi1k_iterate_2vN(long_t ind,
+                        np.ndarray[double_t, ndim=1] Ek_grid,
+                        np.ndarray[complex_t, ndim=4] phi1k,
+                        np.ndarray[complex_t, ndim=4] hphi1k,
+                        np.ndarray[double_t, ndim=2] fk,
+                        np.ndarray[complex_t, ndim=3] kern1,
+                        np.ndarray[double_t, ndim=1] E,
+                        np.ndarray[complex_t, ndim=3] Xba,
                         si):
     #
-    cdef intnp acharge, bcharge, ccharge, dcharge, charge, l, l1, nleads
-    cdef longnp ndm0, c, b, cb, a1, b1, c1, d1, ba1, c1b1, c1b, d1c1, d1c, b1a1, cb1, bbp
-    cdef doublenp fp, fm
-    cdef doublenp Ek = Ek_grid[ind]
+    cdef int_t acharge, bcharge, ccharge, dcharge, charge, l, l1, nleads
+    cdef long_t ndm0, c, b, cb, a1, b1, c1, d1, ba1, c1b1, c1b, d1c1, d1c, b1a1, cb1, bbp
+    cdef double_t fp, fm
+    cdef double_t Ek = Ek_grid[ind]
     ndm0 = si.ndm0
     nleads = si.nleads
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[longnp, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
     #
-    cdef np.ndarray[complexnp, ndim=3] kern0 = np.zeros((si.nleads, si.ndm1, si.ndm0), dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=1] term = np.zeros(ndm0, dtype=np.complex)
+    cdef np.ndarray[complex_t, ndim=3] kern0 = np.zeros((si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=1] term = np.zeros(ndm0, dtype=complexnp)
     #
     for charge in range(si.ncharge-1):
         dcharge = charge+2
@@ -280,15 +280,15 @@ def c_phi1k_iterate_2vN(longnp ind,
 
 @cython.boundscheck(False)
 def c_get_phi1_phi0_2vN(sys):
-    cdef longnp j1, Eklen
-    cdef doublenp dx
-    cdef np.ndarray[doublenp, ndim=1] Ek_grid = sys.Ek_grid
+    cdef long_t j1, Eklen
+    cdef double_t dx
+    cdef np.ndarray[double_t, ndim=1] Ek_grid = sys.Ek_grid
     #
     (phi1k, si) = (sys.phi1k, sys.si)
     # Get integrated Phi[1]_{cb} in terms of Phi[0]_{bb'}
-    #cdef np.ndarray[complexnp, ndim=3]
-    phi1_phi0 = np.zeros((si.nleads, si.ndm1, si.ndm0), dtype=np.complex)
-    e_phi1_phi0 = np.zeros((si.nleads, si.ndm1, si.ndm0), dtype=np.complex)
+    #cdef np.ndarray[complex_t, ndim=3]
+    phi1_phi0 = np.zeros((si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
+    e_phi1_phi0 = np.zeros((si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
     Eklen = Ek_grid.shape[0] #len(Ek_grid)
     #
     for j1 in range(Eklen):
@@ -302,11 +302,11 @@ def c_get_phi1_phi0_2vN(sys):
 
 @cython.boundscheck(False)
 def c_iterate_2vN(sys):
-    cdef longnp j1, Eklen, ind, Ek_left
-    cdef np.ndarray[doublenp, ndim=1] Ek_grid = sys.Ek_grid
-    #cdef np.ndarray[doublenp, ndim=1] Ek_grid_ext = sys.Ek_grid_ext
-    cdef np.ndarray[doublenp, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complexnp, ndim=3] Xba = sys.leads.Xba
+    cdef long_t j1, Eklen, ind, Ek_left
+    cdef np.ndarray[double_t, ndim=1] Ek_grid = sys.Ek_grid
+    #cdef np.ndarray[double_t, ndim=1] Ek_grid_ext = sys.Ek_grid_ext
+    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
+    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
     #
     (Ek_grid_ext) = (sys.Ek_grid_ext)
     (si, funcp) = (sys.si, sys.funcp)
@@ -326,15 +326,15 @@ def c_iterate_2vN(sys):
         Eklen_ext = Ek_grid_ext.shape[0] #len(Ek_grid_ext)
         # Generate the Fermi functions on the grid
         # This is necessary to generate only if Ek_grid, mulst, or tlst are changed
-        sys.fkp = np.zeros((si.nleads, Eklen), dtype=np.double)
+        sys.fkp = np.zeros((si.nleads, Eklen), dtype=doublenp)
         for l in range(si.nleads):
             sys.fkp[l] = 1/( np.exp((Ek_grid - mulst[l])/tlst[l]) + 1 )
         sys.fkm = 1-sys.fkp
         sys.fkp, sys.hfkp = get_htransf_fk(sys.fkp, funcp)
         sys.fkm, sys.hfkm = get_htransf_fk(sys.fkm, funcp)
         # Calculate the zeroth iteration of Phi[1](k)
-        phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=np.complex)
-        kern1k = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm1), dtype=np.complex)
+        phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
+        kern1k = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm1), dtype=complexnp)
         Ek_left = funcp.Ek_left
         for j1 in range(Eklen):
             ind = j1 + Ek_left
@@ -347,7 +347,7 @@ def c_iterate_2vN(sys):
         #print('Hilbert transforming')
         phi1k_delta_old, hphi1k_delta = get_htransf_phi1k(phi1k_delta_old, funcp)
         #print('Making an iteration')
-        phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=np.complex)
+        phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
         Ek_left = funcp.Ek_left
         for j1 in range(Eklen):
             ind = j1 + Ek_left

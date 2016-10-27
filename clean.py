@@ -7,6 +7,7 @@ from glob import glob
 dirs = ['./build',
         './dist',
         './qmeq.egg-info',
+        './qmeq/__pycache__',
         './qmeq/build',
         './qmeq/docs/build']
 

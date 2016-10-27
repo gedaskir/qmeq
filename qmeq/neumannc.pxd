@@ -1,15 +1,12 @@
 import numpy as np
 cimport numpy as np
 
-ctypedef np.uint8_t boolnp
-#ctypedef bint boolnp
-ctypedef np.int_t intnp
-ctypedef np.long_t longnp
-ctypedef np.double_t doublenp
-#ctypedef double doublenp
-ctypedef np.complex128_t complexnp
-#ctypedef complex complexnp
+ctypedef np.uint8_t bool_t
+ctypedef np.int_t int_t
+ctypedef np.int64_t long_t
+ctypedef np.float64_t double_t
+ctypedef np.complex128_t complex_t
 
-cdef doublenp fermi_func(doublenp)
-cdef doublenp func_pauli(doublenp, doublenp, doublenp)
-cdef complexnp func_1vN(doublenp, doublenp, doublenp, doublenp, intnp, intnp)
+cdef double_t fermi_func(double_t)
+cdef double_t func_pauli(double_t, double_t, double_t)
+cdef complex_t func_1vN(double_t, double_t, double_t, double_t, int_t, int_t)

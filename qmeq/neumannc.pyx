@@ -10,7 +10,9 @@ import numpy as np
 from scipy.special import psi as digamma
 from scipy.integrate import quad
 import itertools
-#import mytypes
+
+from .mytypes import doublenp
+from .mytypes import complexnp
 
 cimport numpy as np
 cimport cython
@@ -18,42 +20,39 @@ cimport cython
 # These definitions are already specified in neumannc.pxd
 # as well as 'import numpy as np' and 'cimport numpy as np'
 '''
-ctypedef np.uint8_t boolnp
-#ctypedef bint boolnp
-ctypedef np.int_t intnp
-ctypedef np.long_t longnp
-ctypedef np.double_t doublenp
-#ctypedef double doublenp
-ctypedef np.complex128_t complexnp
-#ctypedef complex complexnp
+ctypedef np.uint8_t bool_t
+ctypedef np.int_t int_t
+ctypedef np.int64_t long_t
+ctypedef np.float64_t double_t
+ctypedef np.complex128_t complex_t
 '''
 
-cdef doublenp pi = 3.14159265358979323846
+cdef double_t pi = 3.14159265358979323846
 
 from libc.math cimport exp
 #cdef extern from "math.h":
-#    doublenp exp(doublenp)
+#    double_t exp(double_t)
 
 from libc.math cimport log
 #cdef extern from "math.h":
-#    doublenp log(doublenp)
+#    double_t log(double_t)
 
 @cython.cdivision(True)
-cdef doublenp fermi_func(doublenp x):
+cdef double_t fermi_func(double_t x):
     return 1/(exp(x)+1)
 
 @cython.cdivision(True)
-cdef doublenp func_pauli(doublenp E, doublenp T, doublenp D):
-    cdef doublenp alpha
+cdef double_t func_pauli(double_t E, double_t T, double_t D):
+    cdef double_t alpha
     alpha = E/T
     R = D/T
     #return 2*pi*fermi_func(-alpha)
     return 2*pi*1/(exp(-alpha)+1) * (1.0 if alpha < R and alpha > -R else 0.0)
 
 @cython.cdivision(True)
-cdef complexnp func_1vN(doublenp E, doublenp T, doublenp D, doublenp eta, intnp itype, intnp limit):
-    cdef doublenp alpha, R, err
-    cdef complexnp rez
+cdef complex_t func_1vN(double_t E, double_t T, double_t D, double_t eta, int_t itype, int_t limit):
+    cdef double_t alpha, R, err
+    cdef complex_t rez
     alpha = E/T
     R = D/T
     #-------------------------
@@ -69,25 +68,25 @@ cdef complexnp func_1vN(doublenp E, doublenp T, doublenp D, doublenp eta, intnp 
 
 @cython.boundscheck(False)
 def c_generate_phi1fct(sys):
-    cdef np.ndarray[doublenp, ndim=1] E = sys.qd.Ea
+    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
     si = sys.si
-    cdef np.ndarray[doublenp, ndim=1] mulst = sys.leads.mulst
-    cdef np.ndarray[doublenp, ndim=1] tlst = sys.leads.tlst
-    cdef np.ndarray[doublenp, ndim=1] dlst = sys.leads.dlst
+    cdef np.ndarray[double_t, ndim=1] mulst = sys.leads.mulst
+    cdef np.ndarray[double_t, ndim=1] tlst = sys.leads.tlst
+    cdef np.ndarray[double_t, ndim=1] dlst = sys.leads.dlst
     #
-    cdef longnp c, b, cb
-    cdef intnp bcharge, ccharge, charge, l
+    cdef long_t c, b, cb
+    cdef int_t bcharge, ccharge, charge, l
     #
-    cdef intnp nleads = si.nleads
-    cdef intnp itype = sys.funcp.itype
-    cdef intnp dqawc_limit = sys.funcp.dqawc_limit
+    cdef int_t nleads = si.nleads
+    cdef int_t itype = sys.funcp.itype
+    cdef int_t dqawc_limit = sys.funcp.dqawc_limit
     #
-    cdef np.ndarray[complexnp, ndim=3] phi1fct = np.zeros((nleads, si.ndm1, 2), dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=3] phi1fct_energy = np.zeros((nleads, si.ndm1, 2), dtype=np.complex)
+    cdef np.ndarray[complex_t, ndim=3] phi1fct = np.zeros((nleads, si.ndm1, 2), dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=3] phi1fct_energy = np.zeros((nleads, si.ndm1, 2), dtype=complexnp)
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
     #
     for charge in range(si.ncharge-1):
         ccharge = charge+1
@@ -103,22 +102,22 @@ def c_generate_phi1fct(sys):
 
 @cython.boundscheck(False)
 def c_generate_paulifct(sys):
-    cdef np.ndarray[doublenp, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complexnp, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
+    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
     si = sys.si
-    cdef np.ndarray[doublenp, ndim=1] mulst = sys.leads.mulst
-    cdef np.ndarray[doublenp, ndim=1] tlst = sys.leads.tlst
-    cdef np.ndarray[doublenp, ndim=1] dlst = sys.leads.dlst
+    cdef np.ndarray[double_t, ndim=1] mulst = sys.leads.mulst
+    cdef np.ndarray[double_t, ndim=1] tlst = sys.leads.tlst
+    cdef np.ndarray[double_t, ndim=1] dlst = sys.leads.dlst
     #
-    cdef longnp c, b, cb
-    cdef intnp bcharge, ccharge, charge, l
-    cdef doublenp xcb
-    cdef intnp nleads = si.nleads
+    cdef long_t c, b, cb
+    cdef int_t bcharge, ccharge, charge, l
+    cdef double_t xcb
+    cdef int_t nleads = si.nleads
     #
-    cdef np.ndarray[doublenp, ndim=3] paulifct = np.zeros((nleads, si.ndm1, 2), dtype=np.double)
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[double_t, ndim=3] paulifct = np.zeros((nleads, si.ndm1, 2), dtype=doublenp)
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
     #
     for charge in range(si.ncharge-1):
         ccharge = charge+1
@@ -136,29 +135,29 @@ def c_generate_paulifct(sys):
 #---------------------------------------------------------------------------------------------------------
 @cython.boundscheck(False)
 def c_generate_kern_pauli(sys):
-    cdef np.ndarray[doublenp, ndim=3] paulifct = sys.paulifct
+    cdef np.ndarray[double_t, ndim=3] paulifct = sys.paulifct
     si = sys.si
     cdef bint symq = sys.funcp.symq
-    cdef longnp norm_rowp = sys.funcp.norm_row
+    cdef long_t norm_rowp = sys.funcp.norm_row
     #
     cdef bb_bool
-    cdef longnp b, bb, a, aa, c, cc, ba, cb
-    cdef intnp acharge, bcharge, ccharge, charge, l
-    cdef intnp norm_row, last_row
-    cdef intnp nleads = si.nleads
+    cdef long_t b, bb, a, aa, c, cc, ba, cb
+    cdef int_t acharge, bcharge, ccharge, charge, l
+    cdef int_t norm_row, last_row
+    cdef int_t nleads = si.nleads
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[longnp, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[boolnp, ndim=1] booldm0 = si.booldm0
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
     #
     norm_row = norm_rowp if symq else si.npauli
     last_row = si.npauli-1 if symq else si.npauli
     #
-    cdef np.ndarray[doublenp, ndim=2] kern = np.zeros((last_row+1, si.npauli), dtype=np.double)
-    cdef np.ndarray[doublenp, ndim=1] bvec = np.zeros(last_row+1, dtype=np.double)
+    cdef np.ndarray[double_t, ndim=2] kern = np.zeros((last_row+1, si.npauli), dtype=doublenp)
+    cdef np.ndarray[double_t, ndim=1] bvec = np.zeros(last_row+1, dtype=doublenp)
     bvec[norm_row] = 1
     for charge in range(si.ncharge):
         acharge = charge-1
@@ -185,24 +184,24 @@ def c_generate_kern_pauli(sys):
 
 @cython.boundscheck(False)
 def c_generate_current_pauli(sys):
-    cdef np.ndarray[doublenp, ndim=1] phi0 = sys.phi0
-    cdef np.ndarray[doublenp, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[doublenp, ndim=3] paulifct = sys.paulifct
+    cdef np.ndarray[double_t, ndim=1] phi0 = sys.phi0
+    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
+    cdef np.ndarray[double_t, ndim=3] paulifct = sys.paulifct
     si = sys.si
     #
-    cdef longnp c, cc, b, bb, cb
-    cdef intnp bcharge, ccharge, charge, l, nleads
-    cdef doublenp fct1, fct2
+    cdef long_t c, cc, b, bb, cb
+    cdef int_t bcharge, ccharge, charge, l, nleads
+    cdef double_t fct1, fct2
     nleads = si.nleads
     #
-    cdef np.ndarray[doublenp, ndim=1] current = np.zeros(nleads, dtype=np.double)
-    cdef np.ndarray[doublenp, ndim=1] energy_current = np.zeros(nleads, dtype=np.double)
+    cdef np.ndarray[double_t, ndim=1] current = np.zeros(nleads, dtype=doublenp)
+    cdef np.ndarray[double_t, ndim=1] energy_current = np.zeros(nleads, dtype=doublenp)
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[longnp, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
     #
     for charge in range(si.ncharge-1):
         ccharge = charge+1
@@ -224,38 +223,38 @@ def c_generate_current_pauli(sys):
 #---------------------------------------------------------------------------------------------------------
 @cython.boundscheck(False)
 def c_generate_kern_redfield(sys):
-    cdef np.ndarray[doublenp, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complexnp, ndim=3] Xba = sys.leads.Xba
-    cdef np.ndarray[complexnp, ndim=3] phi1fct = sys.phi1fct
+    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
+    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     si = sys.si
     cdef bint symq = sys.funcp.symq
-    cdef longnp norm_rowp = sys.funcp.norm_row
+    cdef long_t norm_rowp = sys.funcp.norm_row
     #
-    cdef boolnp bbp_bool, bbpi_bool
-    cdef intnp charge, acharge, bcharge, ccharge, l, nleads, \
+    cdef bool_t bbp_bool, bbpi_bool
+    cdef int_t charge, acharge, bcharge, ccharge, l, nleads, \
                aap_sgn, bppbp_sgn, bbpp_sgn, ccp_sgn
-    cdef longnp b, bp, bbp, bbpi, bb, \
+    cdef long_t b, bp, bbp, bbpi, bb, \
                 a, ap, aap, aapi, \
                 bpp, bppbp, bppbpi, bbpp, bbppi, \
                 c, cp, ccp, ccpi, \
                 bpap, ba, bppa, cbpp, cpbp, cb
-    cdef longnp norm_row, last_row, ndm0, npauli,
-    cdef complexnp fct_aap, fct_bppbp, fct_bbpp, fct_ccp
+    cdef long_t norm_row, last_row, ndm0, npauli,
+    cdef complex_t fct_aap, fct_bppbp, fct_bbpp, fct_ccp
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[longnp, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[boolnp, ndim=1] booldm0 = si.booldm0
-    cdef np.ndarray[boolnp, ndim=1] conjdm0 = si.conjdm0
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
+    cdef np.ndarray[bool_t, ndim=1] conjdm0 = si.conjdm0
     #
     norm_row = norm_rowp if symq else si.ndm0r
     last_row = si.ndm0r-1 if symq else si.ndm0r
     ndm0, npauli, nleads = si.ndm0, si.npauli, si.nleads
     #
-    cdef np.ndarray[doublenp, ndim=2] kern = np.zeros((last_row+1, si.ndm0r), dtype=np.double)
-    cdef np.ndarray[doublenp, ndim=1] bvec = np.zeros(last_row+1, dtype=np.double)
+    cdef np.ndarray[double_t, ndim=2] kern = np.zeros((last_row+1, si.ndm0r), dtype=doublenp)
+    cdef np.ndarray[double_t, ndim=1] bvec = np.zeros(last_row+1, dtype=doublenp)
     bvec[norm_row] = 1
     for charge in range(si.ncharge):
         acharge = charge-1
@@ -353,7 +352,7 @@ def c_generate_kern_redfield(sys):
                             kern[bbpi, ccp] = kern[bbpi, ccp] - fct_ccp.real                        # kern[bbpi, ccp] -= fct_ccp.real
                 #--------------------------------------------------
     # Normalisation condition
-    kern[norm_row] = np.zeros(si.ndm0r, dtype=np.double)
+    kern[norm_row] = np.zeros(si.ndm0r, dtype=doublenp)
     for charge in range(si.ncharge):
         for b in si.statesdm[charge]:
             bb = mapdm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
@@ -362,32 +361,32 @@ def c_generate_kern_redfield(sys):
 
 @cython.boundscheck(False)
 def c_generate_phi1_redfield(sys):
-    cdef np.ndarray[doublenp, ndim=1] phi0p = sys.phi0
-    cdef np.ndarray[doublenp, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complexnp, ndim=3] Xba = sys.leads.Xba
-    cdef np.ndarray[complexnp, ndim=3] phi1fct = sys.phi1fct
-    cdef np.ndarray[complexnp, ndim=3] phi1fct_energy = sys.phi1fct_energy
+    cdef np.ndarray[double_t, ndim=1] phi0p = sys.phi0
+    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
+    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
+    cdef np.ndarray[complex_t, ndim=3] phi1fct_energy = sys.phi1fct_energy
     si = sys.si
     #
-    cdef boolnp bpb_conj, ccp_conj
-    cdef intnp bcharge, ccharge, charge, l, nleads,
-    cdef longnp c, b, cb, bp, bpb, cp, ccp, cbp, cpb
-    cdef longnp ndm0, ndm1, npauli
-    cdef complexnp fct1, fct2, fct1h, fct2h, phi0bpb, phi0ccp
+    cdef bool_t bpb_conj, ccp_conj
+    cdef int_t bcharge, ccharge, charge, l, nleads,
+    cdef long_t c, b, cb, bp, bpb, cp, ccp, cbp, cpb
+    cdef long_t ndm0, ndm1, npauli
+    cdef complex_t fct1, fct2, fct1h, fct2h, phi0bpb, phi0ccp
     ndm0, ndm1, npauli, nleads = si.ndm0, si.ndm1, si.npauli, si.nleads
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[longnp, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[boolnp, ndim=1] booldm0 = si.booldm0
-    cdef np.ndarray[boolnp, ndim=1] conjdm0 = si.conjdm0
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
+    cdef np.ndarray[bool_t, ndim=1] conjdm0 = si.conjdm0
     #
-    cdef np.ndarray[complexnp, ndim=2] phi1 = np.zeros((nleads, ndm1), dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=1] current = np.zeros(nleads, dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=1] energy_current = np.zeros(nleads, dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=1] phi0 = np.zeros(ndm0, dtype=np.complex)
+    cdef np.ndarray[complex_t, ndim=2] phi1 = np.zeros((nleads, ndm1), dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=1] current = np.zeros(nleads, dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=1] energy_current = np.zeros(nleads, dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=1] phi0 = np.zeros(ndm0, dtype=complexnp)
     #
     phi0[0:npauli] = phi0p[0:npauli]
     phi0[npauli:ndm0] = phi0p[npauli:ndm0] + 1j*phi0p[ndm0:]
@@ -426,36 +425,36 @@ def c_generate_phi1_redfield(sys):
     return phi1, current, energy_current
 
 @cython.boundscheck(False)
-def c_generate_vec_redfield(np.ndarray[doublenp, ndim=1] phi0p, sys):
-    cdef np.ndarray[doublenp, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complexnp, ndim=3] Xba = sys.leads.Xba
-    cdef np.ndarray[complexnp, ndim=3] phi1fct = sys.phi1fct
+def c_generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, sys):
+    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
+    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     si = sys.si
-    cdef longnp norm_row = sys.funcp.norm_row
+    cdef long_t norm_row = sys.funcp.norm_row
     #
-    cdef boolnp bbp_bool
-    cdef intnp charge, acharge, bcharge, ccharge, l, nleads, \
+    cdef bool_t bbp_bool
+    cdef int_t charge, acharge, bcharge, ccharge, l, nleads, \
                aap_sgn, bppbp_sgn, bbpp_sgn, ccp_sgn
-    cdef longnp b, bp, bbp, bb, \
+    cdef long_t b, bp, bbp, bb, \
                 a, ap, aap, \
                 bpp, bppbp, bbpp, \
                 c, cp, ccp, \
                 bpap, ba, bppa, cbpp, cpbp, cb
-    cdef longnp ndm0, npauli
-    cdef complexnp fct_aap, fct_bppbp, fct_bbpp, fct_ccp, norm
-    cdef complexnp phi0aap, phi0bppbp, phi0bbpp, phi0ccp
+    cdef long_t ndm0, npauli
+    cdef complex_t fct_aap, fct_bppbp, fct_bbpp, fct_ccp, norm
+    cdef complex_t phi0aap, phi0bppbp, phi0bbpp, phi0ccp
     ndm0, npauli, nleads = si.ndm0, si.npauli, si.nleads
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[longnp, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[boolnp, ndim=1] booldm0 = si.booldm0
-    cdef np.ndarray[boolnp, ndim=1] conjdm0 = si.conjdm0
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
+    cdef np.ndarray[bool_t, ndim=1] conjdm0 = si.conjdm0
     #
-    cdef np.ndarray[complexnp, ndim=1] phi0 = np.zeros(ndm0, dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=1] i_dphi0_dt = np.zeros(ndm0, dtype=np.complex)
+    cdef np.ndarray[complex_t, ndim=1] phi0 = np.zeros(ndm0, dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=1] i_dphi0_dt = np.zeros(ndm0, dtype=complexnp)
     #
     phi0[0:npauli] = phi0p[0:npauli]
     phi0[npauli:ndm0] = phi0p[npauli:ndm0] + 1j*phi0p[ndm0:]
@@ -534,38 +533,38 @@ def c_generate_vec_redfield(np.ndarray[doublenp, ndim=1] phi0p, sys):
 #---------------------------------------------------------------------------------------------------------
 @cython.boundscheck(False)
 def c_generate_kern_1vN(sys):
-    cdef np.ndarray[doublenp, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complexnp, ndim=3] Xba = sys.leads.Xba
-    cdef np.ndarray[complexnp, ndim=3] phi1fct = sys.phi1fct
+    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
+    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     si = sys.si
     cdef bint symq = sys.funcp.symq
-    cdef longnp norm_rowp = sys.funcp.norm_row
+    cdef long_t norm_rowp = sys.funcp.norm_row
     #
-    cdef boolnp bbp_bool, bbpi_bool
-    cdef intnp charge, acharge, bcharge, ccharge, l, nleads, \
+    cdef bool_t bbp_bool, bbpi_bool
+    cdef int_t charge, acharge, bcharge, ccharge, l, nleads, \
                aap_sgn, bppbp_sgn, bbpp_sgn, ccp_sgn
-    cdef longnp b, bp, bbp, bbpi, bb, \
+    cdef long_t b, bp, bbp, bbpi, bb, \
                 a, ap, aap, aapi, \
                 bpp, bppbp, bppbpi, bbpp, bbppi, \
                 c, cp, ccp, ccpi, \
                 bpa, bap, cbp, ba, cb, cpb
-    cdef longnp norm_row, last_row, ndm0, npauli,
-    cdef complexnp fct_aap, fct_bppbp, fct_bbpp, fct_ccp
+    cdef long_t norm_row, last_row, ndm0, npauli,
+    cdef complex_t fct_aap, fct_bppbp, fct_bbpp, fct_ccp
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[longnp, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[boolnp, ndim=1] booldm0 = si.booldm0
-    cdef np.ndarray[boolnp, ndim=1] conjdm0 = si.conjdm0
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
+    cdef np.ndarray[bool_t, ndim=1] conjdm0 = si.conjdm0
     #
     norm_row = norm_rowp if symq else si.ndm0r
     last_row = si.ndm0r-1 if symq else si.ndm0r
     ndm0, npauli, nleads = si.ndm0, si.npauli, si.nleads
     #
-    cdef np.ndarray[doublenp, ndim=2] kern = np.zeros((last_row+1, si.ndm0r), dtype=np.double)
-    cdef np.ndarray[doublenp, ndim=1] bvec = np.zeros(last_row+1, dtype=np.double)
+    cdef np.ndarray[double_t, ndim=2] kern = np.zeros((last_row+1, si.ndm0r), dtype=doublenp)
+    cdef np.ndarray[double_t, ndim=1] bvec = np.zeros(last_row+1, dtype=doublenp)
     bvec[norm_row] = 1
     for charge in range(si.ncharge):
         acharge = charge-1
@@ -663,7 +662,7 @@ def c_generate_kern_1vN(sys):
                             kern[bbpi, ccp] = kern[bbpi, ccp] - fct_ccp.real                        # kern[bbpi, ccp] -= fct_ccp.real
                 #--------------------------------------------------
     # Normalisation condition
-    kern[norm_row] = np.zeros(si.ndm0r, dtype=np.double)
+    kern[norm_row] = np.zeros(si.ndm0r, dtype=doublenp)
     for charge in range(si.ncharge):
         for b in si.statesdm[charge]:
             bb = mapdm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
@@ -672,32 +671,32 @@ def c_generate_kern_1vN(sys):
 
 @cython.boundscheck(False)
 def c_generate_phi1_1vN(sys):
-    cdef np.ndarray[doublenp, ndim=1] phi0p = sys.phi0
-    cdef np.ndarray[doublenp, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complexnp, ndim=3] Xba = sys.leads.Xba
-    cdef np.ndarray[complexnp, ndim=3] phi1fct = sys.phi1fct
-    cdef np.ndarray[complexnp, ndim=3] phi1fct_energy = sys.phi1fct_energy
+    cdef np.ndarray[double_t, ndim=1] phi0p = sys.phi0
+    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
+    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
+    cdef np.ndarray[complex_t, ndim=3] phi1fct_energy = sys.phi1fct_energy
     si = sys.si
     #
-    cdef boolnp bpb_conj, ccp_conj
-    cdef intnp bcharge, ccharge, charge, l, nleads,
-    cdef longnp c, b, cb, bp, bpb, cp, ccp
-    cdef longnp ndm0, ndm1, npauli
-    cdef complexnp fct1, fct2, fct1h, fct2h, phi0bpb, phi0ccp
+    cdef bool_t bpb_conj, ccp_conj
+    cdef int_t bcharge, ccharge, charge, l, nleads,
+    cdef long_t c, b, cb, bp, bpb, cp, ccp
+    cdef long_t ndm0, ndm1, npauli
+    cdef complex_t fct1, fct2, fct1h, fct2h, phi0bpb, phi0ccp
     ndm0, ndm1, npauli, nleads = si.ndm0, si.ndm1, si.npauli, si.nleads
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[longnp, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[boolnp, ndim=1] booldm0 = si.booldm0
-    cdef np.ndarray[boolnp, ndim=1] conjdm0 = si.conjdm0
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
+    cdef np.ndarray[bool_t, ndim=1] conjdm0 = si.conjdm0
     #
-    cdef np.ndarray[complexnp, ndim=2] phi1 = np.zeros((nleads, ndm1), dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=1] current = np.zeros(nleads, dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=1] energy_current = np.zeros(nleads, dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=1] phi0 = np.zeros(ndm0, dtype=np.complex)
+    cdef np.ndarray[complex_t, ndim=2] phi1 = np.zeros((nleads, ndm1), dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=1] current = np.zeros(nleads, dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=1] energy_current = np.zeros(nleads, dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=1] phi0 = np.zeros(ndm0, dtype=complexnp)
     #
     phi0[0:npauli] = phi0p[0:npauli]
     phi0[npauli:ndm0] = phi0p[npauli:ndm0] + 1j*phi0p[ndm0:]
@@ -734,37 +733,37 @@ def c_generate_phi1_1vN(sys):
     return phi1, current, energy_current
 
 @cython.boundscheck(False)
-def c_generate_vec_1vN(np.ndarray[doublenp, ndim=1] phi0p, sys):
-    #cdef np.ndarray[doublenp, ndim=1] phi0p = sys.phi0
-    cdef np.ndarray[doublenp, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complexnp, ndim=3] Xba = sys.leads.Xba
-    cdef np.ndarray[complexnp, ndim=3] phi1fct = sys.phi1fct
+def c_generate_vec_1vN(np.ndarray[double_t, ndim=1] phi0p, sys):
+    #cdef np.ndarray[double_t, ndim=1] phi0p = sys.phi0
+    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
+    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     si = sys.si
-    cdef longnp norm_row = sys.funcp.norm_row
+    cdef long_t norm_row = sys.funcp.norm_row
     #
-    cdef boolnp bbp_bool
-    cdef intnp charge, acharge, bcharge, ccharge, l, nleads, \
+    cdef bool_t bbp_bool
+    cdef int_t charge, acharge, bcharge, ccharge, l, nleads, \
                aap_sgn, bppbp_sgn, bbpp_sgn, ccp_sgn
-    cdef longnp b, bp, bbp, bb, \
+    cdef long_t b, bp, bbp, bb, \
                 a, ap, aap, \
                 bpp, bppbp, bbpp, \
                 c, cp, ccp, \
                 bpa, bap, cbp, ba, cb, cpb
-    cdef longnp ndm0, npauli
-    cdef complexnp fct_aap, fct_bppbp, fct_bbpp, fct_ccp, norm
-    cdef complexnp phi0aap, phi0bppbp, phi0bbpp, phi0ccp
+    cdef long_t ndm0, npauli
+    cdef complex_t fct_aap, fct_bppbp, fct_bbpp, fct_ccp, norm
+    cdef complex_t phi0aap, phi0bppbp, phi0bbpp, phi0ccp
     ndm0, npauli, nleads = si.ndm0, si.npauli, si.nleads
     #
-    cdef np.ndarray[longnp, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[longnp, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[longnp, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[longnp, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[longnp, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[boolnp, ndim=1] booldm0 = si.booldm0
-    cdef np.ndarray[boolnp, ndim=1] conjdm0 = si.conjdm0
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
+    cdef np.ndarray[bool_t, ndim=1] conjdm0 = si.conjdm0
     #
-    cdef np.ndarray[complexnp, ndim=1] phi0 = np.zeros(ndm0, dtype=np.complex)
-    cdef np.ndarray[complexnp, ndim=1] i_dphi0_dt = np.zeros(ndm0, dtype=np.complex)
+    cdef np.ndarray[complex_t, ndim=1] phi0 = np.zeros(ndm0, dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=1] i_dphi0_dt = np.zeros(ndm0, dtype=complexnp)
     #
     phi0[0:npauli] = phi0p[0:npauli]
     phi0[npauli:ndm0] = phi0p[npauli:ndm0] + 1j*phi0p[ndm0:]
