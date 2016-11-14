@@ -52,8 +52,8 @@ def sort_eigenstates(sys, srt='n'):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN
-        The system given as Transport or Transport2vN object.
+    sys : Transport, Transport2vN or Builder
+        The system given as Transport, Transport2vN or Builder object.
     srt : list
         List specifying in which order of properties to sort.
         For example, in the case of 'ssq' indexing we have  such convention:
@@ -84,20 +84,14 @@ def sort_eigenstates(sys, srt='n'):
 def get_phi0(sys, b_, bp_):
     '''
     Get the reduced density matrix element corresponding to
-    mnay-body states b and bp.
+    many-body states b and bp.
 
     Parameters
     ----------
-    sys : Transport, Transport2vN
-        The system given as Transport or Transport2vN object.
+    sys : Transport, Transport2vN or Builder
+        The system given as Transport, Transport2vN or Builder object.
     b_, bp_ : int
         Labels of the many-body states.
-        For example, in the case of 'ssq' indexing we have  such convention:
-        0 - energy
-        1 - charge
-        2 - spin projection S^z
-        3 - total spin S^2
-        The default sorting order for 'ssq' indexing is srt=[1, 2, 3, 0]
 
     Returns
     --------
@@ -109,15 +103,57 @@ def get_phi0(sys, b_, bp_):
     bcharge = sum(sys.si.get_state(b))
     bpcharge = sum(sys.si.get_state(bp))
     phi0bbp = 0.0
-    if bcharge == bpcharge:
+    if sys.funcp.kerntype == 'Pauli':
+        if b == bp:
+            ind = sys.si.get_ind_dm0(b, b, bcharge, maptype=1)
+            phi0bbp = sys.phi0[ind]
+    elif bcharge == bpcharge:
         ind = sys.si.get_ind_dm0(b, bp, bcharge, maptype=1)
         conj = sys.si.get_ind_dm0(b, bp, bcharge, maptype=3)
         if ind != -1:
-            ndm0, npauli = sys.si.ndm0, sys.si.npauli
-            phi0bbp = ( sys.phi0[ind] + 1j*sys.phi0[ndm0-npauli+ind]
-                                          * (+1 if conj else -1)
-                                          * (0 if ind < npauli else 1) )
+            if type(sys.si).__name__ == 'StateIndexingDMc':
+                phi0bbp = sys.phi0[ind]
+            else:
+                ndm0, npauli = sys.si.ndm0, sys.si.npauli
+                phi0bbp = ( sys.phi0[ind] + 1j*sys.phi0[ndm0-npauli+ind]
+                                              * (+1 if conj else -1)
+                                              * (0 if ind < npauli else 1) )
     return phi0bbp
+
+def get_phi1(sys, l, c_, b_):
+    '''
+    Get the momentum integrated current amplitudes corresponding to
+    lead l and many-body states c and b.
+
+    Parameters
+    ----------
+    sys : Transport, Transport2vN or Builder
+        The system given as Transport, Transport2vN or Builder object.
+    l : int
+        Label of the lead channel.
+    c_, b_ : int
+        Labels of the many-body states.
+
+    Returns
+    --------
+    phi0bbp : complex
+        A matrix element of the reduced density matrix (complex number).
+    '''
+    if sys.funcp.kerntype == 'Pauli':
+        return None
+    else:
+        c = sys.si.states_order[c_]
+        b = sys.si.states_order[b_]
+        ccharge = sum(sys.si.get_state(c))
+        bcharge = sum(sys.si.get_state(b))
+        phi1cb = 0.0
+        if ccharge == bcharge+1:
+            ind = sys.si.get_ind_dm1(c, b, bcharge)
+            phi1cb = sys.phi1[l, ind]
+        elif ccharge+1 == bcharge:
+            ind = sys.si.get_ind_dm1(b, c, ccharge)
+            phi1cb = sys.phi1[l, ind].conjugate()
+        return phi1cb
 
 def construct_Ea_extended(sys):
     '''
@@ -127,8 +163,8 @@ def construct_Ea_extended(sys):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN
-        The system given as Transport or Transport2vN object.
+    sys : Transport, Transport2vN or Builder
+        The system given as Transport, Transport2vN or Builder object.
 
     Returns
     --------
@@ -204,8 +240,8 @@ def remove_states(sys, dE):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN
-        The system given as Transport or Transport2vN object.
+    sys : Transport, Transport2vN or Builder
+        The system given as Transport, Transport2vN or Builder object.
     dE : float
         Energy above the ground state.
 
@@ -228,8 +264,8 @@ def use_all_states(sys):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN
-        The system given as Transport or Transport2vN object.
+    sys : Transport, Transport2vN or Builder
+        The system given as Transport, Transport2vN or Builder object.
 
     Modifies
     --------
@@ -244,8 +280,8 @@ def print_state(sys, b_, eps=0.0, prntq=True, filename=None, separator=''):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN
-        The system given as Transport or Transport2vN object.
+    sys : Transport, Transport2vN or Builder
+        The system given as Transport, Transport2vN or Builder object.
     b_ : int
         Index of the many-body eigenstate.
     eps : float
@@ -314,8 +350,8 @@ def print_all_states(sys, filename, eps=0.0, separator='', mode='w'):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN
-        The system given as Transport or Transport2vN object.
+    sys : Transport, Transport2vN or Builder
+        The system given as Transport, Transport2vN or Builder object.
     filename : string
         File to which to print eigenstate properties. The output is appended to this file.
     eps : float

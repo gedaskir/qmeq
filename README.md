@@ -1,2 +1,2 @@
-# qmeq
-QmeQ: package for solving  quantum mechanical rate equations (for tunneling Hamiltonians)
+# QmeQ
+QmeQ is an open-source Python package for transport calculations through quantum dot devices.

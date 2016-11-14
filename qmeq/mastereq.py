@@ -54,48 +54,50 @@ from .indexing import StateIndexingDMc
 from .manyham import QuantumDot
 from .constructxba import LeadsTunneling
 
-def builder(nsingle, hsingle, coulomb,
-            nleads, tleads, mulst, tlst, dlst,
-            indexing='charge', Ek_grid=None,
-            mtype_qd=float, mtype_leads=complex,
-            kerntype='1vN', symq=True, norm_row=0, solmethod='n',
-            itype=1, dqawc_limit=10000, mfreeq=False, phi0_init=None):
-    """
-    Builds the system for stationary transport calculations.
-    For parameters see the definitions of classes Transport and Transport2vN.
+from .various import get_phi0
+from .various import get_phi1
+from .various import remove_states
+from .various import use_all_states
 
-    Returns
-    -------
-    system: Transport or Transport2vN
-        Transport or Transport2vN object.
+class Builder(object):
     """
-    if kerntype == '2vN':
-        if Ek_grid is None:
-            ValueError('For 2vN method Ek_grid needs to be specified.')
-        si = StateIndexingDMc(nsingle, indexing)
-        qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
-        leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst, mtype_leads)
-        system = Transport2vN(qd, leads, si, Ek_grid,
-                              kerntype, symq, norm_row, solmethod)
-    else:
-        si = StateIndexingDM(nsingle, indexing)
-        qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
-        leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst, mtype_leads)
-        system = Transport(qd, leads, si,
-                           kerntype, symq, norm_row, solmethod,
-                           itype, dqawc_limit, mfreeq, phi0_init)
-    return system
-
-class FunctionProperties(object):
-    """
-    Class containing miscellaneous variables for Transport and Transport2vN classes.
+    Class for building the system for stationary transport calculations.
 
     Attributes
     ----------
+    nsingle : int
+        Number of single-particle states.
+    hsingle : dict, list or array
+        Dictionary, list or array corresponding to single-particle hopping (tunneling) Hamiltonian.
+        On input list or array gets converted to dictionary.
+    coulomb : list, dict, or array
+        Dictionary, list or array containing coulomb matrix elements.
+        For dictionary:    coulomb[(m, n, k, l)] = U, where m, n, k, l are the state labels.
+        For list or array: coulomb[i] is list of the format [m, n, k, l, U].
+        U is the strength of the coulomb interaction between the states (m, n, k, l).
+        Note that only the matrix elements k>l, n>m have to be specified.
+        On input list or array gets converted to dictionary.
+    nleads : int
+        Number of the leads.
+    tleads : dict, list or array
+        Dictionary, list or numpy array defining single particle tunneling amplitudes.
+        numpy array has to be nleads by nsingle.
+    mulst : dict, list or array
+        Dictionary, list or array containing chemical potentials of the leads.
+    tlst : dict, list or array
+        Dictionary, list or array containing temperatures of the leads.
+    dlst : dict, list or array
+        Dictionary, list or array containing bandwidths of the leads.
+    indexing : str
+        String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
+        Note that 'sz' indexing for Fock states is used for 'ssq' indexing, with
+        additional specification of eigensates in Fock basis.
+    Ek_grid : array
+        Energy grid on which 2vN approach equations are solved.
     kerntype : string
         String describing what master equation method to use.
         For Transport class the possible values are 'Pauli', '1vN', 'Redfield', 'pyPauli', 'py1vN'.
-        For Transport2vN class the possible values are '2vN'.
+        For Transport2vN class the possible values are '2vN' and 'py2vN'.
         The method with 'py' in front are not compiled using cython.
     symq : bool
         For symq=False keep all equations in the kernel, and the matrix is of size N by N+1.
@@ -120,6 +122,224 @@ class FunctionProperties(object):
         If mfreeq=True the matrix free solution method is used for first order methods.
     phi0_init : array
         For mfreeq=True the initial value of zeroth order density matrix elements.
+    mtype_qd : float or complex
+        Type for the many-body quantum dot Hamiltonian matrix.
+    mtype_leads : float or complex
+        Type for the many-body tunneling matrix Tba.
+    qd : QuantumDot
+        QuantumDot object.
+    leads : LeadsTunneling
+        LeadsTunneling object.
+    si : StateIndexingDM
+        StateIndexingDM object.
+    tt : Transport or Transport2vN.
+        Transport or Transport2vN object.
+    funcp : FunctionProperties
+        FunctionProperties object.
+    Ea : array
+        nmany by 1 array containing many-body Hamiltonian eigenvalues.
+    Tba : array
+        nleads by nmany by nmany array, which contains many-body tunneling amplitude matrix,
+        which is used in calculations.
+    kern : array
+        Kernel (Liouvillian) representing the master equation.
+    phi0 : array
+        Values of zeroth order density matrix elements.
+    phi1 : array
+        Values of first order density matrix elements
+        stored in nleads by ndm1 numpy array.
+    current : array
+        Values of the current having nleads entries.
+    energy_current : array
+        Values of the energy current having nleads entries.
+    heat_current : array
+        Values of the heat current having nleads entries.
+    niter : int
+        Number of iterations performed when solving integral equation for 2vN approach.
+    iters : Iterations2vN
+        Iterations2vN object, which is present just for 2vN approach.
+    """
+
+    def __init__(self, nsingle, hsingle, coulomb,
+                       nleads, tleads, mulst, tlst, dlst,
+                       indexing='charge', Ek_grid=None,
+                       kerntype='1vN', symq=True, norm_row=0, solmethod='n',
+                       itype=1, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                       mtype_qd=complex, mtype_leads=complex):
+
+        funcp = FunctionProperties(kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,
+                                   itype=itype, dqawc_limit=dqawc_limit, mfreeq=mfreeq, phi0_init=phi0_init,
+                                   mtype_qd=mtype_qd, mtype_leads=mtype_leads)
+
+        if kerntype in {'py2vN', '2vN'}:
+            if Ek_grid is None:
+                raise ValueError('For 2vN method Ek_grid needs to be specified.')
+                print('WARNING: For 2vN method Ek_grid needs to be specified.')
+            if not indexing in ['Lin', 'charge']:
+                print('WARNING: For 2vN method indexing needs to be \'Lin\' or \'charge\'. Using \'charge\' as a default.')
+                indexing = 'charge'
+            si = StateIndexingDMc(nsingle, indexing)
+            qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
+            leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst, mtype_leads)
+            tt = Transport2vN(qd, leads, si, funcp, Ek_grid)
+        else:
+            si = StateIndexingDM(nsingle, indexing)
+            qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
+            leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst, mtype_leads)
+            tt = Transport(qd, leads, si, funcp)
+
+        self.funcp, self.si, self.qd, self.leads, self.tt = funcp, si, qd, leads, tt
+
+    def __getattr__(self, item):
+        if item in {'solve', 'current', 'energy_current', 'heat_current', 'phi0', 'phi1',
+                    'niter', 'iters', 'Ek_grid', 'kern'}:
+            return getattr(self.tt, item)
+        elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit', 'mfreeq', 'phi0_init'}:
+            return getattr(self.funcp, item)
+        elif item in {'tleads', 'mulst', 'tlst', 'dlst'}:
+            return getattr(self.leads, item)
+        elif item in {'nsingle', 'nleads'}:
+            return getattr(self.si, item)
+        elif item in {'hsingle', 'coulomb', 'Ea', 'Tba'}:
+            return getattr(self.qd, item)
+        else:
+            #return self.__getattribute__(item)
+            return super(Builder, self).__getattribute__(item)
+
+    def __setattr__(self, item, value):
+        if item in {'solve', 'current', 'energy_current', 'heat_current', 'phi0', 'phi1',
+                    'niter', 'iters', 'Ek_grid', 'kern'}:
+            setattr(self.tt, item, value)
+        elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit', 'mfreeq', 'phi0_init'}:
+            setattr(self.funcp, item, value)
+        elif item in {'tleads', 'mulst', 'tlst', 'dlst'}:
+            setattr(self.leads, item, value)
+        elif item in {'nsingle', 'nleads'}:
+            setattr(self.si, item, value)
+        elif item in {'hsingle', 'coulomb', 'Ea', 'Tba'}:
+            setattr(self.qd, item, value)
+        else:
+            super(Builder, self).__setattr__(item, value)
+
+    # kerntype
+    def get_kerntype(self):
+        return self.funcp.kerntype
+    def set_kerntype(self, value):
+        k1 = 1 if value in {'2vN', 'py2vN'} else 0
+        k2 = 1 if self.funcp.kerntype in {'2vN', 'py2vN'} else 0
+        if k1 == k2:
+            self.funcp.kerntype = value
+        else:
+            print('WARNING: Cannot change kernel type from \''+self.funcp.kerntype+'\' to \''+value
+                 +'\' Consider contructing a new system using \'kerntype='+value+'\'')
+    kerntype = property(get_kerntype, set_kerntype)
+
+    # indexing
+    def get_indexing(self):
+        return self.si.indexing
+    def set_indexing(self, value):
+        if self.si.indexing != value:
+            print('WARNING: Cannot change indexing from \''+self.si.indexing+'\' to \''+value
+                  +'\' Consider contructing a new system using \'indexing='+value+'\'')
+    indexing = property(get_indexing, set_indexing)
+
+    def add(self, hsingle={}, coulomb={}, tleads={}, mulst={}, tlst={}, dlst={}):
+        """
+        Adds the values to the specified dictionaries and correspondingly redefines
+        relevant many-body properties of the system.
+
+        Parameters
+        ----------
+        hsingle, coulomb, tleads, mulst, tlst, dlst : dict
+            Dictionaries describing what values to add.
+            For example, tleads[(lead, state)] = value to add.
+        """
+        if hsingle != {} or coulomb != {}:
+            self.qd.add(hsingle, coulomb)
+        if tleads != {} or mulst != {} or tlst != {} or dlst != {}:
+            self.leads.add(tleads, mulst, tlst, dlst)
+
+    def change(self, hsingle={}, coulomb={}, tleads={}, mulst={}, tlst={}, dlst={}):
+        """
+        Changes the values of the specified dictionaries and correspondingly redefines
+        relevant many-body properties of the system.
+
+        Parameters
+        ----------
+        hsingle, coulomb, tleads, mulst, tlst, dlst : dict
+            Dictionaries describing what values to change.
+            For example, tleads[(lead, state)] = value to change.
+        """
+        if hsingle != {} or coulomb != {}:
+            self.qd.change(hsingle, coulomb)
+        if tleads != {} or mulst != {} or tlst != {} or dlst != {}:
+            self.leads.change(tleads, mulst, tlst, dlst)
+
+    def get_phi0(self, b, bp):
+        '''
+        Get the reduced density matrix element corresponding to
+        many-body states b and bp.
+        '''
+        return get_phi0(self, b, bp)
+
+    def get_phi1(self, l, c, b):
+        '''
+        Get the momentum integrated current amplitudes corresponding to
+        lead l and many-body states c and b.
+        '''
+        return get_phi1(self, l, c, b)
+
+    def remove_states(self, dE):
+        '''
+        Remove the states with energy dE larger than the ground state
+        for the transport calculations.
+        '''
+        remove_states(self, dE)
+
+    def use_all_states(self):
+        '''
+        Use all states for the transport calculations.
+        '''
+        use_all_states(self)
+
+class FunctionProperties(object):
+    """
+    Class containing miscellaneous variables for Transport and Transport2vN classes.
+
+    Attributes
+    ----------
+    kerntype : string
+        String describing what master equation method to use.
+        For Transport class the possible values are 'Pauli', '1vN', 'Redfield', 'pyPauli', 'py1vN'.
+        For Transport2vN class the possible values are '2vN' and 'py2vN'.
+        The method with 'py' in front are not compiled using cython.
+    symq : bool
+        For symq=False keep all equations in the kernel, and the matrix is of size N by N+1.
+        For symq=True replace one equation by the normalisation condition, and the matrix is square N by N.
+    norm_row : int
+        If symq=True this row will be replaced by normalisation condition in the kernel matrix.
+    solmethod : string
+        String specifying the solution method of the equation L(Phi0)=0.
+        The possible values are matrix inversion 'solve' and least squares 'lsqr'.
+        Method 'solve' works only when symq=True.
+        For matrix free methods (used when mfreeq=True) the possible values are
+        'krylov', 'broyden', etc.
+    itype : int
+        Type of integral for first order method calculations.
+        itype=0: the principal parts are neglected.
+        itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
+        itype=2: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
+    dqawc_limit : int
+        For itype=2 dqawc_limit determines the maximum number of subintervals
+        in the partition of the given integration interval.
+    mfreeq : bool
+        If mfreeq=True the matrix free solution method is used for first order methods.
+    phi0_init : array
+        For mfreeq=True the initial value of zeroth order density matrix elements.
+    mtype_qd : float or complex
+        Type for the many-body quantum dot Hamiltonian matrix.
+    mtype_leads : float or complex
+        Type for the many-body tunneling matrix Tba.
     Ek_left, Ek_right : int
         Number of points Ek_grid is extended to the left and the right for '2vN' method.
     ht_ker : array
@@ -130,10 +350,13 @@ class FunctionProperties(object):
         Note that emin<=-D and emax>=+D.
     ext_fct : float
         Multiplication factor used in neumann2py.get_grid_ext(sys), when determining emin and emax.
+    suppress_err : bool
+        Determines whether to print the warning when the inversion of the kernel failed.
     """
 
     def __init__(self, kerntype='2vN', symq=True, norm_row=0, solmethod='n',
-                       itype=1, dqawc_limit=10000, mfreeq=False, phi0_init=None):
+                       itype=1, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                       mtype_qd=float, mtype_leads=complex):
         self.kerntype = kerntype
         self.symq = symq
         self.norm_row = norm_row
@@ -145,12 +368,24 @@ class FunctionProperties(object):
         self.mfreeq = mfreeq
         self.phi0_init = phi0_init
         #
+        self.mtype_qd = mtype_qd
+        self.mtype_leads = mtype_leads
+        #
         self.Ek_left = 0
         self.Ek_right = 0
         self.ht_ker = None
         #
         self.emin, self.emax = 0, 0
         self.ext_fct = 1.1
+        #
+        self.suppress_err = False
+
+    def print_error(self, exept):
+        if not self.suppress_err:
+            print(str(exept))
+            print("WARNING: Could not invert the kernel. All the transport channels may be outside the bandwidth."
+                 +"This warning will not be shown again.")
+            self.suppress_err = True
 
 class Transport(object):
     """
@@ -164,10 +399,6 @@ class Transport(object):
         LeadsTunneling object.
     si : StateIndexingDM
         StateIndexingDM object.
-    kerntype : string
-        String describing what master equation method to use.
-        Possible values are 'Pauli', '1vN', 'Redfield', 'pyPauli', 'py1vN'.
-        '1vN' is the default. The method with 'py' in front are not compiled using cython.
     kern : array
         Kernel (Liouvillian) representing the master equation.
     bvec : array
@@ -196,9 +427,7 @@ class Transport(object):
         Factors used to calculate energy and heat currents in 1vN, Redfield methods.
     """
 
-    def __init__(self, qd=None, leads=None, si=None,
-                 kerntype='1vN', symq=True, norm_row=0, solmethod='n',
-                 itype=1, dqawc_limit=10000, mfreeq=False, phi0_init=None):
+    def __init__(self, qd=None, leads=None, si=None, funcp=None):
         """Initialization of the Transport class."""
         self.qd = qd
         self.leads = leads
@@ -214,8 +443,7 @@ class Transport(object):
         self.energy_current = np.zeros(self.si.nleads, dtype=doublenp)
         self.heat_current = np.zeros(self.si.nleads, dtype=doublenp)
         #
-        self.funcp = FunctionProperties(kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,
-                                        itype=itype, dqawc_limit=dqawc_limit, mfreeq=mfreeq, phi0_init=phi0_init)
+        self.funcp = funcp
 
     def set_kern(self):
         """Generates the kernel (Liouvillian)."""
@@ -250,28 +478,32 @@ class Transport(object):
         if not symq and solmethod != 'lsqr' and solmethod != 'lsmr':
             print("WARNING: Using solmethod=lsqr, because the kernel is not symmetric, symq=False.")
             solmethod = 'lsqr'
-        self.sol0 = [None]
-        if not self.kern is None:
-            self.mtrmethod = 'dense'
-            if self.mtrmethod == 'dense':
-                if   solmethod == 'solve': self.sol0 = [np.linalg.solve(self.kern, self.bvec)]
-                elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(self.kern, self.bvec)
-            '''
-            #The sparse solution methods are removed
-            elif self.mtrmethod == 'sparse':
-                if   solmethod == 'solve':    self.sol0 = [sp.sparse.linalg.spsolve(self.kern, self.bvec)]
-                elif solmethod == 'lsqr':     self.sol0 = sp.sparse.linalg.lsqr(self.kern, self.bvec)
-                elif solmethod == 'lsmr':     self.sol0 = sp.sparse.linalg.lsmr(self.kern, self.bvec)
-                elif solmethod == 'bicg':     self.sol0 = sp.sparse.linalg.bicg(self.kern, self.bvec)
-                elif solmethod == 'bicgstab': self.sol0 = sp.sparse.linalg.bicgstab(self.kern, self.bvec)
-                elif solmethod == 'cgs':      self.sol0 = sp.sparse.linalg.cgs(self.kern, self.bvec)
-                elif solmethod == 'gmres':    self.sol0 = sp.sparse.linalg.gmres(self.kern, self.bvec)
-                elif solmethod == 'lgmres':   self.sol0 = sp.sparse.linalg.lgmres(self.kern, self.bvec)
-                elif solmethod == 'qmr':      self.sol0 = sp.sparse.linalg.qmr(self.kern, self.bvec)
-            '''
-        else:
-            print("WARNING: kern is not generated for calculation of phi0.")
-        self.phi0 = self.sol0[0]
+        try:
+            self.sol0 = [None]
+            if not self.kern is None:
+                self.mtrmethod = 'dense'
+                if self.mtrmethod == 'dense':
+                    if   solmethod == 'solve': self.sol0 = [np.linalg.solve(self.kern, self.bvec)]
+                    elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(self.kern, self.bvec)
+                '''
+                #The sparse solution methods are removed
+                elif self.mtrmethod == 'sparse':
+                    if   solmethod == 'solve':    self.sol0 = [sp.sparse.linalg.spsolve(self.kern, self.bvec)]
+                    elif solmethod == 'lsqr':     self.sol0 = sp.sparse.linalg.lsqr(self.kern, self.bvec)
+                    elif solmethod == 'lsmr':     self.sol0 = sp.sparse.linalg.lsmr(self.kern, self.bvec)
+                    elif solmethod == 'bicg':     self.sol0 = sp.sparse.linalg.bicg(self.kern, self.bvec)
+                    elif solmethod == 'bicgstab': self.sol0 = sp.sparse.linalg.bicgstab(self.kern, self.bvec)
+                    elif solmethod == 'cgs':      self.sol0 = sp.sparse.linalg.cgs(self.kern, self.bvec)
+                    elif solmethod == 'gmres':    self.sol0 = sp.sparse.linalg.gmres(self.kern, self.bvec)
+                    elif solmethod == 'lgmres':   self.sol0 = sp.sparse.linalg.lgmres(self.kern, self.bvec)
+                    elif solmethod == 'qmr':      self.sol0 = sp.sparse.linalg.qmr(self.kern, self.bvec)
+                '''
+            else:
+                print("WARNING: kern is not generated for calculation of phi0.")
+            self.phi0 = self.sol0[0]
+        except Exception as exept:
+            self.funcp.print_error(exept)
+            self.phi0 = np.zeros(self.si.ndm0r)
         self.funcp.solmethod = solmethod
 
     def solve_matrix_free(self):
@@ -283,25 +515,29 @@ class Transport(object):
         kerntype = self.funcp.kerntype
         phi0_init = self.funcp.phi0_init
         solmethod = solmethod if solmethod != 'n' else 'krylov'
-        self.sol0 = None
-        if kerntype == 'Redfield':
-            self.phi1fct, self.phi1fct_energy = c_generate_phi1fct(self)
-            self.sol0 = optimize.root(c_generate_vec_redfield, phi0_init, args=(self), method=solmethod)
-        elif kerntype == '1vN':
-            self.phi1fct, self.phi1fct_energy = c_generate_phi1fct(self)
-            self.sol0 = optimize.root(c_generate_vec_1vN, phi0_init, args=(self), method=solmethod)
-        elif kerntype == 'Lindblad':
-            self.tLba = c_generate_tLba(self)
-            self.sol0 = optimize.root(c_generate_vec_lindblad, phi0_init, args=(self), method=solmethod)
-        elif kerntype == 'py1vN':
-            self.phi1fct, self.phi1fct_energy = generate_phi1fct(self)
-            self.sol0 = optimize.root(generate_vec_1vN, phi0_init, args=(self), method=solmethod)
-        elif kerntype == 'pyLindblad':
-            self.tLba = generate_tLba(self)
-            self.sol0 = optimize.root(generate_vec_lindblad, phi0_init, args=(self), method=solmethod)
-        #
-        if not self.sol0 is None:
-            self.phi0 = self.sol0.x
+        try:
+            self.sol0 = None
+            if kerntype == 'Redfield':
+                self.phi1fct, self.phi1fct_energy = c_generate_phi1fct(self)
+                self.sol0 = optimize.root(c_generate_vec_redfield, phi0_init, args=(self), method=solmethod)
+            elif kerntype == '1vN':
+                self.phi1fct, self.phi1fct_energy = c_generate_phi1fct(self)
+                self.sol0 = optimize.root(c_generate_vec_1vN, phi0_init, args=(self), method=solmethod)
+            elif kerntype == 'Lindblad':
+                self.tLba = c_generate_tLba(self)
+                self.sol0 = optimize.root(c_generate_vec_lindblad, phi0_init, args=(self), method=solmethod)
+            elif kerntype == 'py1vN':
+                self.phi1fct, self.phi1fct_energy = generate_phi1fct(self)
+                self.sol0 = optimize.root(generate_vec_1vN, phi0_init, args=(self), method=solmethod)
+            elif kerntype == 'pyLindblad':
+                self.tLba = generate_tLba(self)
+                self.sol0 = optimize.root(generate_vec_lindblad, phi0_init, args=(self), method=solmethod)
+            #
+            if not self.sol0 is None:
+                self.phi0 = self.sol0.x
+        except Exception as exept:
+            self.funcp.print_error(exept)
+            self.phi0 = np.zeros(self.si.ndm0r)
         self.funcp.solmethod = solmethod
 
     def calc_current(self):
@@ -328,25 +564,28 @@ class Transport(object):
         self.current, self.energy_current = self.current.real, self.energy_current.real
         self.heat_current = self.energy_current - self.leads.mulst*self.current
 
-    def solve(self, solve_qdq=True, solve_ratesq=True, currentq=True, *args, **kwargs):
+    def solve(self, qdq=True, rotateq=True, masterq=True, currentq=True, *args, **kwargs):
         """
         Solves the master equation.
 
         Parameters
         ----------
-        solve_qdq : bool
+        qdq : bool
             Diagonalise many-body quantum dot Hamiltonian
-            and express the lead matrix Xba in the eigenbasis.
-        solve_ratesq : bool
+            and express the lead matrix Tba in the eigenbasis.
+        rotateq : bool
+            Rotate the many-body tunneling matrix Tba.
+        masterq : bool
             Solve the master equation.
         currentq : bool
             Calculate the current.
         """
-        if solve_qdq:
+        if qdq:
             self.qd.diagonalise()
-            self.leads.rotate(self.qd.vecslst)
+            if rotateq:
+                self.leads.rotate(self.qd.vecslst)
         #
-        if solve_ratesq:
+        if masterq:
             if self.funcp.mfreeq:
                 self.solve_matrix_free()
             else:
@@ -362,8 +601,6 @@ class Transport2vN(object):
 
     Attributes
     ----------
-    kerntype : string
-        Now the only possible option is '2vN'.
     kern : array
         Kernel for zeroth order density matrix elements Phi[0].
     Ek_grid : array
@@ -372,6 +609,8 @@ class Transport2vN(object):
         Extension of Ek_grid by neumann2py.get_grid_ext(sys).
     niter : int
         Number of iterations performed when solving integral equation.
+    iters : Iterations2vN
+        Iterations2vN object.
     phi1k : array
         Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm0)
         cotaining energy resolved first order density matrix elements Phi[1](k).
@@ -391,8 +630,7 @@ class Transport2vN(object):
         Hilbert transform of fkp, fkm.
     """
 
-    def __init__(self, qd=None, leads=None, si=None, Ek_grid=None,
-                       kerntype='2vN', symq=True, norm_row=0, solmethod='n'):
+    def __init__(self, qd=None, leads=None, si=None, funcp=None, Ek_grid=None):
         self.qd = qd
         self.leads = leads
         self.si = si
@@ -401,7 +639,7 @@ class Transport2vN(object):
         self.fkp, self.fkm = None, None
         self.hfkp, self.hfkm = None, None
         self.restart()
-        self.funcp = FunctionProperties(kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod)
+        self.funcp = funcp
         # Some exceptions
         if self.si is None:
             pass
@@ -432,10 +670,14 @@ class Transport2vN(object):
         if not symq and solmethod != 'lsqr':
             print("WARNING: Using solmethod=lsqr, because the kernel is not symmetric, symq=False.")
             solmethod = 'lsqr'
-        self.sol0 = [None]
-        if   solmethod == 'solve': self.sol0 = [np.linalg.solve(self.kern, self.bvec)]
-        elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(self.kern, self.bvec)
-        self.phi0 = self.sol0[0]
+        try:
+            self.sol0 = [None]
+            if   solmethod == 'solve': self.sol0 = [np.linalg.solve(self.kern, self.bvec)]
+            elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(self.kern, self.bvec)
+            self.phi0 = self.sol0[0]
+        except Exception as exept:
+            self.funcp.print_error(exept)
+            self.phi0 = np.zeros(self.si.ndm0)
         self.funcp.solmethod = solmethod
 
     def iterate(self):
@@ -528,17 +770,19 @@ class Transport2vN(object):
         self.heat_current = npzfile['heat_current']
         self.niter = npzfile['niter']
 
-    def solve(self, solve_qdq=True, solve_ratesq=True, saveq=False, savekq=False, restartq=True,
+    def solve(self, qdq=True, rotateq=True, masterq=True, saveq=False, savekq=False, restartq=True,
                     niter=None, dir_name='./iterations/', *args, **kwargs):
         """
         Solves the 2vN approach integral equations iteratively.
 
         Parameters
         ----------
-        solve_qdq : bool
+        qdq : bool
             Diagonalise many-body quantum dot Hamiltonian
-            and express the lead matrix Xba in the eigenbasis.
-        solve_ratesq : bool
+            and express the lead matrix Tba in the eigenbasis.
+        rotateq : bool
+            Rotate the many-body tunneling matrix Tba.
+        masterq : bool
             Solve the master equation.
         saveq : bool
             Save the data after each iteration in the directory dir_name.
@@ -554,11 +798,12 @@ class Transport2vN(object):
         """
         if restartq:
             self.restart()
-        if solve_qdq:
+        if qdq:
             self.qd.diagonalise()
-            self.leads.rotate(self.qd.vecslst)
+            if rotateq:
+                self.leads.rotate(self.qd.vecslst)
         #
-        if solve_ratesq:
+        if masterq:
             # Exception
             if niter is None:
                 raise ValueError('Number of iterations niter needs to be specified')
@@ -570,6 +815,9 @@ class Transport2vN(object):
                 #print(self.current)
 
 class Iterations2vN(object):
+    """
+    Class for storing some properties of the system after 2vN iteration.
+    """
 
     def __init__(self, sys):
         self.niter = sys.niter

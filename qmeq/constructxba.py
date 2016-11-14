@@ -11,9 +11,9 @@ from .indexing import ssqrange
 from .indexing import sz_to_ind
 from .indexing import ssq_to_ind
 
-def construct_Xba(tleads, stateind, mtype=complex, Xba_=None):
+def construct_Tba(tleads, stateind, mtype=complex, Tba_=None):
     """
-    Constructs many-body tunneling amplitude matrix Xba from single particle
+    Constructs many-body tunneling amplitude matrix Tba from single particle
     tunneling amplitudes.
 
     Parameters
@@ -24,21 +24,21 @@ def construct_Xba(tleads, stateind, mtype=complex, Xba_=None):
     stateind : StateIndexing
         StateIndexing or StateIndexingDM object.
     mtype : type
-        Defines type of Xba matrix. For example, float, complex, etc.
-    Xba_ : None or array
-        nbaths by nmany by nmany numpy array containing old values of Xba.
-        The values in tleads are added to Xba\_.
+        Defines type of Tba matrix. For example, float, complex, etc.
+    Tba_ : None or array
+        nbaths by nmany by nmany numpy array containing old values of Tba.
+        The values in tleads are added to Tba\_.
 
     Returns
     -------
-    Xba : array
+    Tba : array
         nleads by nmany by nmany numpy array containing many-body tunneling amplitudes.
-        The returned Xba corresponds to Fock basis.
+        The returned Tba corresponds to Fock basis.
     """
-    if Xba_ is None:
-        Xba = np.zeros((stateind.nleads, stateind.nmany, stateind.nmany), dtype=mtype)
+    if Tba_ is None:
+        Tba = np.zeros((stateind.nleads, stateind.nmany, stateind.nmany), dtype=mtype)
     else:
-        Xba = Xba_
+        Tba = Tba_
     # Iterate over many-body states
     for j1 in range(stateind.nmany):
         state = stateind.get_state(j1)
@@ -51,13 +51,13 @@ def construct_Xba(tleads, stateind, mtype=complex, Xba_=None):
                 statep = list(state)
                 statep[j2] = 1
                 ind = stateind.get_ind(statep)
-                Xba[j3, ind, j1] += fsign*np.conj(tamp)
+                Tba[j3, ind, j1] += fsign*np.conj(tamp)
             else:
                 statep = list(state)
                 statep[j2] = 0
                 ind = stateind.get_ind(statep)
-                Xba[j3, ind, j1] += fsign*tamp
-    return Xba
+                Tba[j3, ind, j1] += fsign*tamp
+    return Tba
 
 def construct_full_pmtr(vecslst, stateind, mtype=complex):
     """
@@ -108,40 +108,40 @@ def construct_full_pmtr(vecslst, stateind, mtype=complex):
                 pmtr[stateind.chargelst[charge][j1], stateind.chargelst[charge][j2]] = vecslst[charge][j1, j2]
     return pmtr
 
-def rotate_Xba(Xba0, vecslst, stateind, indexing='n', mtype=complex):
+def rotate_Tba(Tba0, vecslst, stateind, indexing='n', mtype=complex):
     """
-    Rotates tunneling amplitude matrix Xba0 in Fock basis to Xba,
+    Rotates tunneling amplitude matrix Tba0 in Fock basis to Tba,
     which is in eigenstate basis of the quantum dot.
 
     Parameters
     ----------
-    Xba0 : array
+    Tba0 : array
         nleads by nmany by nmany numpy array, giving tunneling amplitudes in Fock basis.
     stateind : StateIndexing
         StateIndexing or StateIndexingDM object.
     indexing : string
         Specifies what kind of rotation procedure to use. Default is stateind.indexing.
     mtype : type
-        Defines type of Xba matrix. For example, float, complex, etc.
+        Defines type of Tba matrix. For example, float, complex, etc.
 
     Returns
     -------
-    Xba : array
+    Tba : array
         nleads by nmany by nmany numpy array containing many-body tunneling amplitudes.
-        The returned Xba corresponds to the quantum dot eigenbasis.
+        The returned Tba corresponds to the quantum dot eigenbasis.
     """
     if indexing == 'n':
         indexingp = stateind.indexing
     else:
         indexingp = indexing
-    Xba = np.zeros((stateind.nleads, stateind.nmany, stateind.nmany), dtype=mtype)
+    Tba = np.zeros((stateind.nleads, stateind.nmany, stateind.nmany), dtype=mtype)
     if indexingp == 'Lin':
         pmtr = construct_full_pmtr(vecslst, stateind, mtype)
         for l in range(stateind.nleads):
-            # Calculate many-body tunneling matrix Xba=P^(-1).Xba0.P
-            # in eigenbasis of Hamiltonian from tunneling matrix Xba0 in Fock basis.
+            # Calculate many-body tunneling matrix Tba=P^(-1).Tba0.P
+            # in eigenbasis of Hamiltonian from tunneling matrix Tba0 in Fock basis.
             # pmtr.conj().T denotes the conjugate transpose of pmtr.
-            Xba[l] = np.dot(pmtr.conj().T, np.dot(Xba0[l], pmtr))
+            Tba[l] = np.dot(pmtr.conj().T, np.dot(Tba0[l], pmtr))
     elif indexingp == 'sz':
         for l, charge in itertools.product(range(stateind.nleads), range(stateind.ncharge-1)):
             szrng = szrange(charge, stateind.nsingle)
@@ -158,8 +158,8 @@ def rotate_Xba(Xba0, vecslst, stateind, indexing='n', mtype=complex):
                 i2 = stateind.szlst[charge][szind][-1] + 1
                 i3 = stateind.szlst[charge+1][szind2][0]
                 i4 = stateind.szlst[charge+1][szind2][-1] + 1
-                Xba[l, i1:i2][:, i3:i4] = np.dot(vecslst[charge][szind].conj().T, np.dot(Xba0[l, i1:i2][:, i3:i4], vecslst[charge+1][szind2]))
-                Xba[l, i3:i4][:, i1:i2] = Xba[l, i1:i2][:, i3:i4].conj().T
+                Tba[l, i1:i2][:, i3:i4] = np.dot(vecslst[charge][szind].conj().T, np.dot(Tba0[l, i1:i2][:, i3:i4], vecslst[charge+1][szind2]))
+                Tba[l, i3:i4][:, i1:i2] = Tba[l, i1:i2][:, i3:i4].conj().T
     elif indexingp == 'ssq':
         for l, charge in itertools.product(range(stateind.nleads), range(stateind.ncharge-1)):
             szrng = szrange(charge, stateind.nsingle)
@@ -178,17 +178,17 @@ def rotate_Xba(Xba0, vecslst, stateind, indexing='n', mtype=complex):
                 i4 = stateind.szlst[charge+1][szind2][-1] + 1
                 vecslst1 = np.concatenate(vecslst[charge][szind], axis=1)
                 vecslst2 = np.concatenate(vecslst[charge+1][szind2], axis=1)
-                Xba[l, i1:i2][:, i3:i4] = np.dot(vecslst1.conj().T, np.dot(Xba0[l, i1:i2][:, i3:i4], vecslst2))
-                Xba[l, i3:i4][:, i1:i2] = Xba[l, i1:i2][:, i3:i4].conj().T
+                Tba[l, i1:i2][:, i3:i4] = np.dot(vecslst1.conj().T, np.dot(Tba0[l, i1:i2][:, i3:i4], vecslst2))
+                Tba[l, i3:i4][:, i1:i2] = Tba[l, i1:i2][:, i3:i4].conj().T
     elif indexingp == 'charge':
         for l, charge in itertools.product(range(stateind.nleads), range(stateind.ncharge-1)):
             i1 = stateind.chargelst[charge][0]
             i2 = stateind.chargelst[charge][-1] + 1
             i3 = stateind.chargelst[charge+1][0]
             i4 = stateind.chargelst[charge+1][-1] + 1
-            Xba[l, i1:i2][:, i3:i4] = np.dot(vecslst[charge].conj().T, np.dot(Xba0[l, i1:i2][:, i3:i4], vecslst[charge+1]))
-            Xba[l, i3:i4][:, i1:i2] = Xba[l, i1:i2][:, i3:i4].conj().T
-    return Xba
+            Tba[l, i1:i2][:, i3:i4] = np.dot(vecslst[charge].conj().T, np.dot(Tba0[l, i1:i2][:, i3:i4], vecslst[charge+1]))
+            Tba[l, i3:i4][:, i1:i2] = Tba[l, i1:i2][:, i3:i4].conj().T
+    return Tba
 #---------------------------------------------------------------------------------------------------
 
 def make_tleads_mtr(tleads, nleads, nsingle, mtype=complex):
@@ -251,6 +251,33 @@ def make_tleads_dict(tleads):
         return tleads_dict
     elif htype == 'dict':
         return tleads
+
+def make_array(lst, nleads):
+    """
+    Converts dictionary or list of mulst, tlst or dlst to an array.
+
+    Parameters
+    ----------
+    lst : list, dict, or array
+        Contains lead parameters.
+    nleads : int
+        Number of the leads.
+
+    Returns
+    -------
+    lst_arr : array
+        Numpy array containing lead parameters.
+    """
+    htype = type(lst).__name__
+    if htype == 'dict':
+        lst_arr = np.zeros(nleads)
+        for j1 in lst:
+            lst_arr[j1] = lst[j1]
+        return lst_arr
+    elif htype == 'list':
+        return np.array(lst)
+    elif htype == 'ndarray':
+        return lst
 #---------------------------------------------------------------------------------------------------
 
 class LeadsTunneling(object):
@@ -261,22 +288,22 @@ class LeadsTunneling(object):
     ----------
     nleads : int
         Number of the leads.
-    tleads : list, dict, or array
-        list, dictionary or numpy array defining single particle tunneling amplitudes.
+    tleads : dict, list or array
+        Dictionary, list or numpy array defining single particle tunneling amplitudes.
         numpy array has to be nleads by nsingle.
     stateind : StateIndexing
         StateIndexing or StateIndexingDM object.
-    mulst : list
-        List containing chemical potentials of the leads.
-    tlst : list
-        List containing temperatures of the leads.
-    dlst : list
-        List containing bandwidths of the leads.
+    mulst : dict, list or array
+        Dictionary, list or numpy array containing chemical potentials of the leads.
+    tlst : dict, list or array
+        Dictionary, list or numpy array containing temperatures of the leads.
+    dlst : dict, list or array
+        Dictionary, list or numpy array containing bandwidths of the leads.
     mtype : type
-        Defines type of Xba0 and Xba matrices. For example, float, complex, etc.
-    Xba0 : array
+        Defines type of Tba0 and Tba matrices. For example, float, complex, etc.
+    Tba0 : array
         nleads by nmany by nmany array, which contains many-body tunneling amplitude matrix in Fock basis.
-    Xba : list
+    Tba : array
         nleads by nmany by nmany array, which contains many-body tunneling amplitude matrix,
         which is used in calculations.
     """
@@ -286,67 +313,75 @@ class LeadsTunneling(object):
         self.tleads = make_tleads_dict(tleads)
         self.stateind = stateind
         self.stateind.nleads = nleads
-        self.mulst = np.array(mulst)
-        self.tlst = np.array(tlst)
-        self.dlst = np.array(dlst)
+        self.mulst = make_array(mulst, nleads) #np.array(mulst)
+        self.tlst = make_array(tlst, nleads)   #np.array(tlst)
+        self.dlst = make_array(dlst, nleads)   #np.array(dlst)
         self.mtype = mtype
-        self.Xba0 = construct_Xba(self.tleads, stateind, mtype)
-        self.Xba = self.Xba0
+        self.Tba0 = construct_Tba(self.tleads, stateind, mtype)
+        self.Tba = self.Tba0
 
-    def add(self, tleads={}, updateq=True):
+    def add(self, tleads={}, mulst={}, tlst={}, dlst={}, updateq=True):
         """
         Adds a value to single particle tunneling amplitudes and correspondingly redefines
-        many-body tunneling matrix Xba.
+        many-body tunneling matrix Tba.
 
         Parameters
         ----------
-        tleads : dict
-            Dictionary describing what values to add.
+        tleads, mulst, tlst, dlst : dict
+            Dictionaries describing what values to add.
             For example, tleads[(lead, state)] = value to add.
         updateq : bool
             Specifies if the values of the single particle amplitudes will be updated.
-            The many-body tunneling amplitudes Xba will be updates in either case.
+            The many-body tunneling amplitudes Tba will be updates in either case.
         """
-        self.Xba0 = construct_Xba(tleads, self.stateind, self.mtype, self.Xba0)
-        if updateq:
-            for j0 in tleads:
-                try:    self.tleads[j0] += tleads[j0]       # if tleads[j0] != 0:
-                except: self.tleads.update({j0:tleads[j0]}) # if tleads[j0] != 0:
+        if mulst != {}: self.mulst = self.mulst + make_array(mulst, self.stateind.nleads)
+        if tlst != {}: self.tlst = self.tlst + make_array(tlst, self.stateind.nleads)
+        if dlst != {}: self.dlst = self.dlst + make_array(dlst, self.stateind.nleads)
+        if tleads != {}:
+            self.Tba0 = construct_Tba(tleads, self.stateind, self.mtype, self.Tba0)
+            if updateq:
+                for j0 in tleads:
+                    try:    self.tleads[j0] += tleads[j0]       # if tleads[j0] != 0:
+                    except: self.tleads.update({j0:tleads[j0]}) # if tleads[j0] != 0:
 
-    def change(self, tleads={}, updateq=True):
+    def change(self, tleads={}, mulst={}, tlst={}, dlst={}, updateq=True):
         """
         Changes the values of the single particle tunneling amplitudes and correspondingly redefines
-        many-body tunneling matrix Xba.
+        many-body tunneling matrix Tba.
 
         Parameters
         ----------
-        tleads : dict
-            Dictionary describing which tunneling amplitudes to change.
+        tleads, mulst, tlst, dlst : dict
+            Dictionaries describing what values to change.
             For example, tleads[(lead, state)] = the new value.
         updateq : bool
             Specifies if the values of the single particle amplitudes will be updated.
-            The many-body tunneling amplitudes Xba will be updates in either case.
+            The many-body tunneling amplitudes Tba will be updates in either case.
         """
-        tleadsp = tleads if type(tleads).__name__ == 'dict' else make_tleads_dict(tleads)
-        # Find the differences from the previous tunneling amplitudes
-        tleads_add = {}
-        for j0 in tleadsp:
-            try:
-                tleads_diff = tleadsp[j0]-self.tleads[j0]
-                if tleads_diff != 0:
-                    tleads_add.update({j0:tleads_diff})
-                    if updateq: self.tleads[j0] += tleads_diff
-            except:
-                tleads_diff = tleadsp[j0]
-                if tleads_diff != 0:
-                    tleads_add.update({j0:tleads_diff})
-                    if updateq: self.tleads.update({j0:tleads_diff})
-        # Add the differences
-        self.add(tleads_add, False)
+        if mulst != {}: self.mulst = make_array(mulst, self.stateind.nleads)
+        if tlst != {}: self.tlst = make_array(tlst, self.stateind.nleads)
+        if dlst != {}: self.dlst = make_array(dlst, self.stateind.nleads)
+        if tleads != {}:
+            tleadsp = tleads if type(tleads).__name__ == 'dict' else make_tleads_dict(tleads)
+            # Find the differences from the previous tunneling amplitudes
+            tleads_add = {}
+            for j0 in tleadsp:
+                try:
+                    tleads_diff = tleadsp[j0]-self.tleads[j0]
+                    if tleads_diff != 0:
+                        tleads_add.update({j0:tleads_diff})
+                        if updateq: self.tleads[j0] += tleads_diff
+                except:
+                    tleads_diff = tleadsp[j0]
+                    if tleads_diff != 0:
+                        tleads_add.update({j0:tleads_diff})
+                        if updateq: self.tleads.update({j0:tleads_diff})
+            # Add the differences
+            self.add(tleads_add, updateq=False)
 
     def rotate(self, vecslst, indexing='n'):
         """
-        Rotates tunneling amplitude matrix Xba0 in Fock basis to Xba,
+        Rotates tunneling amplitude matrix Tba0 in Fock basis to Tba,
         which is in eigenstate basis of the quantum dot.
 
         Parameters
@@ -356,17 +391,17 @@ class LeadsTunneling(object):
         indexing : string
             Specifies what kind of rotation procedure to use. Default is stateind.indexing.
         """
-        self.Xba = rotate_Xba(self.Xba0, vecslst, self.stateind, indexing, self.mtype)
+        self.Tba = rotate_Tba(self.Tba0, vecslst, self.stateind, indexing, self.mtype)
 
-    def use_Xba0(self):
+    def use_Tba0(self):
         """
-        Sets the Xba matrix for calculation to Xba0 in the Fock basis.
+        Sets the Tba matrix for calculation to Tba0 in the Fock basis.
         """
-        self.Xba = self.Xba0
+        self.Tba = self.Tba0
 
-    def update_Xba0(self, nleads, tleads, mtype=complex):
+    def update_Tba0(self, nleads, tleads, mtype=complex):
         """
-        Updates the Xba0 in the Fock basis using new single-particle tunneling amplitudes.
+        Updates the Tba0 in the Fock basis using new single-particle tunneling amplitudes.
 
         Parameters
         ----------
@@ -376,4 +411,4 @@ class LeadsTunneling(object):
         self.stateind.nleads = nleads
         self.tleads = make_tleads_dict(tleads)
         self.mtype = mtype
-        self.Xba0 = construct_Xba(tleads, self.stateind, mtype)
+        self.Tba0 = construct_Tba(tleads, self.stateind, mtype)

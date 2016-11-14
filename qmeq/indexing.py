@@ -36,6 +36,8 @@ def integer_to_binarylist(num, binlen=0, strq=False):
         Integer number.
     binlen : int
         Length of a list containing digits of a binary number.
+    strq : bool
+        If true then returns a string instead of a list.
 
     Returns
     -------
@@ -496,7 +498,9 @@ class StateIndexing(object):
         ind : int
             Index of the state.
         linq : bool
-            For linq=True uses Lin indexing, for linq=False uses specified indexing
+            For linq=True uses Lin indexing, for linq=False uses specified indexing.
+        strq : bool
+            If true then returns a string instead of a list.
 
         Returns
         -------

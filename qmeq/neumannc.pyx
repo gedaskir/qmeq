@@ -103,7 +103,7 @@ def c_generate_phi1fct(sys):
 @cython.boundscheck(False)
 def c_generate_paulifct(sys):
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     si = sys.si
     cdef np.ndarray[double_t, ndim=1] mulst = sys.leads.mulst
     cdef np.ndarray[double_t, ndim=1] tlst = sys.leads.tlst
@@ -125,7 +125,7 @@ def c_generate_paulifct(sys):
         for c, b in itertools.product(si.statesdm[ccharge], si.statesdm[bcharge]):
             cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
             for l in range(nleads):
-                xcb = (Xba[l, b, c]*Xba[l, c, b]).real
+                xcb = (Tba[l, b, c]*Tba[l, c, b]).real
                 paulifct[l, cb, 0] = xcb*func_pauli(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l])
                 paulifct[l, cb, 1] = xcb*func_pauli(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l]) #2*pi*xcb - paulifct[l, cb, 0]
     return paulifct
@@ -224,7 +224,7 @@ def c_generate_current_pauli(sys):
 @cython.boundscheck(False)
 def c_generate_kern_redfield(sys):
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     si = sys.si
     cdef bint symq = sys.funcp.symq
@@ -277,8 +277,8 @@ def c_generate_kern_redfield(sys):
                         ba = lenlst[acharge]*dictdm[b] + dictdm[a] + shiftlst1[acharge]
                         fct_aap = 0
                         for l in range(nleads):
-                            fct_aap += (+Xba[l, b, a]*Xba[l, ap, bp]*phi1fct[l, bpap, 0].conjugate()
-                                        -Xba[l, b, a]*Xba[l, ap, bp]*phi1fct[l, ba, 0])
+                            fct_aap += (+Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bpap, 0].conjugate()
+                                        -Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, ba, 0])
                         aapi = ndm0 + aap - npauli
                         aap_sgn = +1 if conjdm0[lenlst[acharge]*dictdm[a] + dictdm[ap] + shiftlst0[acharge]] else -1
                         kern[bbp, aap] = kern[bbp, aap] + fct_aap.imag                              # kern[bbp, aap]   += fct_aap.imag
@@ -296,11 +296,11 @@ def c_generate_kern_redfield(sys):
                         for a in si.statesdm[acharge]:
                             bppa = lenlst[acharge]*dictdm[bpp] + dictdm[a] + shiftlst1[acharge]
                             for l in range(nleads):
-                                fct_bppbp += +Xba[l, b, a]*Xba[l, a, bpp]*phi1fct[l, bppa, 1].conjugate()
+                                fct_bppbp += +Tba[l, b, a]*Tba[l, a, bpp]*phi1fct[l, bppa, 1].conjugate()
                         for c in si.statesdm[ccharge]:
                             cbpp = lenlst[bcharge]*dictdm[c] + dictdm[bpp] + shiftlst1[bcharge]
                             for l in range(nleads):
-                                fct_bppbp += +Xba[l, b, c]*Xba[l, c, bpp]*phi1fct[l, cbpp, 0]
+                                fct_bppbp += +Tba[l, b, c]*Tba[l, c, bpp]*phi1fct[l, cbpp, 0]
                         bppbpi = ndm0 + bppbp - npauli
                         bppbp_sgn = +1 if conjdm0[lenlst[bcharge]*dictdm[bpp] + dictdm[bp] + shiftlst0[bcharge]] else -1
                         kern[bbp, bppbp] = kern[bbp, bppbp] + fct_bppbp.imag                        # kern[bbp, bppbp] += fct_bppbp.imag
@@ -317,11 +317,11 @@ def c_generate_kern_redfield(sys):
                         for a in si.statesdm[acharge]:
                             bppa = lenlst[acharge]*dictdm[bpp] + dictdm[a] + shiftlst1[acharge]
                             for l in range(nleads):
-                                fct_bbpp += -Xba[l, bpp, a]*Xba[l, a, bp]*phi1fct[l, bppa, 1]
+                                fct_bbpp += -Tba[l, bpp, a]*Tba[l, a, bp]*phi1fct[l, bppa, 1]
                         for c in si.statesdm[ccharge]:
                             cbpp = lenlst[bcharge]*dictdm[c] + dictdm[bpp] + shiftlst1[bcharge]
                             for l in range(nleads):
-                                fct_bbpp += -Xba[l, bpp, c]*Xba[l, c, bp]*phi1fct[l, cbpp, 0].conjugate()
+                                fct_bbpp += -Tba[l, bpp, c]*Tba[l, c, bp]*phi1fct[l, cbpp, 0].conjugate()
                         bbppi = ndm0 + bbpp - npauli
                         bbpp_sgn = +1 if conjdm0[lenlst[bcharge]*dictdm[b] + dictdm[bpp] + shiftlst0[bcharge]] else -1
                         kern[bbp, bbpp] = kern[bbp, bbpp] + fct_bbpp.imag                           # kern[bbp, bbpp] += fct_bbpp.imag
@@ -339,8 +339,8 @@ def c_generate_kern_redfield(sys):
                         cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
                         fct_ccp = 0
                         for l in range(nleads):
-                            fct_ccp += (+Xba[l, b, c]*Xba[l, cp, bp]*phi1fct[l, cpbp, 1]
-                                        -Xba[l, b, c]*Xba[l, cp, bp]*phi1fct[l, cb, 1].conjugate())
+                            fct_ccp += (+Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cpbp, 1]
+                                        -Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cb, 1].conjugate())
                         ccpi = ndm0 + ccp - npauli
                         ccp_sgn = +1 if conjdm0[lenlst[ccharge]*dictdm[c] + dictdm[cp] + shiftlst0[ccharge]] else -1
                         kern[bbp, ccp] = kern[bbp, ccp] + fct_ccp.imag                              # kern[bbp, ccp] += fct_ccp.imag
@@ -363,7 +363,7 @@ def c_generate_kern_redfield(sys):
 def c_generate_phi1_redfield(sys):
     cdef np.ndarray[double_t, ndim=1] phi0p = sys.phi0
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     cdef np.ndarray[complex_t, ndim=3] phi1fct_energy = sys.phi1fct_energy
     si = sys.si
@@ -405,9 +405,9 @@ def c_generate_phi1_redfield(sys):
                         fct1h = phi1fct_energy[l, cbp, 0]
                         bpb_conj = conjdm0[lenlst[bcharge]*dictdm[bp] + dictdm[b] + shiftlst0[bcharge]]
                         phi0bpb = phi0[bpb] if bpb_conj else phi0[bpb].conjugate()
-                        phi1[l, cb] = phi1[l, cb] + Xba[l, c, bp]*phi0bpb*fct1
-                        current[l] = current[l] + Xba[l, b, c]*Xba[l, c, bp]*phi0bpb*fct1
-                        energy_current[l] = energy_current[l] + Xba[l, b, c]*Xba[l, c, bp]*phi0bpb*fct1h
+                        phi1[l, cb] = phi1[l, cb] + Tba[l, c, bp]*phi0bpb*fct1
+                        current[l] = current[l] + Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1
+                        energy_current[l] = energy_current[l] + Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1h
                 for cp in si.statesdm[ccharge]:
                     ccp = mapdm0[lenlst[ccharge]*dictdm[c] + dictdm[cp] + shiftlst0[ccharge]]
                     if ccp != -1:
@@ -416,9 +416,9 @@ def c_generate_phi1_redfield(sys):
                         fct2h = phi1fct_energy[l, cpb, 1]
                         ccp_conj = conjdm0[lenlst[ccharge]*dictdm[c] + dictdm[cp] + shiftlst0[ccharge]]
                         phi0ccp = phi0[ccp] if ccp_conj else phi0[ccp].conjugate()
-                        phi1[l, cb] = phi1[l, cb] + Xba[l, cp, b]*phi0ccp*fct2
-                        current[l] = current[l] + Xba[l, b, c]*phi0ccp*Xba[l, cp, b]*fct2
-                        energy_current[l] = energy_current[l] + Xba[l, b, c]*phi0ccp*Xba[l, cp, b]*fct2h
+                        phi1[l, cb] = phi1[l, cb] + Tba[l, cp, b]*phi0ccp*fct2
+                        current[l] = current[l] + Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2
+                        energy_current[l] = energy_current[l] + Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2h
     for l in range(nleads):
         current[l] = -2*current[l].imag
         energy_current[l] = -2*energy_current[l].imag
@@ -427,7 +427,7 @@ def c_generate_phi1_redfield(sys):
 @cython.boundscheck(False)
 def c_generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, sys):
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     si = sys.si
     cdef long_t norm_row = sys.funcp.norm_row
@@ -478,8 +478,8 @@ def c_generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, sys):
                             ba = lenlst[acharge]*dictdm[b] + dictdm[a] + shiftlst1[acharge]
                             fct_aap = 0
                             for l in range(nleads):
-                                fct_aap += (+Xba[l, b, a]*Xba[l, ap, bp]*phi1fct[l, bpap, 0].conjugate()
-                                            -Xba[l, b, a]*Xba[l, ap, bp]*phi1fct[l, ba, 0])
+                                fct_aap += (+Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bpap, 0].conjugate()
+                                            -Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, ba, 0])
                             phi0aap = phi0[aap] if conjdm0[lenlst[acharge]*dictdm[a] + dictdm[ap] + shiftlst0[acharge]] else phi0[aap].conjugate()
                             i_dphi0_dt[bbp] = i_dphi0_dt[bbp] + fct_aap*phi0aap
                     #--------------------------------------------------
@@ -490,11 +490,11 @@ def c_generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, sys):
                             for a in si.statesdm[charge-1]:
                                 bppa = lenlst[acharge]*dictdm[bpp] + dictdm[a] + shiftlst1[acharge]
                                 for l in range(nleads):
-                                    fct_bppbp += +Xba[l, b, a]*Xba[l, a, bpp]*phi1fct[l, bppa, 1].conjugate()
+                                    fct_bppbp += +Tba[l, b, a]*Tba[l, a, bpp]*phi1fct[l, bppa, 1].conjugate()
                             for c in si.statesdm[charge+1]:
                                 cbpp = lenlst[bcharge]*dictdm[c] + dictdm[bpp] + shiftlst1[bcharge]
                                 for l in range(nleads):
-                                    fct_bppbp += +Xba[l, b, c]*Xba[l, c, bpp]*phi1fct[l, cbpp, 0]
+                                    fct_bppbp += +Tba[l, b, c]*Tba[l, c, bpp]*phi1fct[l, cbpp, 0]
                             phi0bppbp = phi0[bppbp] if conjdm0[lenlst[bcharge]*dictdm[bpp] + dictdm[bp] + shiftlst0[bcharge]] else phi0[bppbp].conjugate()
                             i_dphi0_dt[bbp] = i_dphi0_dt[bbp] + fct_bppbp*phi0bppbp
                         #--------------------------------------------------
@@ -504,11 +504,11 @@ def c_generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, sys):
                             for a in si.statesdm[charge-1]:
                                 bppa = lenlst[acharge]*dictdm[bpp] + dictdm[a] + shiftlst1[acharge]
                                 for l in range(nleads):
-                                    fct_bbpp += -Xba[l, bpp, a]*Xba[l, a, bp]*phi1fct[l, bppa, 1]
+                                    fct_bbpp += -Tba[l, bpp, a]*Tba[l, a, bp]*phi1fct[l, bppa, 1]
                             for c in si.statesdm[charge+1]:
                                 cbpp = lenlst[bcharge]*dictdm[c] + dictdm[bpp] + shiftlst1[bcharge]
                                 for l in range(nleads):
-                                    fct_bbpp += -Xba[l, bpp, c]*Xba[l, c, bp]*phi1fct[l, cbpp, 0].conjugate()
+                                    fct_bbpp += -Tba[l, bpp, c]*Tba[l, c, bp]*phi1fct[l, cbpp, 0].conjugate()
                             phi0bbpp = phi0[bbpp] if conjdm0[lenlst[bcharge]*dictdm[b] + dictdm[bpp] + shiftlst0[bcharge]] else phi0[bbpp].conjugate()
                             i_dphi0_dt[bbp] = i_dphi0_dt[bbp] + fct_bbpp*phi0bbpp
                     #--------------------------------------------------
@@ -519,8 +519,8 @@ def c_generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, sys):
                             cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
                             fct_ccp = 0
                             for l in range(nleads):
-                                fct_ccp += (+Xba[l, b, c]*Xba[l, cp, bp]*phi1fct[l, cpbp, 1]
-                                            -Xba[l, b, c]*Xba[l, cp, bp]*phi1fct[l, cb, 1].conjugate())
+                                fct_ccp += (+Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cpbp, 1]
+                                            -Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cb, 1].conjugate())
                             phi0ccp = phi0[ccp] if conjdm0[lenlst[ccharge]*dictdm[c] + dictdm[cp] + shiftlst0[ccharge]] else phi0[ccp].conjugate()
                             i_dphi0_dt[bbp] = i_dphi0_dt[bbp] + fct_ccp*phi0ccp
                     #--------------------------------------------------
@@ -534,7 +534,7 @@ def c_generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, sys):
 @cython.boundscheck(False)
 def c_generate_kern_1vN(sys):
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     si = sys.si
     cdef bint symq = sys.funcp.symq
@@ -587,8 +587,8 @@ def c_generate_kern_1vN(sys):
                         bap = lenlst[acharge]*dictdm[b] + dictdm[ap] + shiftlst1[acharge]
                         fct_aap = 0
                         for l in range(nleads):
-                            fct_aap += (+Xba[l, b, a]*Xba[l, ap, bp]*phi1fct[l, bpa, 0].conjugate()
-                                        -Xba[l, b, a]*Xba[l, ap, bp]*phi1fct[l, bap, 0])
+                            fct_aap += (+Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bpa, 0].conjugate()
+                                        -Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bap, 0])
                         aapi = ndm0 + aap - npauli
                         aap_sgn = +1 if conjdm0[lenlst[acharge]*dictdm[a] + dictdm[ap] + shiftlst0[acharge]] else -1
                         kern[bbp, aap] = kern[bbp, aap] + fct_aap.imag                              # kern[bbp, aap]   += fct_aap.imag
@@ -606,11 +606,11 @@ def c_generate_kern_1vN(sys):
                         for a in si.statesdm[acharge]:
                             bpa = lenlst[acharge]*dictdm[bp] + dictdm[a] + shiftlst1[acharge]
                             for l in range(nleads):
-                                fct_bppbp += +Xba[l, b, a]*Xba[l, a, bpp]*phi1fct[l, bpa, 1].conjugate()
+                                fct_bppbp += +Tba[l, b, a]*Tba[l, a, bpp]*phi1fct[l, bpa, 1].conjugate()
                         for c in si.statesdm[ccharge]:
                             cbp = lenlst[bcharge]*dictdm[c] + dictdm[bp] + shiftlst1[bcharge]
                             for l in range(nleads):
-                                fct_bppbp += +Xba[l, b, c]*Xba[l, c, bpp]*phi1fct[l, cbp, 0]
+                                fct_bppbp += +Tba[l, b, c]*Tba[l, c, bpp]*phi1fct[l, cbp, 0]
                         bppbpi = ndm0 + bppbp - npauli
                         bppbp_sgn = +1 if conjdm0[lenlst[bcharge]*dictdm[bpp] + dictdm[bp] + shiftlst0[bcharge]] else -1
                         kern[bbp, bppbp] = kern[bbp, bppbp] + fct_bppbp.imag                        # kern[bbp, bppbp] += fct_bppbp.imag
@@ -627,11 +627,11 @@ def c_generate_kern_1vN(sys):
                         for a in si.statesdm[acharge]:
                             ba = lenlst[acharge]*dictdm[b] + dictdm[a] + shiftlst1[acharge]
                             for l in range(nleads):
-                                fct_bbpp += -Xba[l, bpp, a]*Xba[l, a, bp]*phi1fct[l, ba, 1]
+                                fct_bbpp += -Tba[l, bpp, a]*Tba[l, a, bp]*phi1fct[l, ba, 1]
                         for c in si.statesdm[ccharge]:
                             cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
                             for l in range(nleads):
-                                fct_bbpp += -Xba[l, bpp, c]*Xba[l, c, bp]*phi1fct[l, cb, 0].conjugate()
+                                fct_bbpp += -Tba[l, bpp, c]*Tba[l, c, bp]*phi1fct[l, cb, 0].conjugate()
                         bbppi = ndm0 + bbpp - npauli
                         bbpp_sgn = +1 if conjdm0[lenlst[bcharge]*dictdm[b] + dictdm[bpp] + shiftlst0[bcharge]] else -1
                         kern[bbp, bbpp] = kern[bbp, bbpp] + fct_bbpp.imag                           # kern[bbp, bbpp] += fct_bbpp.imag
@@ -649,8 +649,8 @@ def c_generate_kern_1vN(sys):
                         cpb = lenlst[bcharge]*dictdm[cp] + dictdm[b] + shiftlst1[bcharge]
                         fct_ccp = 0
                         for l in range(nleads):
-                            fct_ccp += (+Xba[l, b, c]*Xba[l, cp, bp]*phi1fct[l, cbp, 1]
-                                        -Xba[l, b, c]*Xba[l, cp, bp]*phi1fct[l, cpb, 1].conjugate())
+                            fct_ccp += (+Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cbp, 1]
+                                        -Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cpb, 1].conjugate())
                         ccpi = ndm0 + ccp - npauli
                         ccp_sgn = +1 if conjdm0[lenlst[ccharge]*dictdm[c] + dictdm[cp] + shiftlst0[ccharge]] else -1
                         kern[bbp, ccp] = kern[bbp, ccp] + fct_ccp.imag                              # kern[bbp, ccp] += fct_ccp.imag
@@ -673,7 +673,7 @@ def c_generate_kern_1vN(sys):
 def c_generate_phi1_1vN(sys):
     cdef np.ndarray[double_t, ndim=1] phi0p = sys.phi0
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     cdef np.ndarray[complex_t, ndim=3] phi1fct_energy = sys.phi1fct_energy
     si = sys.si
@@ -716,17 +716,17 @@ def c_generate_phi1_1vN(sys):
                     if bpb != -1:
                         bpb_conj = conjdm0[lenlst[bcharge]*dictdm[bp] + dictdm[b] + shiftlst0[bcharge]]
                         phi0bpb = phi0[bpb] if bpb_conj else phi0[bpb].conjugate()
-                        phi1[l, cb] = phi1[l, cb] + Xba[l, c, bp]*phi0bpb*fct1
-                        current[l] = current[l] + Xba[l, b, c]*Xba[l, c, bp]*phi0bpb*fct1
-                        energy_current[l] = energy_current[l] + Xba[l, b, c]*Xba[l, c, bp]*phi0bpb*fct1h
+                        phi1[l, cb] = phi1[l, cb] + Tba[l, c, bp]*phi0bpb*fct1
+                        current[l] = current[l] + Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1
+                        energy_current[l] = energy_current[l] + Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1h
                 for cp in si.statesdm[ccharge]:
                     ccp = mapdm0[lenlst[ccharge]*dictdm[c] + dictdm[cp] + shiftlst0[ccharge]]
                     if ccp != -1:
                         ccp_conj = conjdm0[lenlst[ccharge]*dictdm[c] + dictdm[cp] + shiftlst0[ccharge]]
                         phi0ccp = phi0[ccp] if ccp_conj else phi0[ccp].conjugate()
-                        phi1[l, cb] = phi1[l, cb] + Xba[l, cp, b]*phi0ccp*fct2
-                        current[l] = current[l] + Xba[l, b, c]*phi0ccp*Xba[l, cp, b]*fct2
-                        energy_current[l] = energy_current[l] + Xba[l, b, c]*phi0ccp*Xba[l, cp, b]*fct2h
+                        phi1[l, cb] = phi1[l, cb] + Tba[l, cp, b]*phi0ccp*fct2
+                        current[l] = current[l] + Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2
+                        energy_current[l] = energy_current[l] + Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2h
     for l in range(nleads):
         current[l] = -2*current[l].imag
         energy_current[l] = -2*energy_current[l].imag
@@ -736,7 +736,7 @@ def c_generate_phi1_1vN(sys):
 def c_generate_vec_1vN(np.ndarray[double_t, ndim=1] phi0p, sys):
     #cdef np.ndarray[double_t, ndim=1] phi0p = sys.phi0
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Xba = sys.leads.Xba
+    cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     si = sys.si
     cdef long_t norm_row = sys.funcp.norm_row
@@ -787,8 +787,8 @@ def c_generate_vec_1vN(np.ndarray[double_t, ndim=1] phi0p, sys):
                             bap = lenlst[acharge]*dictdm[b] + dictdm[ap] + shiftlst1[acharge]
                             fct_aap = 0
                             for l in range(nleads):
-                                fct_aap += (+Xba[l, b, a]*Xba[l, ap, bp]*phi1fct[l, bpa, 0].conjugate()
-                                            -Xba[l, b, a]*Xba[l, ap, bp]*phi1fct[l, bap, 0])
+                                fct_aap += (+Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bpa, 0].conjugate()
+                                            -Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bap, 0])
                             phi0aap = phi0[aap] if conjdm0[lenlst[acharge]*dictdm[a] + dictdm[ap] + shiftlst0[acharge]] else phi0[aap].conjugate()
                             i_dphi0_dt[bbp] = i_dphi0_dt[bbp] + fct_aap*phi0aap
                     #--------------------------------------------------
@@ -799,11 +799,11 @@ def c_generate_vec_1vN(np.ndarray[double_t, ndim=1] phi0p, sys):
                             for a in si.statesdm[charge-1]:
                                 bpa = lenlst[acharge]*dictdm[bp] + dictdm[a] + shiftlst1[acharge]
                                 for l in range(nleads):
-                                    fct_bppbp += +Xba[l, b, a]*Xba[l, a, bpp]*phi1fct[l, bpa, 1].conjugate()
+                                    fct_bppbp += +Tba[l, b, a]*Tba[l, a, bpp]*phi1fct[l, bpa, 1].conjugate()
                             for c in si.statesdm[charge+1]:
                                 cbp = lenlst[bcharge]*dictdm[c] + dictdm[bp] + shiftlst1[bcharge]
                                 for l in range(nleads):
-                                    fct_bppbp += +Xba[l, b, c]*Xba[l, c, bpp]*phi1fct[l, cbp, 0]
+                                    fct_bppbp += +Tba[l, b, c]*Tba[l, c, bpp]*phi1fct[l, cbp, 0]
                             phi0bppbp = phi0[bppbp] if conjdm0[lenlst[bcharge]*dictdm[bpp] + dictdm[bp] + shiftlst0[bcharge]] else phi0[bppbp].conjugate()
                             i_dphi0_dt[bbp] = i_dphi0_dt[bbp] + fct_bppbp*phi0bppbp
                         #--------------------------------------------------
@@ -813,11 +813,11 @@ def c_generate_vec_1vN(np.ndarray[double_t, ndim=1] phi0p, sys):
                             for a in si.statesdm[charge-1]:
                                 ba = lenlst[acharge]*dictdm[b] + dictdm[a] + shiftlst1[acharge]
                                 for l in range(nleads):
-                                    fct_bbpp += -Xba[l, bpp, a]*Xba[l, a, bp]*phi1fct[l, ba, 1]
+                                    fct_bbpp += -Tba[l, bpp, a]*Tba[l, a, bp]*phi1fct[l, ba, 1]
                             for c in si.statesdm[charge+1]:
                                 cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
                                 for l in range(nleads):
-                                    fct_bbpp += -Xba[l, bpp, c]*Xba[l, c, bp]*phi1fct[l, cb, 0].conjugate()
+                                    fct_bbpp += -Tba[l, bpp, c]*Tba[l, c, bp]*phi1fct[l, cb, 0].conjugate()
                             phi0bbpp = phi0[bbpp] if conjdm0[lenlst[bcharge]*dictdm[b] + dictdm[bpp] + shiftlst0[bcharge]] else phi0[bbpp].conjugate()
                             i_dphi0_dt[bbp] = i_dphi0_dt[bbp] + fct_bbpp*phi0bbpp
                     #--------------------------------------------------
@@ -828,8 +828,8 @@ def c_generate_vec_1vN(np.ndarray[double_t, ndim=1] phi0p, sys):
                             cpb = lenlst[bcharge]*dictdm[cp] + dictdm[b] + shiftlst1[bcharge]
                             fct_ccp = 0
                             for l in range(nleads):
-                                fct_ccp += (+Xba[l, b, c]*Xba[l, cp, bp]*phi1fct[l, cbp, 1]
-                                            -Xba[l, b, c]*Xba[l, cp, bp]*phi1fct[l, cpb, 1].conjugate())
+                                fct_ccp += (+Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cbp, 1]
+                                            -Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cpb, 1].conjugate())
                             phi0ccp = phi0[ccp] if conjdm0[lenlst[ccharge]*dictdm[c] + dictdm[cp] + shiftlst0[ccharge]] else phi0[ccp].conjugate()
                             i_dphi0_dt[bbp] = i_dphi0_dt[bbp] + fct_ccp*phi0ccp
                     #--------------------------------------------------

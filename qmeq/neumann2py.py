@@ -98,7 +98,7 @@ def get_at_k1(Ek, Ek_grid, l, cb, conj, phi1k, hphi1k):
     hu = hu.conjugate() if conj else hu
     return pi*hu, pi*u
 
-def phi1k_local_2vN(ind, Ek_grid, fk, hfkp, hfkm, E, Xba, si):
+def phi1k_local_2vN(ind, Ek_grid, fk, hfkp, hfkm, E, Tba, si):
     """
     Constructs Phi[1](k) corresponding to local approximation at Ek_grid[ind].
     More precisely, generates local approximation kernels L1 and L0, Phi[1](k) = L0(k)Phi[0],
@@ -116,7 +116,7 @@ def phi1k_local_2vN(ind, Ek_grid, fk, hfkp, hfkm, E, Xba, si):
         Hilbert transforms of fk and 1-fk.
     E : array
         nmany by 1 array containing Hamiltonian eigenvalues.
-    Xba : array
+    Tba : array
         nmany by nmany array, which contains many-body tunneling amplitude matrix.
     si : StateIndexingDM
         StateIndexingDM object.
@@ -149,45 +149,45 @@ def phi1k_local_2vN(ind, Ek_grid, fk, hfkp, hfkm, E, Xba, si):
                 # Phi[0] terms
                 for b1 in si.statesdm[bcharge]:
                     b1b = si.get_ind_dm0(b1, b, bcharge)
-                    kern0[l, cb, b1b] += +Xba[l, c, b1]*fp
+                    kern0[l, cb, b1b] += +Tba[l, c, b1]*fp
                 for c1 in si.statesdm[ccharge]:
                     cc1 = si.get_ind_dm0(c, c1, ccharge)
-                    kern0[l, cb, cc1] += -Xba[l, c1, b]*fm
+                    kern0[l, cb, cc1] += -Tba[l, c1, b]*fm
                 #---------------------------------------------------------------------------
                 # Phi[1] terms
                 # 2nd and 7th terms
                 for b1, a1 in itertools.product(si.statesdm[bcharge], si.statesdm[acharge]):
                     b1a1 = si.get_ind_dm1(b1, a1, acharge)
                     for l1 in range(si.nleads):
-                        kern1[l, cb, b1a1] -= +Xba[l1, c, b1]*Xba[l1, a1, b]*(+func_2vN(+(Ek-E[b1]+E[b]), Ek_grid, l1, +1, hfkp)
+                        kern1[l, cb, b1a1] -= +Tba[l1, c, b1]*Tba[l1, a1, b]*(+func_2vN(+(Ek-E[b1]+E[b]), Ek_grid, l1, +1, hfkp)
                                                                               -func_2vN(-(Ek-E[c]+E[a1]), Ek_grid, l1, -1, hfkp) )
                 # 6th and 8th terms
                 for b1 in si.statesdm[bcharge]:
                     cb1 = si.get_ind_dm1(c, b1, bcharge)
                     for l1 in range(si.nleads):
                         for c1 in si.statesdm[ccharge]:
-                            kern1[l, cb, cb1] -= +Xba[l1, b1, c1]*Xba[l1, c1, b]*func_2vN(+(Ek-E[c]+E[c1]), Ek_grid, l1, +1, hfkp)
+                            kern1[l, cb, cb1] -= +Tba[l1, b1, c1]*Tba[l1, c1, b]*func_2vN(+(Ek-E[c]+E[c1]), Ek_grid, l1, +1, hfkp)
                         for a1 in si.statesdm[acharge]:
-                            kern1[l, cb, cb1] -= -Xba[l1, b1, a1]*Xba[l1, a1, b]*func_2vN(-(Ek-E[c]+E[a1]), Ek_grid, l1, -1, hfkm)
+                            kern1[l, cb, cb1] -= -Tba[l1, b1, a1]*Tba[l1, a1, b]*func_2vN(-(Ek-E[c]+E[a1]), Ek_grid, l1, -1, hfkm)
                 # 1st and 3rd terms
                 for c1 in si.statesdm[ccharge]:
                     c1b = si.get_ind_dm1(c1, b, bcharge)
                     for l1 in range(si.nleads):
                         for b1 in si.statesdm[bcharge]:
-                            kern1[l, cb, c1b] -= +Xba[l1, c, b1]*Xba[l1, b1, c1]*func_2vN(+(Ek-E[b1]+E[b]), Ek_grid, l1, +1, hfkm)
+                            kern1[l, cb, c1b] -= +Tba[l1, c, b1]*Tba[l1, b1, c1]*func_2vN(+(Ek-E[b1]+E[b]), Ek_grid, l1, +1, hfkm)
                         for d1 in si.statesdm[dcharge]:
-                            kern1[l, cb, c1b] -= -Xba[l1, c, d1]*Xba[l1, d1, c1]*func_2vN(-(Ek-E[d1]+E[b]), Ek_grid, l1, -1, hfkp)
+                            kern1[l, cb, c1b] -= -Tba[l1, c, d1]*Tba[l1, d1, c1]*func_2vN(-(Ek-E[d1]+E[b]), Ek_grid, l1, -1, hfkp)
                 # 5th and 4th terms
                 for d1, c1 in itertools.product(si.statesdm[dcharge], si.statesdm[ccharge]):
                     d1c1 = si.get_ind_dm1(d1, c1, ccharge)
                     for l1 in range(si.nleads):
-                        kern1[l, cb, d1c1] -= +Xba[l1, c, d1]*Xba[l1, c1, b]*(+func_2vN(+(Ek-E[c]+E[c1]), Ek_grid, l1, +1, hfkm)
+                        kern1[l, cb, d1c1] -= +Tba[l1, c, d1]*Tba[l1, c1, b]*(+func_2vN(+(Ek-E[c]+E[c1]), Ek_grid, l1, +1, hfkm)
                                                                               -func_2vN(-(Ek-E[d1]+E[b]), Ek_grid, l1, -1, hfkm) )
     for l in range(si.nleads):
         kern0[l] = np.dot(np.linalg.inv(kern1[l]), kern0[l])
     return kern0, kern1
 
-def phi1k_iterate_2vN(ind, Ek_grid, phi1k, hphi1k, fk, kern1, E, Xba, si):
+def phi1k_iterate_2vN(ind, Ek_grid, phi1k, hphi1k, fk, kern1, E, Tba, si):
     """
     Iterates the 2vN integral equation.
 
@@ -209,7 +209,7 @@ def phi1k_iterate_2vN(ind, Ek_grid, phi1k, hphi1k, fk, kern1, E, Xba, si):
         Local approximation kernel L1(k) at Ek_grid[ind].
     E : array
         nmany by 1 array containing Hamiltonian eigenvalues.
-    Xba : array
+    Tba : array
         nmany by nmany array, which contains many-body tunneling amplitude matrix.
     si : StateIndexingDM
         StateIndexingDM object.
@@ -240,7 +240,7 @@ def phi1k_iterate_2vN(ind, Ek_grid, phi1k, hphi1k, fk, kern1, E, Xba, si):
                     for b1, l1 in itertools.product(si.statesdm[bcharge], range(si.nleads)):
                         #print('1')
                         hu, u = get_at_k1(+(Ek-E[b1]+E[b]), Ek_grid, l1, ba1, True, phi1k, hphi1k)
-                        term += -Xba[l1, c, b1]*Xba[l, b1, a1]*fp*(hu - 1j*u)
+                        term += -Tba[l1, c, b1]*Tba[l, b1, a1]*fp*(hu - 1j*u)
                 # 2nd and 5th terms
                 for b1, c1 in itertools.product(si.statesdm[bcharge], si.statesdm[ccharge]):
                     #print('2 and 5')
@@ -248,45 +248,45 @@ def phi1k_iterate_2vN(ind, Ek_grid, phi1k, hphi1k, fk, kern1, E, Xba, si):
                     for l1 in range(si.nleads):
                         # 2nd term
                         hu, u = get_at_k1(+(Ek-E[b1]+E[b]), Ek_grid, l1, c1b1, True, phi1k, hphi1k)
-                        term += -Xba[l1, c, b1]*(hu - 1j*u)*fm*Xba[l, c1, b]
+                        term += -Tba[l1, c, b1]*(hu - 1j*u)*fm*Tba[l, c1, b]
                         # 5th term
                         hu, u = get_at_k1(+(Ek-E[c]+E[c1]), Ek_grid, l1, c1b1, True, phi1k, hphi1k)
-                        term += -Xba[l, c, b1]*fp*(hu - 1j*u)*Xba[l1, c1, b]
+                        term += -Tba[l, c, b1]*fp*(hu - 1j*u)*Tba[l1, c1, b]
                 # 3rd term
                 for c1 in si.statesdm[ccharge]:
                     c1b = si.get_ind_dm1(c1, b, bcharge)
                     for d1, l1 in itertools.product(si.statesdm[dcharge], range(si.nleads)):
                         #print('3')
                         hu, u = get_at_k1(-(Ek-E[d1]+E[b]), Ek_grid, l1, c1b, False, phi1k, hphi1k)
-                        term += +Xba[l1, c, d1]*Xba[l, d1, c1]*fp*(hu + 1j*u)
+                        term += +Tba[l1, c, d1]*Tba[l, d1, c1]*fp*(hu + 1j*u)
                 # 4th term
                 for d1, c1 in itertools.product(si.statesdm[dcharge], si.statesdm[ccharge]):
                     #print('4')
                     d1c1 = si.get_ind_dm1(d1, c1, ccharge)
                     for l1 in range(si.nleads):
                         hu, u = get_at_k1(-(Ek-E[d1]+E[b]), Ek_grid, l1, d1c1, False, phi1k, hphi1k)
-                        term += +Xba[l1, c, d1]*(hu + 1j*u)*fm*Xba[l, c1, b]
+                        term += +Tba[l1, c, d1]*(hu + 1j*u)*fm*Tba[l, c1, b]
                 # 6th term
                 for d1 in si.statesdm[dcharge]:
                     d1c = si.get_ind_dm1(d1, c, ccharge)
                     for c1, l1 in itertools.product(si.statesdm[ccharge], range(si.nleads)):
                         #print('6')
                         hu, u = get_at_k1(+(Ek-E[c]+E[c1]), Ek_grid, l1, d1c, True, phi1k, hphi1k)
-                        term += -(hu - 1j*u)*fm*Xba[l, d1, c1]*Xba[l1, c1, b]
+                        term += -(hu - 1j*u)*fm*Tba[l, d1, c1]*Tba[l1, c1, b]
                 # 7th term
                 for b1, a1 in itertools.product(si.statesdm[bcharge], si.statesdm[acharge]):
                     #print('7')
                     b1a1 = si.get_ind_dm1(b1, a1, acharge)
                     for l1 in range(si.nleads):
                         hu, u = get_at_k1(-(Ek-E[c]+E[a1]), Ek_grid, l1, b1a1, False, phi1k, hphi1k)
-                        term += +Xba[l, c, b1]*fp*(hu + 1j*u)*Xba[l1, a1, b]
+                        term += +Tba[l, c, b1]*fp*(hu + 1j*u)*Tba[l1, a1, b]
                 # 8th term
                 for b1 in si.statesdm[bcharge]:
                     cb1 = si.get_ind_dm1(c, b1, bcharge)
                     for a1, l1 in itertools.product(si.statesdm[acharge], range(si.nleads)):
                         #print('8')
                         hu, u = get_at_k1(-(Ek-E[c]+E[a1]), Ek_grid, l1, cb1, False, phi1k, hphi1k)
-                        term += +(hu + 1j*u)*fm*Xba[l, b1, a1]*Xba[l1, a1, b]
+                        term += +(hu + 1j*u)*fm*Tba[l, b1, a1]*Tba[l1, a1, b]
                 kern0[l, cb] = term
     for l in range(si.nleads):
         kern0[l] = np.dot(np.linalg.inv(kern1[l]), kern0[l])
@@ -342,8 +342,8 @@ def kern_phi0_2vN(sys):
     bvec : array
         Right hand side column vector for master equation.
     """
-    #(phi1_phi0, E, Xba, si, funcp, mulst, tlst, dlst)
-    (phi1_phi0, E, Xba, si) = (sys.phi1_phi0, sys.qd.Ea, sys.leads.Xba, sys.si)
+    #(phi1_phi0, E, Tba, si, funcp, mulst, tlst, dlst)
+    (phi1_phi0, E, Tba, si) = (sys.phi1_phi0, sys.qd.Ea, sys.leads.Tba, sys.si)
     symq = sys.funcp.symq
     norm_rowp = sys.funcp.norm_row
     # Integrated Phi[1]_{bc} in terms of phi1_phi0
@@ -377,15 +377,15 @@ def kern_phi0_2vN(sys):
                 bpa1 = si.get_ind_dm1(bp, a1, acharge)
                 ba1 = si.get_ind_dm1(b, a1, acharge)
                 for l in range(si.nleads):
-                    kern[bbp] += +Xba[l, b, a1]*phi1_phi0_conj[l, bpa1]
-                    kern[bbp] += -phi1_phi0[l, ba1]*Xba[l, a1, bp]
+                    kern[bbp] += +Tba[l, b, a1]*phi1_phi0_conj[l, bpa1]
+                    kern[bbp] += -phi1_phi0[l, ba1]*Tba[l, a1, bp]
             #
             for c1 in si.statesdm[ccharge]:
                 c1bp = si.get_ind_dm1(c1, bp, bcharge)
                 c1b = si.get_ind_dm1(c1, b, bcharge)
                 for l in range(si.nleads):
-                    kern[bbp] += +Xba[l, b, c1]*phi1_phi0[l, c1bp]
-                    kern[bbp] += -phi1_phi0_conj[l, c1b]*Xba[l, c1, bp]
+                    kern[bbp] += +Tba[l, b, c1]*phi1_phi0[l, c1bp]
+                    kern[bbp] += -phi1_phi0_conj[l, c1b]*Tba[l, c1, bp]
     kern[norm_row] = norm_vec
     return kern, bvec
 
@@ -409,9 +409,9 @@ def generate_current_2vN(sys):
     energy_current : array
         Values of the energy current having nleads entries.
     """
-    #(phi1_phi0, e_phi1_phi0, phi0, Xba, si)
+    #(phi1_phi0, e_phi1_phi0, phi0, Tba, si)
     (phi1_phi0, e_phi1_phi0) = (sys.phi1_phi0, sys.e_phi1_phi0)
-    (phi0, Xba, si) = (sys.phi0, sys.leads.Xba, sys.si)
+    (phi0, Tba, si) = (sys.phi0, sys.leads.Tba, sys.si)
     #
     phi1 = np.zeros((si.nleads, si.ndm1), dtype=complexnp)
     h_phi1 = np.zeros((si.nleads, si.ndm1), dtype=complexnp)
@@ -427,8 +427,8 @@ def generate_current_2vN(sys):
         for c, b in itertools.product(si.statesdm[ccharge], si.statesdm[bcharge]):
             cb = si.get_ind_dm1(c, b, bcharge)
             for l in range(si.nleads):
-                current[l] += phi1[l, cb]*Xba[l, b, c]
-                energy_current[l] = energy_current[l] + h_phi1[l, cb]*Xba[l, b, c]
+                current[l] += phi1[l, cb]*Tba[l, b, c]
+                energy_current[l] = energy_current[l] + h_phi1[l, cb]*Tba[l, b, c]
     for l in range(si.nleads):
         current[l] = -2*current[l].imag
         energy_current[l] = -2*energy_current[l].imag
@@ -605,7 +605,7 @@ def iterate_2vN(sys):
     sys.fkp, sys.fkm, sys.hfkp, sys.hfkm
     """
     (Ek_grid, Ek_grid_ext) = (sys.Ek_grid, sys.Ek_grid_ext)
-    (E, Xba, si, funcp) = (sys.qd.Ea, sys.leads.Xba, sys.si, sys.funcp)
+    (E, Tba, si, funcp) = (sys.qd.Ea, sys.leads.Tba, sys.si, sys.funcp)
     (mulst, tlst) = (sys.leads.mulst, sys.leads.tlst)
     # Assign sys.phi1k_delta to phi1k_delta_old, because the new phi1k_delta
     # will be generated in this function
@@ -633,7 +633,7 @@ def iterate_2vN(sys):
         kern1k = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm1), dtype=complexnp)
         for j1 in range(Eklen):
             ind = j1 + funcp.Ek_left
-            phi1k_delta[j1], kern1k[j1] = phi1k_local_2vN(ind, Ek_grid_ext, sys.fkp, sys.hfkp, sys.hfkm, E, Xba, si)
+            phi1k_delta[j1], kern1k[j1] = phi1k_local_2vN(ind, Ek_grid_ext, sys.fkp, sys.hfkp, sys.hfkm, E, Tba, si)
         hphi1k_delta = None
     elif kern1k is None:
         pass
@@ -645,5 +645,5 @@ def iterate_2vN(sys):
         phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
         for j1 in range(Eklen):
             ind = j1 + funcp.Ek_left
-            phi1k_delta[j1] = phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta, sys.fkp, kern1k[j1], E, Xba, si)
+            phi1k_delta[j1] = phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta, sys.fkp, kern1k[j1], E, Tba, si)
     return phi1k_delta, hphi1k_delta, kern1k

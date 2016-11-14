@@ -623,11 +623,11 @@ class QuantumDot(object):
 
     Attributes
     ----------
-    hsingle : list, dict, or array
-        List, dictionary, or array corresponding to single-particle hopping (tunneling) Hamiltonian.
+    hsingle : dict, list or array
+        Dictionary, list or array corresponding to single-particle hopping (tunneling) Hamiltonian.
         On input list or array gets converted to dictionary.
-    coulomb : list, dict, or array
-        List, dictionary, or containing coulomb matrix elements.
+    coulomb : dict, list or array
+        Dictionary, list or array or containing coulomb matrix elements.
         For dictionary:    coulomb[(m, n, k, l)] = U, where m, n, k, l are the state labels.
         For list or array: coulomb[i] is list of the format [m, n, k, l, U].
         U is the strength of the coulomb interaction between the states (m, n, k, l).

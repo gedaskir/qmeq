@@ -45,6 +45,7 @@ qmeq/docs/source/qmeq.neumannpy_complex.rst
 ### Directories
 
 # Build directories
+build/
 qmeq.egg-info/
 qmeq/build
 qmeq/docs/build

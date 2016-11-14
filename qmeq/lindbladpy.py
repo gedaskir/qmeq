@@ -33,10 +33,10 @@ def generate_tLba(sys):
     phi1fct_energy : array
         Factors used to calculate energy and heat currents in 1vN, Redfield methods.
     """
-    (Xba, E, si) = (sys.leads.Xba, sys.qd.Ea, sys.si)
+    (Tba, E, si) = (sys.leads.Tba, sys.qd.Ea, sys.si)
     (mulst, tlst, mtype) = (sys.leads.mulst, sys.leads.tlst, sys.leads.mtype)
     #
-    tLba = np.zeros(Xba.shape, dtype=mtype)
+    tLba = np.zeros(Tba.shape, dtype=mtype)
     for charge in range(si.ncharge-1):
         bcharge = charge+1
         acharge = charge
@@ -44,8 +44,8 @@ def generate_tLba(sys):
             for l in range(si.nleads):
                 fct1 = fermi_func((E[b]-E[a]-mulst[l])/tlst[l])
                 fct2 = 1-fct1
-                tLba[l, b, a] = np.sqrt(2*np.pi*fct1)*Xba[l, b, a]
-                tLba[l, a, b] = np.sqrt(2*np.pi*fct2)*Xba[l, a, b]
+                tLba[l, b, a] = np.sqrt(2*np.pi*fct1)*Tba[l, b, a]
+                tLba[l, a, b] = np.sqrt(2*np.pi*fct2)*Tba[l, a, b]
     return tLba
 
 def generate_kern_lindblad(sys):
@@ -65,7 +65,7 @@ def generate_kern_lindblad(sys):
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
     """
-    (E, Xba, tLba) = (sys.qd.Ea, sys.leads.Xba, sys.tLba)
+    (E, Tba, tLba) = (sys.qd.Ea, sys.leads.Tba, sys.tLba)
     (si, symq, norm_rowp) = (sys.si, sys.funcp.symq, sys.funcp.norm_row)
     norm_row = norm_rowp if symq else si.ndm0r
     last_row = si.ndm0r-1 if symq else si.ndm0r
@@ -178,7 +178,7 @@ def generate_current_lindblad(sys):
     energy_current : array
         Values of the energy current having nleads entries.
     """
-    (phi0p, E, Xba, tLba, si) = (sys.phi0, sys.qd.Ea, sys.leads.Xba, sys.tLba, sys.si)
+    (phi0p, E, Tba, tLba, si) = (sys.phi0, sys.qd.Ea, sys.leads.Tba, sys.tLba, sys.si)
     current = np.zeros(si.nleads, dtype=complexnp)
     energy_current = np.zeros(si.nleads, dtype=complexnp)
     #
@@ -224,7 +224,7 @@ def generate_vec_lindblad(phi0p, sys):
         Values of zeroth order density matrix elements
         after acting with Liouvillian, i.e., phi0=L(phi0p).
     """
-    (E, Xba, tLba, si, norm_row) = (sys.qd.Ea, sys.leads.Xba, sys.tLba, sys.si, sys.funcp.norm_row)
+    (E, Tba, tLba, si, norm_row) = (sys.qd.Ea, sys.leads.Tba, sys.tLba, sys.si, sys.funcp.norm_row)
     #
     phi0 = np.zeros(si.ndm0, dtype=complexnp)
     phi0[0:si.npauli] = phi0p[0:si.npauli]
