@@ -276,7 +276,7 @@ def use_all_states(sys):
 
 def print_state(sys, b_, eps=0.0, prntq=True, filename=None, separator=''):
     '''
-    Print properties of given many-body eigenstate of the quantum dot Hamiltonain
+    Prints properties of given many-body eigenstate of the quantum dot Hamiltonain
 
     Parameters
     ----------

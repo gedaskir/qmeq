@@ -8,6 +8,7 @@ import scipy as sp
 import scipy.sparse.linalg
 from scipy import optimize
 import os
+import copy
 
 from .lindbladpy import generate_tLba
 from .lindbladpy import generate_kern_lindblad
@@ -56,6 +57,8 @@ from .constructxba import LeadsTunneling
 
 from .various import get_phi0
 from .various import get_phi1
+from .various import print_state
+from .various import print_all_states
 from .various import remove_states
 from .various import use_all_states
 
@@ -96,9 +99,9 @@ class Builder(object):
         Energy grid on which 2vN approach equations are solved.
     kerntype : string
         String describing what master equation method to use.
-        For Transport class the possible values are 'Pauli', '1vN', 'Redfield', 'pyPauli', 'py1vN'.
+        For Transport class the possible values are 'Pauli', '1vN', 'Redfield', 'Lindblad', 'pyPauli', 'py1vN', 'pyLindblad'.
         For Transport2vN class the possible values are '2vN' and 'py2vN'.
-        The method with 'py' in front are not compiled using cython.
+        The methods with 'py' in front are not compiled using cython.
     symq : bool
         For symq=False keep all equations in the kernel, and the matrix is of size N by N+1.
         For symq=True replace one equation by the normalisation condition, and the matrix is square N by N.
@@ -166,6 +169,16 @@ class Builder(object):
                        kerntype='1vN', symq=True, norm_row=0, solmethod='n',
                        itype=1, dqawc_limit=10000, mfreeq=False, phi0_init=None,
                        mtype_qd=complex, mtype_leads=complex):
+
+        # Make copies of initialized parameters.
+        hsingle = copy.deepcopy(hsingle)
+        coulomb = copy.deepcopy(coulomb)
+        tleads = copy.deepcopy(tleads)
+        mulst = copy.deepcopy(mulst)
+        tlst = copy.deepcopy(tlst)
+        dlst = copy.deepcopy(dlst)
+        Ek_grid = copy.deepcopy(Ek_grid)
+        phi0_init = copy.deepcopy(phi0_init)
 
         funcp = FunctionProperties(kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,
                                    itype=itype, dqawc_limit=dqawc_limit, mfreeq=mfreeq, phi0_init=phi0_init,
@@ -288,6 +301,18 @@ class Builder(object):
         lead l and many-body states c and b.
         '''
         return get_phi1(self, l, c, b)
+
+    def print_state(self, b, eps=0.0, prntq=True, filename=None, separator=''):
+        '''
+        Prints properties of given many-body eigenstate of the quantum dot Hamiltonain
+        '''
+        print_state(self, b, eps, prntq, filename, separator)
+
+    def print_all_states(self, filename, eps=0.0, separator='', mode='w'):
+        '''
+        Prints properties of all many-body eigenstates to a file.
+        '''
+        print_all_states(self, filename, eps, separator, mode)
 
     def remove_states(self, dE):
         '''
