@@ -310,14 +310,14 @@ class LeadsTunneling(object):
         which is used in calculations.
     """
 
-    def __init__(self, nleads, tleads, stateind, mulst=0, tlst=0, dlst=0, mtype=complex):
+    def __init__(self, nleads, tleads, stateind, mulst, tlst, dlst, mtype=complex):
         """Initialization of the LeadsTunneling class."""
         self.tleads = make_tleads_dict(tleads)
         self.stateind = stateind
         self.stateind.nleads = nleads
-        self.mulst = make_array(mulst, nleads) #np.array(mulst)
-        self.tlst = make_array(tlst, nleads)   #np.array(tlst)
-        self.dlst = make_array(dlst, nleads)   #np.array(dlst)
+        self.mulst = make_array(mulst, nleads)
+        self.tlst = make_array(tlst, nleads)
+        self.dlst = make_array(dlst, nleads)
         self.mtype = mtype
         self.Tba0 = construct_Tba(self.tleads, stateind, mtype)
         self.Tba = self.Tba0

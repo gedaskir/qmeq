@@ -95,8 +95,8 @@ class Builder(object):
         String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
         Note that 'sz' indexing for Fock states is used for 'ssq' indexing, with
         additional specification of eigensates in Fock basis.
-    Ek_grid : array
-        Energy grid on which 2vN approach equations are solved.
+    kpnt : int
+        Number of energy grid points on which 2vN approach equations are solved.
     kerntype : string
         String describing what master equation method to use.
         For Transport class the possible values are 'Pauli', '1vN', 'Redfield', 'Lindblad', 'pyPauli', 'py1vN', 'pyLindblad'.
@@ -165,7 +165,7 @@ class Builder(object):
 
     def __init__(self, nsingle, hsingle, coulomb,
                        nleads, tleads, mulst, tlst, dlst,
-                       indexing='charge', Ek_grid=None,
+                       indexing='charge', kpnt=None,
                        kerntype='1vN', symq=True, norm_row=0, solmethod='n',
                        itype=2, dqawc_limit=10000, mfreeq=False, phi0_init=None,
                        mtype_qd=complex, mtype_leads=complex):
@@ -177,24 +177,23 @@ class Builder(object):
         mulst = copy.deepcopy(mulst)
         tlst = copy.deepcopy(tlst)
         dlst = copy.deepcopy(dlst)
-        Ek_grid = copy.deepcopy(Ek_grid)
         phi0_init = copy.deepcopy(phi0_init)
 
         funcp = FunctionProperties(kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,
                                    itype=itype, dqawc_limit=dqawc_limit, mfreeq=mfreeq, phi0_init=phi0_init,
-                                   mtype_qd=mtype_qd, mtype_leads=mtype_leads)
+                                   mtype_qd=mtype_qd, mtype_leads=mtype_leads, kpnt=kpnt)
 
         if kerntype in {'py2vN', '2vN'}:
-            if Ek_grid is None:
-                raise ValueError('For 2vN method Ek_grid needs to be specified.')
-                print('WARNING: For 2vN method Ek_grid needs to be specified.')
+            if kpnt is None:
+                raise ValueError('For 2vN method kpnt needs to be specified.')
+                print('WARNING: For 2vN method kpnt needs to be specified.')
             if not indexing in ['Lin', 'charge']:
                 print('WARNING: For 2vN method indexing needs to be \'Lin\' or \'charge\'. Using \'charge\' as a default.')
                 indexing = 'charge'
             si = StateIndexingDMc(nsingle, indexing)
             qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
             leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst, mtype_leads)
-            tt = Transport2vN(qd, leads, si, funcp, Ek_grid)
+            tt = Transport2vN(qd, leads, si, funcp, kpnt)
         else:
             si = StateIndexingDM(nsingle, indexing)
             qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
@@ -209,7 +208,7 @@ class Builder(object):
 
     def __getattr__(self, item):
         if item in {'solve', 'current', 'energy_current', 'heat_current', 'phi0', 'phi1',
-                    'niter', 'iters', 'Ek_grid', 'kern'}:
+                    'niter', 'iters', 'kpnt', 'kern'}:
             return getattr(self.tt, item)
         elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit', 'mfreeq', 'phi0_init'}:
             return getattr(self.funcp, item)
@@ -225,7 +224,7 @@ class Builder(object):
 
     def __setattr__(self, item, value):
         if item in {'solve', 'current', 'energy_current', 'heat_current', 'phi0', 'phi1',
-                    'niter', 'iters', 'Ek_grid', 'kern'}:
+                    'niter', 'iters', 'kpnt', 'kern'}:
             setattr(self.tt, item, value)
         elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit', 'mfreeq', 'phi0_init'}:
             setattr(self.funcp, item, value)
@@ -385,7 +384,7 @@ class FunctionProperties(object):
 
     def __init__(self, kerntype='2vN', symq=True, norm_row=0, solmethod='n',
                        itype=2, dqawc_limit=10000, mfreeq=False, phi0_init=None,
-                       mtype_qd=float, mtype_leads=complex):
+                       mtype_qd=float, mtype_leads=complex, kpnt=None):
         self.kerntype = kerntype
         self.symq = symq
         self.norm_row = norm_row
@@ -399,6 +398,8 @@ class FunctionProperties(object):
         #
         self.mtype_qd = mtype_qd
         self.mtype_leads = mtype_leads
+        #
+        self.kpnt = kpnt
         #
         self.Ek_left = 0
         self.Ek_right = 0
@@ -634,6 +635,8 @@ class Transport2vN(object):
     ----------
     kern : array
         Kernel for zeroth order density matrix elements Phi[0].
+    kpnt : int
+        Number of energy grid points on which 2vN approach equations are solved.
     Ek_grid : array
         Energy grid on which 2vN approach equations are solved.
     Ek_grid_ext : array
@@ -661,21 +664,28 @@ class Transport2vN(object):
         Hilbert transform of fkp, fkm.
     """
 
-    def __init__(self, qd=None, leads=None, si=None, funcp=None, Ek_grid=None):
+    def __init__(self, qd, leads, si, funcp, kpnt):
         self.qd = qd
         self.leads = leads
         self.si = si
-        self.Ek_grid = Ek_grid
-        self.Ek_grid_ext = np.zeros(0, dtype=doublenp)
         self.fkp, self.fkm = None, None
         self.hfkp, self.hfkm = None, None
         self.restart()
         self.funcp = funcp
+        self.kpnt = kpnt
+        self.Ek_grid_ext = np.zeros(0, dtype=doublenp)
         # Some exceptions
-        if self.si is None:
-            pass
-        elif type(self.si).__name__ != 'StateIndexingDMc':
+        if type(self.si).__name__ != 'StateIndexingDMc':
             raise TypeError('The state indexing class for 2vN approach has to be StateIndexingDMc')
+
+    # kpnt
+    def get_kpnt(self):
+        return self.funcp.kpnt
+    def set_kpnt(self, value):
+        self.funcp.kpnt = value
+        dband = self.leads.dlst[0]
+        self.Ek_grid = np.linspace(-dband, dband, value)
+    kpnt = property(get_kpnt, set_kpnt)
 
     def restart(self):
         """Restart values of some variables for new calculations."""
