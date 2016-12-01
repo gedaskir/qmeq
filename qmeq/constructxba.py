@@ -278,6 +278,8 @@ def make_array(lst, nleads):
         return np.array(lst)
     elif htype == 'ndarray':
         return lst
+    else:
+        return np.zeros(nleads)
 #---------------------------------------------------------------------------------------------------
 
 class LeadsTunneling(object):
@@ -320,7 +322,7 @@ class LeadsTunneling(object):
         self.Tba0 = construct_Tba(self.tleads, stateind, mtype)
         self.Tba = self.Tba0
 
-    def add(self, tleads={}, mulst={}, tlst={}, dlst={}, updateq=True):
+    def add(self, tleads=None, mulst=None, tlst=None, dlst=None, updateq=True, lstq=True):
         """
         Adds a value to single particle tunneling amplitudes and correspondingly redefines
         many-body tunneling matrix Tba.
@@ -333,18 +335,22 @@ class LeadsTunneling(object):
         updateq : bool
             Specifies if the values of the single particle amplitudes will be updated.
             The many-body tunneling amplitudes Tba will be updates in either case.
+        lstq : bool
+            Determines if the values will be added to mulst, tlst, dlst.
         """
-        if mulst != {}: self.mulst = self.mulst + make_array(mulst, self.stateind.nleads)
-        if tlst != {}: self.tlst = self.tlst + make_array(tlst, self.stateind.nleads)
-        if dlst != {}: self.dlst = self.dlst + make_array(dlst, self.stateind.nleads)
-        if tleads != {}:
-            self.Tba0 = construct_Tba(tleads, self.stateind, self.mtype, self.Tba0)
+        if lstq:
+            self.mulst = self.mulst if mulst is None else self.mulst + make_array(mulst, self.stateind.nleads)
+            self.tlst = self.tlst if tlst is None else self.tlst + make_array(tlst, self.stateind.nleads)
+            self.dlst = self.dlst if dlst is None else self.dlst + make_array(dlst, self.stateind.nleads)
+        if not tleads is None:
+            tleadsp = tleads if type(tleads).__name__ == 'dict' else make_tleads_dict(tleads)
+            self.Tba0 = construct_Tba(tleadsp, self.stateind, self.mtype, self.Tba0)
             if updateq:
-                for j0 in tleads:
-                    try:    self.tleads[j0] += tleads[j0]       # if tleads[j0] != 0:
+                for j0 in tleadsp:
+                    try:    self.tleads[j0] += tleadsp[j0]       # if tleads[j0] != 0:
                     except: self.tleads.update({j0:tleads[j0]}) # if tleads[j0] != 0:
 
-    def change(self, tleads={}, mulst={}, tlst={}, dlst={}, updateq=True):
+    def change(self, tleads=None, mulst=None, tlst=None, dlst=None, updateq=True):
         """
         Changes the values of the single particle tunneling amplitudes and correspondingly redefines
         many-body tunneling matrix Tba.
@@ -358,10 +364,28 @@ class LeadsTunneling(object):
             Specifies if the values of the single particle amplitudes will be updated.
             The many-body tunneling amplitudes Tba will be updates in either case.
         """
-        if mulst != {}: self.mulst = make_array(mulst, self.stateind.nleads)
-        if tlst != {}: self.tlst = make_array(tlst, self.stateind.nleads)
-        if dlst != {}: self.dlst = make_array(dlst, self.stateind.nleads)
-        if tleads != {}:
+        if not mulst is None:
+            if type(mulst).__name__ == 'dict':
+                for j0 in mulst:
+                    self.mulst[j0] = mulst[j0]
+            else:
+                self.mulst = make_array(mulst, self.stateind.nleads)
+        #
+        if not tlst is None:
+            if type(tlst).__name__ == 'dict':
+                for j0 in tlst:
+                    self.tlst[j0] = tlst[j0]
+            else:
+                self.tlst = make_array(tlst, self.stateind.nleads)
+        #
+        if not dlst is None:
+            if type(dlst).__name__ == 'dict':
+                for j0 in dlst:
+                    self.dlst[j0] = dlst[j0]
+            else:
+                self.dlst = make_array(dlst, self.stateind.nleads)
+        #
+        if not tleads is None:
             tleadsp = tleads if type(tleads).__name__ == 'dict' else make_tleads_dict(tleads)
             # Find the differences from the previous tunneling amplitudes
             tleads_add = {}
@@ -377,7 +401,7 @@ class LeadsTunneling(object):
                         tleads_add.update({j0:tleads_diff})
                         if updateq: self.tleads.update({j0:tleads_diff})
             # Add the differences
-            self.add(tleads_add, updateq=False)
+            self.add(tleads_add, updateq=False, lstq=False)
 
     def rotate(self, vecslst, indexing='n'):
         """

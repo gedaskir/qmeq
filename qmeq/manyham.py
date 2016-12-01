@@ -675,7 +675,7 @@ class QuantumDot(object):
         self.Ea = np.zeros(stateind.nmany, dtype=float)
         self.Ea_ext = None
 
-    def add(self, hsingle={}, coulomb={}, updateq=True):
+    def add(self, hsingle=None, coulomb=None, updateq=True):
         """
         Adds a value to single particle Hamiltonian and Coulomb matrix elements
         and correspondingly redefines many-body Hamiltonian.
@@ -694,6 +694,9 @@ class QuantumDot(object):
             The many-body Hamiltonian will be updates in either case.
         """
         if self.hamq:
+            hsingle = {} if hsingle is None else hsingle
+            coulomb = {} if coulomb is None else coulomb
+            #
             if self.stateind.indexing == 'sz':
                 for charge in range(self.stateind.ncharge):
                     for sz in szrange(charge, self.stateind.nsingle):
@@ -723,7 +726,7 @@ class QuantumDot(object):
                     try:    self.coulomb[j0] += coulomb[j0]       # if coulomb_diff != 0:
                     except: self.hsingle.update({j0:coulomb[j0]}) # if coulomb_diff != 0:
 
-    def change(self, hsingle={}, coulomb={}, updateq=True):
+    def change(self, hsingle=None, coulomb=None, updateq=True):
         """
         Changes the values of the single particle Hamiltonian and Coulomb matrix elements
         and correspondingly redefines many-body Hamiltonian.
@@ -742,6 +745,9 @@ class QuantumDot(object):
             The many-body Hamiltonian will be updates in either case.
         """
         if self.hamq:
+            hsingle = {} if hsingle is None else hsingle
+            coulomb = {} if coulomb is None else coulomb
+            #
             hsinglep = hsingle if type(hsingle).__name__ == 'dict' else make_hsingle_dict(hsingle)
             coulombp = coulomb if type(coulomb).__name__ == 'dict' else make_coulomb_dict(coulomb)
             #

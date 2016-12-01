@@ -45,12 +45,14 @@ qmeq/docs/source/qmeq.neumannpy_complex.rst
 ### Directories
 
 # Build directories
+.cache/
 build/
 qmeq.egg-info/
 qmeq/build
 qmeq/docs/build
 
 # Specific directories
+qmeq/tests_
 qmeq/tests
 tutorial/.ipynb_checkpoints
 tutorial/various

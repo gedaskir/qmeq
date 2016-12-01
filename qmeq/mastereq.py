@@ -167,7 +167,7 @@ class Builder(object):
                        nleads, tleads, mulst, tlst, dlst,
                        indexing='charge', Ek_grid=None,
                        kerntype='1vN', symq=True, norm_row=0, solmethod='n',
-                       itype=1, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                       itype=2, dqawc_limit=10000, mfreeq=False, phi0_init=None,
                        mtype_qd=complex, mtype_leads=complex):
 
         # Make copies of initialized parameters.
@@ -200,6 +200,10 @@ class Builder(object):
             qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
             leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst, mtype_leads)
             tt = Transport(qd, leads, si, funcp)
+
+        if mfreeq and phi0_init is None and not kerntype in {'Pauli', 'pyPauli'}:
+            funcp.phi0_init = np.zeros(si.ndm0r, dtype=doublenp)
+            funcp.phi0_init[0] = 1.0
 
         self.funcp, self.si, self.qd, self.leads, self.tt = funcp, si, qd, leads, tt
 
@@ -256,7 +260,7 @@ class Builder(object):
                   +'\' Consider contructing a new system using \'indexing='+value+'\'')
     indexing = property(get_indexing, set_indexing)
 
-    def add(self, hsingle={}, coulomb={}, tleads={}, mulst={}, tlst={}, dlst={}):
+    def add(self, hsingle=None, coulomb=None, tleads=None, mulst=None, tlst=None, dlst=None):
         """
         Adds the values to the specified dictionaries and correspondingly redefines
         relevant many-body properties of the system.
@@ -267,12 +271,12 @@ class Builder(object):
             Dictionaries describing what values to add.
             For example, tleads[(lead, state)] = value to add.
         """
-        if hsingle != {} or coulomb != {}:
+        if not (hsingle is None and coulomb is None):
             self.qd.add(hsingle, coulomb)
-        if tleads != {} or mulst != {} or tlst != {} or dlst != {}:
+        if not (tleads is None and mulst is None and tlst is None and dlst is None):
             self.leads.add(tleads, mulst, tlst, dlst)
 
-    def change(self, hsingle={}, coulomb={}, tleads={}, mulst={}, tlst={}, dlst={}):
+    def change(self, hsingle=None, coulomb=None, tleads=None, mulst=None, tlst=None, dlst=None):
         """
         Changes the values of the specified dictionaries and correspondingly redefines
         relevant many-body properties of the system.
@@ -283,9 +287,9 @@ class Builder(object):
             Dictionaries describing what values to change.
             For example, tleads[(lead, state)] = value to change.
         """
-        if hsingle != {} or coulomb != {}:
+        if not (hsingle is None and coulomb is None):
             self.qd.change(hsingle, coulomb)
-        if tleads != {} or mulst != {} or tlst != {} or dlst != {}:
+        if not (tleads is None and mulst is None and tlst is None and dlst is None):
             self.leads.change(tleads, mulst, tlst, dlst)
 
     def get_phi0(self, b, bp):
@@ -380,7 +384,7 @@ class FunctionProperties(object):
     """
 
     def __init__(self, kerntype='2vN', symq=True, norm_row=0, solmethod='n',
-                       itype=1, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                       itype=2, dqawc_limit=10000, mfreeq=False, phi0_init=None,
                        mtype_qd=float, mtype_leads=complex):
         self.kerntype = kerntype
         self.symq = symq
@@ -533,6 +537,8 @@ class Transport(object):
 
     def solve_matrix_free(self):
         """Finds the stationary state using matrix free methods like broyden, krylov, etc."""
+        if self.funcp.kerntype in {'Pauli', 'pyPauli'}:
+            return 0
         if self.funcp.phi0_init is None:
             print("WARNING: The initial guess phi0_init is not specified.")
             return 0

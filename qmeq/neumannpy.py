@@ -30,7 +30,7 @@ def generate_phi1fct(sys): #E, si, mulst, tlst, dlst
         Factors used to calculate energy and heat currents in 1vN, Redfield methods.
     """
     (E, si, mulst, tlst, dlst) = (sys.qd.Ea, sys.si, sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
-    (itype, limit) = (sys.funcp.itype, sys.funcp.dqwac_limit)
+    (itype, limit) = (sys.funcp.itype, sys.funcp.dqawc_limit)
     phi1fct = np.zeros((si.nleads, si.ndm1, 2), dtype=complexnp)
     phi1fct_energy = np.zeros((si.nleads, si.ndm1, 2), dtype=complexnp)
     for charge in range(si.ncharge-1):

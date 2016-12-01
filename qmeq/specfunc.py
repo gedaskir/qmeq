@@ -12,6 +12,7 @@ from scipy import log2
 from scipy import exp
 from scipy import sqrt
 from scipy.special import psi as digamma
+from scipy.integrate import quad
 
 from .mytypes import complexnp
 from .mytypes import doublenp

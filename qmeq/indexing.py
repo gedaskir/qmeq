@@ -436,6 +436,9 @@ class StateIndexing(object):
         Maps quantum number to state index
     ind_qn : dictionary
         Maps state index to quantum numbers
+    states_order : list
+        Order of states used by many-body state printing functions in qmeq.various
+        print_state() and print_all_states()
     """
 
     def __init__(self, nsingle, indexing='Lin'):
@@ -650,7 +653,7 @@ class StateIndexingPauli(StateIndexing):
             return counter+1
         #
         self.mapdm0 = np.ones(self.npauli_, dtype=longnp)*(-1)
-        self.booldm0 = np.zeros(self.npauli_, dtype=bool)
+        self.booldm0 = np.zeros(self.npauli_, dtype=boolnp)
         #self.inddm0 = {}
         counter = 0
         # Diagonal density matrix elements
@@ -996,7 +999,7 @@ class StateIndexingDMc(StateIndexing):
             return counter+1
         #
         self.mapdm0 = np.ones(self.ndm0_, dtype=longnp)*(-1)
-        self.booldm0 = np.zeros(self.ndm0_, dtype=bool)
+        self.booldm0 = np.zeros(self.ndm0_, dtype=boolnp)
         self.inddm0 = {}
         counter = 0
         # Diagonal density matrix elements
