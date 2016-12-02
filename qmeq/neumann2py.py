@@ -444,8 +444,7 @@ def get_emin_emax(sys):
     sys : Transport2vN
         Transport2vN object.
 
-    Modifies
-    --------
+    Modifies:
     sys.funcp.emax, sys.funcp.emax : float
         Minimal and maximal energy in the updated Ek_grid.
     """
@@ -472,8 +471,7 @@ def get_grid_ext(sys):
     sys : Transport2vN
         Transport2vN object.
 
-    Modifies
-    --------
+    Modifies:
     sys.Ek_grid_ext : array
         Extended Ek_grid from emin to emax.
     sys.funcp.Ek_left, sys.funcp.Ek_right : int
@@ -501,6 +499,10 @@ def get_htransf_phi1k(phi1k, funcp):
     funcp : FunctionProperties
         FunctionProperties object.
 
+    Modifies:
+    funcp.ht_ker : array
+        Kernel used when performing Hilbert transform using FFT.
+
     Returns
     -------
     phi1k : array
@@ -510,10 +512,6 @@ def get_htransf_phi1k(phi1k, funcp):
         Numpy array with dimensions (len(Ek_grid_ext), nleads, ndm1, ndm0).
         Hilbert transform of phi1k on extended grid.
 
-    Modifies
-    --------
-    funcp.ht_ker : array
-        Kernel used when performing Hilbert transform using FFT.
     """
     nleads, ndm1, ndm0 = phi1k.shape[1], phi1k.shape[2], phi1k.shape[3]
     Eklen_ext = phi1k.shape[0] + funcp.Ek_left + funcp.Ek_right
@@ -546,6 +544,10 @@ def get_htransf_fk(fk, funcp):
     funcp : FunctionProperties
         FunctionProperties object.
 
+    Modifies:
+    funcp.ht_ker : array
+        Kernel used when performing Hilbert transform using FFT.
+
     Returns
     -------
     fk : array
@@ -554,11 +556,6 @@ def get_htransf_fk(fk, funcp):
     hfk : array
         Numpy array with dimensions (nleads, len(Ek_grid_ext)).
         Hilbert transform of fk on extended grid.
-
-    Modifies
-    --------
-    funcp.ht_ker : array
-        Kernel used when performing Hilbert transform using FFT.
     """
     nleads = fk.shape[0]
     Eklen_ext = fk.shape[1] + funcp.Ek_left + funcp.Ek_right
@@ -586,6 +583,11 @@ def iterate_2vN(sys):
     sys : Transport2vN
         Transport2vN object.
 
+    Modifies:
+    sys.funcp.emin, sys.funcp.emax
+    sys.Ek_grid_ext, sys.funcp.Ek_left, sys.funcp.Ek_right
+    sys.fkp, sys.fkm, sys.hfkp, sys.hfkm
+
     Returns
     -------
     phi1k_delta : array
@@ -597,12 +599,6 @@ def iterate_2vN(sys):
     kern1k : array
         Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm1)
         corresponding to energy resolved local kernel for Phi[1](k).
-
-    Modifies
-    --------
-    sys.funcp.emin, sys.funcp.emax
-    sys.Ek_grid_ext, sys.funcp.Ek_left, sys.funcp.Ek_right
-    sys.fkp, sys.fkm, sys.hfkp, sys.hfkm
     """
     (Ek_grid, Ek_grid_ext) = (sys.Ek_grid, sys.Ek_grid_ext)
     (E, Tba, si, funcp) = (sys.qd.Ea, sys.leads.Tba, sys.si, sys.funcp)

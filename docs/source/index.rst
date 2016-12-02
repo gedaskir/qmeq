@@ -23,9 +23,7 @@ Contents:
 .. qmeq.neumann2py.rst
 .. qmeq.neumannpy_complex.rst
 .. qmeq.mytypes.rst
-.. qmeq.setupc.rst
-.. qmeq.neumannc_setupc.rst
-.. qmeq.neumann2c_setupc.rst
+.. qmeq.various.rst
 
 
 Indices and tables

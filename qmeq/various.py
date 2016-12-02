@@ -1,3 +1,5 @@
+"""Module containing various functions."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -59,12 +61,11 @@ def sort_eigenstates(sys, srt='n'):
         For example, in the case of 'ssq' indexing we have  such convention:
         0 - energy
         1 - charge
-        2 - spin projection S^z
-        3 - total spin S^2
+        2 - spin projection :math:`S_{z}`
+        3 - total spin :math:`S^{2}`
         The default sorting order for 'ssq' indexing is srt=[1, 2, 3, 0]
 
-    Modifies
-    --------
+    Modifies:
     sys.qd.Ea_ext : array
         A two-dimensional numpy array containing in the zeroth row energies,
         first row charge, and etc.
@@ -158,7 +159,7 @@ def get_phi1(sys, l, c_, b_):
 def construct_Ea_extended(sys):
     '''
     Constructs an array containing properties of the many-body states,
-    like energy, charge, spin-projection S^{z}, etc.
+    like energy, charge, spin-projection :math:`S_{z}`, etc.
 
 
     Parameters
@@ -181,8 +182,8 @@ def construct_Ea_extended(sys):
         and for 'ssq' indexing we have:
         0 - energy
         1 - charge
-        2 - spin projection S^{z}
-        3 - total spin S^{2}
+        2 - spin projection :math:`S_{z}`
+        3 - total spin :math:`S^{2}`
         4 - state number
     '''
     (si, Ea) = (sys.si, sys.qd.Ea)
@@ -245,8 +246,7 @@ def remove_states(sys, dE):
     dE : float
         Energy above the ground state.
 
-    Modifies
-    --------
+    Modifies:
     sys.si.statesdm : list
         List containing indices of many-body state under consideration.
     '''
@@ -267,8 +267,7 @@ def use_all_states(sys):
     sys : Transport, Transport2vN or Builder
         The system given as Transport, Transport2vN or Builder object.
 
-    Modifies
-    --------
+    Modifies:
     sys.si.statesdm : list
         List containing indices of many-body state under consideration.
     '''

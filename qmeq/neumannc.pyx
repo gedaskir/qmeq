@@ -57,11 +57,11 @@ cdef complex_t func_1vN(double_t E, double_t T, double_t D, double_t eta, int_t 
     R = D/T
     #-------------------------
     if itype == 0:
-        rez.real = 0
+        (rez.real, err) = quad(fermi_func, -R, +R, weight='cauchy', wvar=-alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
     elif itype == 1:
         rez.real = digamma(0.5-1.0j*alpha/(2*pi)).real - log(R/(2*pi))
     elif itype == 2:
-        (rez.real, err) = quad(fermi_func, -R, +R, weight='cauchy', wvar=-alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
+        rez.real = 0
     #-------------------------
     rez.imag = -pi*1/(exp(-alpha)+1)*eta * (1.0 if alpha < R and alpha > -R else 0.0)
     return rez

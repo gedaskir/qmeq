@@ -28,6 +28,8 @@ qmeq/neumann2c_setupc.py
 qmeq/neumannc_setupc.py
 qmeq/setupc.py
 #
+qmeq/makefile
+qmeq/makefile.bat
 qmeq/lindbladc_makefile.bat
 qmeq/neumannc_makefile.bat
 qmeq/neumann2c_makefile.bat
@@ -37,27 +39,31 @@ qmeq/pylintrc
 qmeq/neumannpy_linblad.py
 qmeq/neumannpy_complex.py
 #
-qmeq/docs/index.html.lnk
-qmeq/docs/source/conf_scipy.py
-qmeq/docs/source/conf_standard.py
-qmeq/docs/source/qmeq.neumannpy_complex.rst
+docs/index.html.lnk
+docs/run.bat
+docs/source/conf_scipy.py
+docs/source/conf_standard.py
+docs/source/qmeq.neumannpy_complex.rst
+#
+tutorial/example_anderson.ipynb
+tutorial/example_anderson.py
 
 ### Directories
 
 # Build directories
 .cache/
 build/
+docs/build
 qmeq.egg-info/
 qmeq/build
-qmeq/docs/build
 
 # Specific directories
+docs/source/_static
+docs/source/_templates
+docs/source/_theme
+project
 qmeq/tests_
 qmeq/tests
 tutorial/.ipynb_checkpoints
 tutorial/various
 tutorial/papers
-#
-tutorial/example_anderson.ipynb
-tutorial/example_anderson.py
-tutorial/model.py

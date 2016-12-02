@@ -59,6 +59,7 @@ from .various import get_phi0
 from .various import get_phi1
 from .various import print_state
 from .various import print_all_states
+from .various import sort_eigenstates
 from .various import remove_states
 from .various import use_all_states
 
@@ -115,11 +116,11 @@ class Builder(object):
         'krylov', 'broyden', etc.
     itype : int
         Type of integral for first order method calculations.
-        itype=0: the principal parts are neglected.
+        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
         itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
-        itype=2: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
+        itype=2: the principal parts are neglected.
     dqawc_limit : int
-        For itype=2 dqawc_limit determines the maximum number of subintervals
+        For itype=0 dqawc_limit determines the maximum number of subintervals
         in the partition of the given integration interval.
     mfreeq : bool
         If mfreeq=True the matrix free solution method is used for first order methods.
@@ -167,7 +168,7 @@ class Builder(object):
                        nleads, tleads, mulst, tlst, dlst,
                        indexing='charge', kpnt=None,
                        kerntype='1vN', symq=True, norm_row=0, solmethod='n',
-                       itype=2, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                       itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
                        mtype_qd=complex, mtype_leads=complex):
 
         # Make copies of initialized parameters.
@@ -193,7 +194,7 @@ class Builder(object):
             si = StateIndexingDMc(nsingle, indexing)
             qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
             leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst, mtype_leads)
-            tt = Transport2vN(qd, leads, si, funcp, kpnt)
+            tt = Transport2vN(qd, leads, si, funcp)
         else:
             si = StateIndexingDM(nsingle, indexing)
             qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
@@ -317,6 +318,12 @@ class Builder(object):
         '''
         print_all_states(self, filename, eps, separator, mode)
 
+    def sort_eigenstates(self, srt='n'):
+        '''
+        Sort many-body states of the system by given order of properties.
+        '''
+        sort_eigenstates(self, srt=srt)
+
     def remove_states(self, dE):
         '''
         Remove the states with energy dE larger than the ground state
@@ -354,11 +361,11 @@ class FunctionProperties(object):
         'krylov', 'broyden', etc.
     itype : int
         Type of integral for first order method calculations.
-        itype=0: the principal parts are neglected.
+        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
         itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
-        itype=2: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
+        itype=2: the principal parts are neglected.
     dqawc_limit : int
-        For itype=2 dqawc_limit determines the maximum number of subintervals
+        For itype=0 dqawc_limit determines the maximum number of subintervals
         in the partition of the given integration interval.
     mfreeq : bool
         If mfreeq=True the matrix free solution method is used for first order methods.
@@ -383,7 +390,7 @@ class FunctionProperties(object):
     """
 
     def __init__(self, kerntype='2vN', symq=True, norm_row=0, solmethod='n',
-                       itype=2, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                       itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
                        mtype_qd=float, mtype_leads=complex, kpnt=None):
         self.kerntype = kerntype
         self.symq = symq
@@ -664,7 +671,7 @@ class Transport2vN(object):
         Hilbert transform of fkp, fkm.
     """
 
-    def __init__(self, qd, leads, si, funcp, kpnt):
+    def __init__(self, qd, leads, si, funcp):
         self.qd = qd
         self.leads = leads
         self.si = si
@@ -672,7 +679,7 @@ class Transport2vN(object):
         self.hfkp, self.hfkm = None, None
         self.restart()
         self.funcp = funcp
-        self.kpnt = kpnt
+        self.kpnt = funcp.kpnt
         self.Ek_grid_ext = np.zeros(0, dtype=doublenp)
         # Some exceptions
         if type(self.si).__name__ != 'StateIndexingDMc':
@@ -682,6 +689,7 @@ class Transport2vN(object):
     def get_kpnt(self):
         return self.funcp.kpnt
     def set_kpnt(self, value):
+        self.restart()
         self.funcp.kpnt = value
         dband = self.leads.dlst[0]
         self.Ek_grid = np.linspace(-dband, dband, value)

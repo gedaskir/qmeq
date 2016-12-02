@@ -16,6 +16,7 @@ Submodules
    qmeq.neumannpy
    qmeq.neumannpy_complex
    qmeq.specfunc
+   qmeq.various
 
 Module contents
 ---------------

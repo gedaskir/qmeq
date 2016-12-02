@@ -73,12 +73,12 @@ def construct_chargelst(nsingle):
 
 def sz_to_ind(sz, charge, nsingle):
     """
-    Converts sz to a list index.
+    Converts :math:`S_{z}` to a list index.
 
     Parameters
     ----------
     sz : int
-        Value of a spin projection in the z direction.
+        Value :math:`S_{z}` of a spin projection in the z direction.
     charge : int
         Value of the charge.
     nsingle : int
@@ -94,7 +94,7 @@ def sz_to_ind(sz, charge, nsingle):
 
 def szrange(charge, nsingle):
     """
-    Make a list giving sz values for given charge.
+    Make a list giving :math:`S_{z}` values for given charge.
 
     Parameters
     ----------
@@ -106,7 +106,7 @@ def szrange(charge, nsingle):
     Returns
     -------
     list
-        List containing sz values for given charge.
+        List containing :math:`S_{z}` values for given charge.
     """
     szmax = min(charge, nsingle-charge)
     return range(-szmax, szmax+1, +2)
@@ -114,7 +114,7 @@ def szrange(charge, nsingle):
 
 def empty_szlst(nsingle, noneq=False):
     """
-    Make an empty list of lists corresponding to different charges and sz values.
+    Make an empty list of lists corresponding to different charges and :math:`S_{z}` values.
 
     Parameters
     ----------
@@ -137,7 +137,7 @@ def empty_szlst(nsingle, noneq=False):
 
 def construct_szlst(nsingle):
     """
-    Makes list of lists of lists containing Lin indices of the states for given charge and spin sz.
+    Makes list of lists of lists containing Lin indices of the states for given charge and spin :math:`S_{z}`.
 
     Parameters
     ----------
@@ -165,25 +165,25 @@ def construct_szlst(nsingle):
 
 def ssq_to_ind(ssq, sz):
     """
-    Convert the value of :math:`S^{2}` for a given sz to an index.
+    Convert the value of :math:`S^{2}` for a given :math:`S_{z}` to an index.
 
     Parameters
     ----------
     ssq : int
         Value of :math:`S^{2}`.
     sz : int
-        Value of sz.
+        Value of :math:`S_{z}`.
 
     Returns
     -------
     int
-        An index corresponding to given :math:`S^{2}` and sz.
+        An index corresponding to given :math:`S^{2}` and :math:`S_{z}`.
     """
     return int((ssq-abs(sz))/2)
 
 def ssqrange(charge, sz, nsingle):
     """
-    Make a list giving all possible :math:`S^{2}` values for given charge and sz.
+    Make a list giving all possible :math:`S^{2}` values for given charge and :math:`S_{z}`.
 
     Parameters
     ----------
@@ -197,7 +197,7 @@ def ssqrange(charge, sz, nsingle):
     Returns
     -------
     list
-        List of all possible :math:`S^{2}` values for given charge and sz.
+        List of all possible :math:`S^{2}` values for given charge and :math:`S_{z}`.
     """
     szmax = min(charge, nsingle-charge)
     return range(abs(sz), szmax+1, +2)
@@ -205,7 +205,7 @@ def ssqrange(charge, sz, nsingle):
 def empty_ssqlst(nsingle, noneq=False):
     """
     Make an empty list of lists of lists corresponding to
-    different charge, sz, :math:`S^{2}` values.
+    different charge, :math:`S_{z}`, :math:`S^{2}` values.
 
     Parameters
     ----------
@@ -229,13 +229,13 @@ def empty_ssqlst(nsingle, noneq=False):
 def construct_ssqlst(szlst, nsingle):
     """
     Makes list of lists of lists of lists containing Lin indices of the states
-    for given charge, spin projection sz, and :math:`S^{2}` value.
+    for given charge, spin projection :math:`S_{z}`, and :math:`S^{2}` value.
 
     Parameters
     ----------
     szlst : list of lists
-        List cotaining the possbile values of sz for given charge.
-        szlst[charge][szind] is an integer corresponding to sz.
+        List cotaining the possbile values of :math:`S_{z}` for given charge.
+        szlst[charge][szind] is an integer corresponding to :math:`S_{z}`.
     nsingle : int
         Number of single particle states.
 
@@ -243,8 +243,8 @@ def construct_ssqlst(szlst, nsingle):
     -------
     sqqlst : list of lists of lists of lists
         ssqlst[charge] gives a list of lists of lists of state indices for given charge,
-        ssqlst[charge][sz] gives a list of lists corresponding to charge and sz,
-        ssqlst[charge][sz][ssq] gives a list corresponding to charge, sz, and :math:`S^{2}`.
+        ssqlst[charge][sz] gives a list of lists corresponding to charge and :math:`S_{z}`,
+        ssqlst[charge][sz][ssq] gives a list corresponding to charge, :math:`S_{z}`, and :math:`S^{2}`.
         ssqlst[charge][sz][ssq][ind] gives a state index.
     """
     nmany = np.power(2, nsingle)
@@ -431,7 +431,9 @@ class StateIndexing(object):
     chargelst : list of lists
         Indices of states for different charges for chosen indexing.
     szlst : list of lists
-        Indices of states for different sz values for chosen indexing.
+        Indices of states for different :math:`S_{z}` values for chosen indexing.
+    ssqlst : list of lists of lists
+        Indices of states for different :math:`S_{z}` and :math:`S^{2}` values.
     qn_ind : dictionary
         Maps quantum number to state index
     ind_qn : dictionary

@@ -71,11 +71,11 @@ def func_1vN(E, T, D, eta, itype, limit):
     alpha = E/T
     R = D/T
     if itype == 0:
-        rez = 0.0
+        (rez, err) = quad(fermi_func, -R, +R, weight='cauchy', wvar=-alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
     elif itype == 1:
         rez = digamma(0.5-1.0j*alpha/(2*pi)).real - log(R/(2*pi))
     elif itype == 2:
-        (rez, err) = quad(fermi_func, -R, +R, weight='cauchy', wvar=-alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
+        rez = 0.0
     rez = rez - 1.0j*pi*fermi_func(-alpha)*sign(eta) * (1 if alpha < R and alpha > -R else 0)
     #-------------------------
     return rez

@@ -4,12 +4,14 @@ import subprocess
 import shutil
 from glob import glob
 
-dirs = ['./build',
+dirs = ['./.cache',
+        './build',
         './dist',
+        './docs/build',
         './qmeq.egg-info',
         './qmeq/__pycache__',
         './qmeq/build',
-        './qmeq/docs/build']
+        './qmeq/tests/__pycache__']
 
 for dr in dirs:
     try: shutil.rmtree(dr)
