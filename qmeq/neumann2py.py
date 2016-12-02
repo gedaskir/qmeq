@@ -448,7 +448,7 @@ def get_emin_emax(sys):
     sys.funcp.emax, sys.funcp.emax : float
         Minimal and maximal energy in the updated Ek_grid.
     """
-    (E, si, dband) = (sys.qd.Ea, sys.si, sys.leads.dlst[0])
+    (E, si, dband) = (sys.qd.Ea, sys.si, sys.leads.dlst[0,1])
     lst = []
     for charge in range(si.ncharge):
         for b, bp in itertools.product(si.statesdm[charge], si.statesdm[charge]):
@@ -474,17 +474,17 @@ def get_grid_ext(sys):
     Modifies:
     sys.Ek_grid_ext : array
         Extended Ek_grid from emin to emax.
-    sys.funcp.Ek_left, sys.funcp.Ek_right : int
+    sys.funcp.kpnt_left, sys.funcp.kpnt_right : int
         Number of points Ek_grid is extended to the left and the right.
     """
-    (emin_, emax_, dband, ext_fct) = (sys.funcp.emin, sys.funcp.emax, sys.leads.dlst[0], sys.funcp.ext_fct)
+    (emin_, emax_, dband, ext_fct) = (sys.funcp.emin, sys.funcp.emax, sys.leads.dlst[0,1], sys.funcp.ext_fct)
     Ek_grid = sys.Ek_grid
     step = Ek_grid[1]-Ek_grid[0]
     emin = ext_fct*emin_
     emax = ext_fct*emax_
     ext_left = np.sort(-np.arange(dband+step, dband-emin+step, step))
     ext_right = np.arange(dband+step, dband+emax+step, step)
-    sys.Ek_grid_ext, sys.funcp.Ek_left, sys.funcp.Ek_right = np.concatenate((ext_left, Ek_grid, ext_right)), len(ext_left), len(ext_right)
+    sys.Ek_grid_ext, sys.funcp.kpnt_left, sys.funcp.kpnt_right = np.concatenate((ext_left, Ek_grid, ext_right)), len(ext_left), len(ext_right)
     return 0
 
 def get_htransf_phi1k(phi1k, funcp):
@@ -514,15 +514,15 @@ def get_htransf_phi1k(phi1k, funcp):
 
     """
     nleads, ndm1, ndm0 = phi1k.shape[1], phi1k.shape[2], phi1k.shape[3]
-    Eklen_ext = phi1k.shape[0] + funcp.Ek_left + funcp.Ek_right
+    Eklen_ext = phi1k.shape[0] + funcp.kpnt_left + funcp.kpnt_right
     # Create the kernels for Hilbert transformation
     if funcp.ht_ker is None or 2*Eklen_ext != len(funcp.ht_ker):
         funcp.ht_ker = kernel_fredriksen(Eklen_ext)
     # Make phi1k on extended grid Ek_grid_ext
     # Pad phi1k values with zeros from the left and the right
-    phi1k = np.concatenate( (np.zeros((funcp.Ek_left, nleads, ndm1, ndm0)),
+    phi1k = np.concatenate( (np.zeros((funcp.kpnt_left, nleads, ndm1, ndm0)),
                              phi1k,
-                             np.zeros((funcp.Ek_right, nleads, ndm1, ndm0))), axis=0)
+                             np.zeros((funcp.kpnt_right, nleads, ndm1, ndm0))), axis=0)
     # Make the Hilbert transformation
     hphi1k = np.zeros(phi1k.shape, dtype=complexnp)
     for l, cb, bbp in itertools.product(range(nleads), range(ndm1), range(ndm0)):
@@ -558,14 +558,14 @@ def get_htransf_fk(fk, funcp):
         Hilbert transform of fk on extended grid.
     """
     nleads = fk.shape[0]
-    Eklen_ext = fk.shape[1] + funcp.Ek_left + funcp.Ek_right
+    Eklen_ext = fk.shape[1] + funcp.kpnt_left + funcp.kpnt_right
     # Create the kernels for Hilbert transformation
     if funcp.ht_ker is None or 2*Eklen_ext != len(funcp.ht_ker):
         funcp.ht_ker = kernel_fredriksen(Eklen_ext)
     # Pad fk values with zeros from the left and the right
-    fk = np.concatenate( (np.zeros((nleads, funcp.Ek_left)),
+    fk = np.concatenate( (np.zeros((nleads, funcp.kpnt_left)),
                           fk,
-                          np.zeros((nleads, funcp.Ek_right))), axis=1)
+                          np.zeros((nleads, funcp.kpnt_right))), axis=1)
     # Calculate the Hilbert transform with added positive infinitesimal of the Fermi functions
     hfk = np.zeros((nleads, Eklen_ext), dtype=doublenp)
     for l in range(nleads):
@@ -585,7 +585,7 @@ def iterate_2vN(sys):
 
     Modifies:
     sys.funcp.emin, sys.funcp.emax
-    sys.Ek_grid_ext, sys.funcp.Ek_left, sys.funcp.Ek_right
+    sys.Ek_grid_ext, sys.funcp.kpnt_left, sys.funcp.kpnt_right
     sys.fkp, sys.fkm, sys.hfkp, sys.hfkm
 
     Returns
@@ -612,7 +612,7 @@ def iterate_2vN(sys):
         ## Define the extended grid Ek_grid_ext for calculations outside the bandwidth
         # Here sys.funcp.emin, sys.funcp.emax are defined
         get_emin_emax(sys)
-        # Here sys.Ek_grid_ext, sys.funcp.Ek_left, sys.funcp.Ek_right are defined
+        # Here sys.Ek_grid_ext, sys.funcp.kpnt_left, sys.funcp.kpnt_right are defined
         get_grid_ext(sys)
         Ek_grid_ext = sys.Ek_grid_ext
         Eklen_ext = len(Ek_grid_ext)
@@ -628,7 +628,7 @@ def iterate_2vN(sys):
         phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
         kern1k = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm1), dtype=complexnp)
         for j1 in range(Eklen):
-            ind = j1 + funcp.Ek_left
+            ind = j1 + funcp.kpnt_left
             phi1k_delta[j1], kern1k[j1] = phi1k_local_2vN(ind, Ek_grid_ext, sys.fkp, sys.hfkp, sys.hfkm, E, Tba, si)
         hphi1k_delta = None
     elif kern1k is None:
@@ -640,6 +640,6 @@ def iterate_2vN(sys):
         #print('Making an iteration')
         phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
         for j1 in range(Eklen):
-            ind = j1 + funcp.Ek_left
+            ind = j1 + funcp.kpnt_left
             phi1k_delta[j1] = phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta, sys.fkp, kern1k[j1], E, Tba, si)
     return phi1k_delta, hphi1k_delta, kern1k

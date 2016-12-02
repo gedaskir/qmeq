@@ -8,5 +8,5 @@ ctypedef np.float64_t double_t
 ctypedef np.complex128_t complex_t
 
 cdef double_t fermi_func(double_t)
-cdef double_t func_pauli(double_t, double_t, double_t)
+cdef double_t func_pauli(double_t, double_t, double_t, int_t)
 cdef complex_t func_1vN(double_t, double_t, double_t, double_t, int_t, int_t)

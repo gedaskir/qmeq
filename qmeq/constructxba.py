@@ -11,6 +11,8 @@ from .indexing import ssqrange
 from .indexing import sz_to_ind
 from .indexing import ssq_to_ind
 
+from .mytypes import doublenp
+
 def construct_Tba(tleads, stateind, mtype=complex, Tba_=None):
     """
     Constructs many-body tunneling amplitude matrix Tba from single particle
@@ -270,16 +272,34 @@ def make_array(lst, nleads):
     """
     htype = type(lst).__name__
     if htype == 'dict':
-        lst_arr = np.zeros(nleads)
+        lst_arr = np.zeros(nleads, dtype=doublenp)
         for j1 in lst:
             lst_arr[j1] = lst[j1]
         return lst_arr
-    elif htype == 'list':
-        return np.array(lst)
-    elif htype == 'ndarray':
-        return lst
+    elif htype in {'list', 'ndarray'}:
+        return np.array(lst, dtype=doublenp)
     else:
-        return np.zeros(nleads)
+        return np.zeros(nleads, dtype=doublenp)
+
+def make_array_dlst(dlst, nleads):
+    htype = type(dlst).__name__
+    lst_arr = np.zeros((nleads,2), dtype=doublenp)
+    if htype == 'dict':
+        for j1 in dlst:
+            if type(dlst[j1]).__name__ in {'float', 'int'}:
+                lst_arr[j1] = (-dlst[j1], dlst[j1])
+            else:
+                lst_arr[j1] = dlst[j1]
+    elif htype in {'int', 'float'}:
+        lst_arr[:,0] = -dlst*np.ones(nleads, dtype=doublenp)
+        lst_arr[:,1] = +dlst*np.ones(nleads, dtype=doublenp)
+    elif htype in {'list', 'ndarray'}:
+        if type(dlst[0]).__name__ in {'float', 'int'}:
+            lst_arr[:,0] = -np.array(dlst, dtype=doublenp)
+            lst_arr[:,1] = +np.array(dlst, dtype=doublenp)
+        else:
+            lst_arr = np.array(dlst, dtype=doublenp)
+    return lst_arr
 #---------------------------------------------------------------------------------------------------
 
 class LeadsTunneling(object):
@@ -317,7 +337,7 @@ class LeadsTunneling(object):
         self.stateind.nleads = nleads
         self.mulst = make_array(mulst, nleads)
         self.tlst = make_array(tlst, nleads)
-        self.dlst = make_array(dlst, nleads)
+        self.dlst = make_array_dlst(dlst, nleads)
         self.mtype = mtype
         self.Tba0 = construct_Tba(self.tleads, stateind, mtype)
         self.Tba = self.Tba0
@@ -341,13 +361,13 @@ class LeadsTunneling(object):
         if lstq:
             self.mulst = self.mulst if mulst is None else self.mulst + make_array(mulst, self.stateind.nleads)
             self.tlst = self.tlst if tlst is None else self.tlst + make_array(tlst, self.stateind.nleads)
-            self.dlst = self.dlst if dlst is None else self.dlst + make_array(dlst, self.stateind.nleads)
+            self.dlst = self.dlst if dlst is None else self.dlst + make_array_dlst(dlst, self.stateind.nleads)
         if not tleads is None:
             tleadsp = tleads if type(tleads).__name__ == 'dict' else make_tleads_dict(tleads)
             self.Tba0 = construct_Tba(tleadsp, self.stateind, self.mtype, self.Tba0)
             if updateq:
                 for j0 in tleadsp:
-                    try:    self.tleads[j0] += tleadsp[j0]       # if tleads[j0] != 0:
+                    try:    self.tleads[j0] += tleadsp[j0]      # if tleads[j0] != 0:
                     except: self.tleads.update({j0:tleads[j0]}) # if tleads[j0] != 0:
 
     def change(self, tleads=None, mulst=None, tlst=None, dlst=None, updateq=True):
@@ -381,9 +401,12 @@ class LeadsTunneling(object):
         if not dlst is None:
             if type(dlst).__name__ == 'dict':
                 for j0 in dlst:
-                    self.dlst[j0] = dlst[j0]
+                    if type(dlst[j0]).__name__ in {'int', 'float'}:
+                        self.dlst[j0] = (-dlst[j0], dlst[j0])
+                    else:
+                        self.dlst[j0] = dlst[j0]
             else:
-                self.dlst = make_array(dlst, self.stateind.nleads)
+                self.dlst = make_array_dlst(dlst, self.stateind.nleads)
         #
         if not tleads is None:
             tleadsp = tleads if type(tleads).__name__ == 'dict' else make_tleads_dict(tleads)

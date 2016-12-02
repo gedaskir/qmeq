@@ -22,7 +22,7 @@ def fermi_func(x):
     """Fermi function."""
     return 1/(exp(x)+1)
 
-def func_pauli(E, T, D):
+def func_pauli(E, T, D, itype):
     """
     Function used when generating Pauli master equation kernel.
 
@@ -41,7 +41,10 @@ def func_pauli(E, T, D):
     """
     alpha = E/T
     R = D/T
-    return 2*pi*fermi_func(-alpha) * (1 if alpha < R and alpha > -R else 0)
+    if itype == 1:
+        return 2*pi*fermi_func(-alpha)
+    else:
+        return 2*pi*fermi_func(-alpha) if -alpha < R and -alpha > -R else 0
 
 def func_1vN(E, T, D, eta, itype, limit):
     """
@@ -76,7 +79,7 @@ def func_1vN(E, T, D, eta, itype, limit):
         rez = digamma(0.5-1.0j*alpha/(2*pi)).real - log(R/(2*pi))
     elif itype == 2:
         rez = 0.0
-    rez = rez - 1.0j*pi*fermi_func(-alpha)*sign(eta) * (1 if alpha < R and alpha > -R else 0)
+    rez = rez - ( 1.0j*pi*fermi_func(-alpha)*sign(eta) if -alpha < R and -alpha > -R else 0 )
     #-------------------------
     return rez
 

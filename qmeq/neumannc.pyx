@@ -42,12 +42,15 @@ cdef double_t fermi_func(double_t x):
     return 1/(exp(x)+1)
 
 @cython.cdivision(True)
-cdef double_t func_pauli(double_t E, double_t T, double_t D):
+cdef double_t func_pauli(double_t E, double_t T, double_t D, int_t itype):
     cdef double_t alpha
     alpha = E/T
     R = D/T
-    #return 2*pi*fermi_func(-alpha)
-    return 2*pi*1/(exp(-alpha)+1) * (1.0 if alpha < R and alpha > -R else 0.0)
+    if itype == 1:
+        #return 2*pi*fermi_func(-alpha)
+        return 2*pi*1/(exp(-alpha)+1)
+    else:
+        return 2*pi*1/(exp(-alpha)+1) if -alpha < R and -alpha > -R else 0.0
 
 @cython.cdivision(True)
 cdef complex_t func_1vN(double_t E, double_t T, double_t D, double_t eta, int_t itype, int_t limit):
@@ -63,7 +66,7 @@ cdef complex_t func_1vN(double_t E, double_t T, double_t D, double_t eta, int_t 
     elif itype == 2:
         rez.real = 0
     #-------------------------
-    rez.imag = -pi*1/(exp(-alpha)+1)*eta * (1.0 if alpha < R and alpha > -R else 0.0)
+    rez.imag = -pi*1/(exp(-alpha)+1)*eta if -alpha < R and -alpha > -R else 0.0
     return rez
 
 @cython.boundscheck(False)
@@ -72,7 +75,7 @@ def c_generate_phi1fct(sys):
     si = sys.si
     cdef np.ndarray[double_t, ndim=1] mulst = sys.leads.mulst
     cdef np.ndarray[double_t, ndim=1] tlst = sys.leads.tlst
-    cdef np.ndarray[double_t, ndim=1] dlst = sys.leads.dlst
+    cdef np.ndarray[double_t, ndim=2] dlst = sys.leads.dlst
     #
     cdef long_t c, b, cb
     cdef int_t bcharge, ccharge, charge, l
@@ -94,10 +97,10 @@ def c_generate_phi1fct(sys):
         for c, b in itertools.product(si.statesdm[ccharge], si.statesdm[bcharge]):
             cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
             for l in range(nleads):
-                phi1fct[l, cb, 0] = +func_1vN(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l], +1, itype, dqawc_limit)
-                phi1fct[l, cb, 1] = +func_1vN(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l], -1, itype, dqawc_limit)
-                phi1fct_energy[l, cb, 0] = +dlst[l]-(E[b]-E[c])*phi1fct[l, cb, 0] # (E[b]-E[c]+mulst[l])
-                phi1fct_energy[l, cb, 1] = -dlst[l]-(E[b]-E[c])*phi1fct[l, cb, 1] # (E[b]-E[c]+mulst[l])
+                phi1fct[l, cb, 0] = +func_1vN(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], +1, itype, dqawc_limit)
+                phi1fct[l, cb, 1] = +func_1vN(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], -1, itype, dqawc_limit)
+                phi1fct_energy[l, cb, 0] = +dlst[l,1]-(E[b]-E[c])*phi1fct[l, cb, 0] # (E[b]-E[c]+mulst[l])
+                phi1fct_energy[l, cb, 1] = -dlst[l,1]-(E[b]-E[c])*phi1fct[l, cb, 1] # (E[b]-E[c]+mulst[l])
     return phi1fct, phi1fct_energy
 
 @cython.boundscheck(False)
@@ -107,12 +110,13 @@ def c_generate_paulifct(sys):
     si = sys.si
     cdef np.ndarray[double_t, ndim=1] mulst = sys.leads.mulst
     cdef np.ndarray[double_t, ndim=1] tlst = sys.leads.tlst
-    cdef np.ndarray[double_t, ndim=1] dlst = sys.leads.dlst
+    cdef np.ndarray[double_t, ndim=2] dlst = sys.leads.dlst
     #
     cdef long_t c, b, cb
     cdef int_t bcharge, ccharge, charge, l
     cdef double_t xcb
     cdef int_t nleads = si.nleads
+    cdef int_t itype = sys.funcp.itype
     #
     cdef np.ndarray[double_t, ndim=3] paulifct = np.zeros((nleads, si.ndm1, 2), dtype=doublenp)
     cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
@@ -126,8 +130,8 @@ def c_generate_paulifct(sys):
             cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
             for l in range(nleads):
                 xcb = (Tba[l, b, c]*Tba[l, c, b]).real
-                paulifct[l, cb, 0] = xcb*func_pauli(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l])
-                paulifct[l, cb, 1] = xcb*func_pauli(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l]) #2*pi*xcb - paulifct[l, cb, 0]
+                paulifct[l, cb, 0] = xcb*func_pauli(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], itype)
+                paulifct[l, cb, 1] = xcb*func_pauli(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], itype) #2*pi*xcb - paulifct[l, cb, 0]
     return paulifct
 
 #---------------------------------------------------------------------------------------------------------

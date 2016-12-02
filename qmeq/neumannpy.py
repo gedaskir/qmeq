@@ -39,10 +39,10 @@ def generate_phi1fct(sys): #E, si, mulst, tlst, dlst
         for c, b in itertools.product(si.statesdm[ccharge], si.statesdm[bcharge]):
             cb = si.get_ind_dm1(c, b, bcharge)
             for l in range(si.nleads):
-                phi1fct[l, cb, 0] = +func_1vN(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l], +1, itype, limit)
-                phi1fct[l, cb, 1] = +func_1vN(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l], -1, itype, limit)
-                phi1fct_energy[l, cb, 0] = +dlst[l]-(E[b]-E[c])*phi1fct[l, cb, 0] # (E[b]-E[c]+mulst[l])
-                phi1fct_energy[l, cb, 1] = -dlst[l]-(E[b]-E[c])*phi1fct[l, cb, 1] # (E[b]-E[c]+mulst[l])
+                phi1fct[l, cb, 0] = +func_1vN(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], +1, itype, limit)
+                phi1fct[l, cb, 1] = +func_1vN(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], -1, itype, limit)
+                phi1fct_energy[l, cb, 0] = +dlst[l,1]-(E[b]-E[c])*phi1fct[l, cb, 0] # (E[b]-E[c]+mulst[l])
+                phi1fct_energy[l, cb, 1] = -dlst[l,1]-(E[b]-E[c])*phi1fct[l, cb, 1] # (E[b]-E[c]+mulst[l])
     return phi1fct, phi1fct_energy
 
 def generate_paulifct(sys): #E, Tba, si, mulst, tlst, dlst
@@ -60,6 +60,7 @@ def generate_paulifct(sys): #E, Tba, si, mulst, tlst, dlst
         Factors used for generating Pauli master equation kernel.
     """
     (E, Tba, si, mulst, tlst, dlst) = (sys.qd.Ea, sys.leads.Tba, sys.si, sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
+    itype = sys.funcp.itype
     paulifct = np.zeros((si.nleads, si.ndm1, 2), dtype=doublenp)
     for charge in range(si.ncharge-1):
         ccharge = charge+1
@@ -68,8 +69,8 @@ def generate_paulifct(sys): #E, Tba, si, mulst, tlst, dlst
             cb = si.get_ind_dm1(c, b, bcharge)
             for l in range(si.nleads):
                 xcb = (Tba[l, b, c]*Tba[l, c, b]).real
-                paulifct[l, cb, 0] = xcb*func_pauli(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l])
-                paulifct[l, cb, 1] = xcb*func_pauli(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l]) #2*np.pi*xcb - paulifct[l, cb, 0]
+                paulifct[l, cb, 0] = xcb*func_pauli(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], itype)
+                paulifct[l, cb, 1] = xcb*func_pauli(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], itype) #2*np.pi*xcb - paulifct[l, cb, 0]
     return paulifct
 
 #---------------------------------------------------------------------------------------------------------

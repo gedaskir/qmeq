@@ -375,7 +375,7 @@ class FunctionProperties(object):
         Type for the many-body quantum dot Hamiltonian matrix.
     mtype_leads : float or complex
         Type for the many-body tunneling matrix Tba.
-    Ek_left, Ek_right : int
+    kpnt_left, kpnt_right : int
         Number of points Ek_grid is extended to the left and the right for '2vN' method.
     ht_ker : array
         Kernel used when performing Hilbert transform using FFT.
@@ -408,8 +408,8 @@ class FunctionProperties(object):
         #
         self.kpnt = kpnt
         #
-        self.Ek_left = 0
-        self.Ek_right = 0
+        self.kpnt_left = 0
+        self.kpnt_right = 0
         self.ht_ker = None
         #
         self.emin, self.emax = 0, 0
@@ -691,7 +691,7 @@ class Transport2vN(object):
     def set_kpnt(self, value):
         self.restart()
         self.funcp.kpnt = value
-        dband = self.leads.dlst[0]
+        dband = self.leads.dlst[0,1]
         self.Ek_grid = np.linspace(-dband, dband, value)
     kpnt = property(get_kpnt, set_kpnt)
 

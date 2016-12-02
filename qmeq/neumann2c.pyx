@@ -302,7 +302,7 @@ def c_get_phi1_phi0_2vN(sys):
 
 @cython.boundscheck(False)
 def c_iterate_2vN(sys):
-    cdef long_t j1, Eklen, ind, Ek_left
+    cdef long_t j1, Eklen, ind, kpnt_left
     cdef np.ndarray[double_t, ndim=1] Ek_grid = sys.Ek_grid
     #cdef np.ndarray[double_t, ndim=1] Ek_grid_ext = sys.Ek_grid_ext
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
@@ -320,7 +320,7 @@ def c_iterate_2vN(sys):
         ## Define the extended grid Ek_grid_ext for calculations outside the bandwidth
         # Here sys.funcp.emin, sys.funcp.emax are defined
         get_emin_emax(sys)
-        # Here sys.Ek_grid_ext, sys.funcp.Ek_left, sys.funcp.Ek_right are defined
+        # Here sys.Ek_grid_ext, sys.funcp.kpnt_left, sys.funcp.kpnt_right are defined
         get_grid_ext(sys)
         Ek_grid_ext = sys.Ek_grid_ext
         Eklen_ext = Ek_grid_ext.shape[0] #len(Ek_grid_ext)
@@ -335,9 +335,9 @@ def c_iterate_2vN(sys):
         # Calculate the zeroth iteration of Phi[1](k)
         phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
         kern1k = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm1), dtype=complexnp)
-        Ek_left = funcp.Ek_left
+        kpnt_left = funcp.kpnt_left
         for j1 in range(Eklen):
-            ind = j1 + Ek_left
+            ind = j1 + kpnt_left
             phi1k_delta[j1], kern1k[j1] = c_phi1k_local_2vN(ind, Ek_grid_ext, sys.fkp, sys.hfkp, sys.hfkm, E, Tba, si)
         hphi1k_delta = None
     elif kern1k is None:
@@ -348,8 +348,8 @@ def c_iterate_2vN(sys):
         phi1k_delta_old, hphi1k_delta = get_htransf_phi1k(phi1k_delta_old, funcp)
         #print('Making an iteration')
         phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
-        Ek_left = funcp.Ek_left
+        kpnt_left = funcp.kpnt_left
         for j1 in range(Eklen):
-            ind = j1 + Ek_left
+            ind = j1 + kpnt_left
             phi1k_delta[j1] = c_phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta, sys.fkp, kern1k[j1], E, Tba, si)
     return phi1k_delta, hphi1k_delta, kern1k
