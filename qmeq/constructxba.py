@@ -290,15 +290,15 @@ def make_array_dlst(dlst, nleads):
                 lst_arr[j1] = (-dlst[j1], dlst[j1])
             else:
                 lst_arr[j1] = dlst[j1]
-    elif htype in {'int', 'float'}:
+    elif htype in {'float', 'int'}:
         lst_arr[:,0] = -dlst*np.ones(nleads, dtype=doublenp)
         lst_arr[:,1] = +dlst*np.ones(nleads, dtype=doublenp)
     elif htype in {'list', 'ndarray'}:
-        if type(dlst[0]).__name__ in {'float', 'int'}:
+        if type(dlst[0]).__name__ in {'list', 'tuple', 'ndarray'}:
+            lst_arr = np.array(dlst, dtype=doublenp)
+        else:
             lst_arr[:,0] = -np.array(dlst, dtype=doublenp)
             lst_arr[:,1] = +np.array(dlst, dtype=doublenp)
-        else:
-            lst_arr = np.array(dlst, dtype=doublenp)
     return lst_arr
 #---------------------------------------------------------------------------------------------------
 

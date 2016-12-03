@@ -9,6 +9,8 @@ import itertools
 from .mytypes import doublenp
 from .mytypes import complexnp
 
+from .specfuncc cimport func_pauli
+
 cimport numpy as np
 cimport cython
 
@@ -18,19 +20,21 @@ ctypedef np.int64_t long_t
 ctypedef np.float64_t double_t
 ctypedef np.complex128_t complex_t
 
+'''
 cdef double_t pi = 3.14159265358979323846
 
 from libc.math cimport exp
 #cdef extern from "math.h":
 #    double_t exp(double_t)
 
-from libc.math cimport sqrt
-#cdef extern from "math.h":
-#    double_t sqrt(double_t)
-
 @cython.cdivision(True)
 cdef double_t fermi_func(double_t x):
     return 1/(exp(x)+1)
+'''
+
+from libc.math cimport sqrt
+#cdef extern from "math.h":
+#    double_t sqrt(double_t)
 
 #---------------------------------------------------------------------------------------------------------
 # Lindblad approach
@@ -43,23 +47,30 @@ def c_generate_tLba(sys):
     si = sys.si
     cdef np.ndarray[double_t, ndim=1] mulst = sys.leads.mulst
     cdef np.ndarray[double_t, ndim=1] tlst = sys.leads.tlst
+    cdef np.ndarray[double_t, ndim=2] dlst = sys.leads.dlst
+    #
     #mtype = sys.leads.mtype
+    cdef int_t itype = sys.funcp.itype
     #
     cdef long_t b, a
     cdef int_t bcharge, acharge, charge, l
-    cdef double_t fct1, fct2
+    cdef double_t Eba
     cdef int_t nleads = si.nleads
+    #
+    cdef np.ndarray[double_t, ndim=1] rez = np.zeros(2, dtype=doublenp)
     #
     cdef np.ndarray[complex_t, ndim=3] tLba = np.zeros((nleads, si.nmany, si.nmany), dtype=complexnp)
     for charge in range(si.ncharge-1):
         bcharge = charge+1
         acharge = charge
         for b, a in itertools.product(si.statesdm[bcharge], si.statesdm[acharge]):
+            Eba = E[b]-E[a]
             for l in range(nleads):
-                fct1 = fermi_func((E[b]-E[a]-mulst[l])/tlst[l])
-                fct2 = 1-fct1
-                tLba[l, b, a] = sqrt(2*pi*fct1)*Tba[l, b, a]
-                tLba[l, a, b] = sqrt(2*pi*fct2)*Tba[l, a, b]
+                #fct1 = fermi_func((E[b]-E[a]-mulst[l])/tlst[l])
+                #fct2 = 1-fct1
+                func_pauli(Eba, mulst[l], tlst[l], dlst[l,0], dlst[l,1], itype, rez)
+                tLba[l, b, a] = sqrt(rez[0])*Tba[l, b, a]
+                tLba[l, a, b] = sqrt(rez[1])*Tba[l, a, b]
     return tLba
 
 @cython.boundscheck(False)

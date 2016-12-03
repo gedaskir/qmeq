@@ -119,6 +119,7 @@ class Builder(object):
         itype=0: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
         itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
         itype=2: the principal parts are neglected.
+        itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
     dqawc_limit : int
         For itype=0 dqawc_limit determines the maximum number of subintervals
         in the partition of the given integration interval.
@@ -364,6 +365,7 @@ class FunctionProperties(object):
         itype=0: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
         itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
         itype=2: the principal parts are neglected.
+        itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
     dqawc_limit : int
         For itype=0 dqawc_limit determines the maximum number of subintervals
         in the partition of the given integration interval.

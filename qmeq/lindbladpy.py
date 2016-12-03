@@ -34,18 +34,21 @@ def generate_tLba(sys):
         Factors used to calculate energy and heat currents in 1vN, Redfield methods.
     """
     (Tba, E, si) = (sys.leads.Tba, sys.qd.Ea, sys.si)
-    (mulst, tlst, mtype) = (sys.leads.mulst, sys.leads.tlst, sys.leads.mtype)
+    (mulst, tlst, dlst) = (sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
+    (mtype, itype) = (sys.leads.mtype, sys.funcp.itype)
     #
     tLba = np.zeros(Tba.shape, dtype=mtype)
     for charge in range(si.ncharge-1):
         bcharge = charge+1
         acharge = charge
         for b, a in itertools.product(si.statesdm[bcharge], si.statesdm[acharge]):
+            Eba = E[b]-E[a]
             for l in range(si.nleads):
-                fct1 = fermi_func((E[b]-E[a]-mulst[l])/tlst[l])
-                fct2 = 1-fct1
-                tLba[l, b, a] = np.sqrt(2*np.pi*fct1)*Tba[l, b, a]
-                tLba[l, a, b] = np.sqrt(2*np.pi*fct2)*Tba[l, a, b]
+                #fct1 = fermi_func((E[b]-E[a]-mulst[l])/tlst[l])
+                #fct2 = 1-fct1
+                fct1, fct2 = func_pauli(Eba, mulst[l], tlst[l], dlst[l,0], dlst[l,1], itype)
+                tLba[l, b, a] = np.sqrt(fct1)*Tba[l, b, a]
+                tLba[l, a, b] = np.sqrt(fct2)*Tba[l, a, b]
     return tLba
 
 def generate_kern_lindblad(sys):

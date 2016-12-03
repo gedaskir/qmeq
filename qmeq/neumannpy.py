@@ -38,11 +38,13 @@ def generate_phi1fct(sys): #E, si, mulst, tlst, dlst
         bcharge = charge
         for c, b in itertools.product(si.statesdm[ccharge], si.statesdm[bcharge]):
             cb = si.get_ind_dm1(c, b, bcharge)
+            Ecb = E[c]-E[b]
             for l in range(si.nleads):
-                phi1fct[l, cb, 0] = +func_1vN(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], +1, itype, limit)
-                phi1fct[l, cb, 1] = +func_1vN(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], -1, itype, limit)
-                phi1fct_energy[l, cb, 0] = +dlst[l,1]-(E[b]-E[c])*phi1fct[l, cb, 0] # (E[b]-E[c]+mulst[l])
-                phi1fct_energy[l, cb, 1] = -dlst[l,1]-(E[b]-E[c])*phi1fct[l, cb, 1] # (E[b]-E[c]+mulst[l])
+                rez = func_1vN(Ecb, mulst[l], tlst[l], dlst[l,0], dlst[l,1], itype, limit)
+                phi1fct[l, cb, 0] = rez[0]
+                phi1fct[l, cb, 1] = rez[1]
+                phi1fct_energy[l, cb, 0] = rez[2]
+                phi1fct_energy[l, cb, 1] = rez[3]
     return phi1fct, phi1fct_energy
 
 def generate_paulifct(sys): #E, Tba, si, mulst, tlst, dlst
@@ -67,10 +69,12 @@ def generate_paulifct(sys): #E, Tba, si, mulst, tlst, dlst
         bcharge = charge
         for c, b in itertools.product(si.statesdm[ccharge], si.statesdm[bcharge]):
             cb = si.get_ind_dm1(c, b, bcharge)
+            Ecb = E[c]-E[b]
             for l in range(si.nleads):
                 xcb = (Tba[l, b, c]*Tba[l, c, b]).real
-                paulifct[l, cb, 0] = xcb*func_pauli(+(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], itype)
-                paulifct[l, cb, 1] = xcb*func_pauli(-(E[b]-E[c]+mulst[l]), tlst[l], dlst[l,1], itype) #2*np.pi*xcb - paulifct[l, cb, 0]
+                rez = func_pauli(Ecb, mulst[l], tlst[l], dlst[l,0], dlst[l,1], itype)
+                paulifct[l, cb, 0] = xcb*rez[0]
+                paulifct[l, cb, 1] = xcb*rez[1]
     return paulifct
 
 #---------------------------------------------------------------------------------------------------------

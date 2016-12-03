@@ -17,7 +17,10 @@ ext = [# Pauli, Redfield, 1vN approaches
                  ["qmeq/lindbladc.pyx"]),
        # 2vN approach
        Extension("qmeq.neumann2c",
-                 ["qmeq/neumann2c.pyx"])]
+                 ["qmeq/neumann2c.pyx"]),
+       # Special functions
+       Extension("qmeq.specfuncc",
+                 ["qmeq/specfuncc.pyx"])]
 
 cext = cythonize(ext)
 
