@@ -445,21 +445,22 @@ def get_emin_emax(sys):
         Transport2vN object.
 
     Modifies:
-    sys.funcp.emax, sys.funcp.emax : float
+    sys.funcp.emin, sys.funcp.emax : float
         Minimal and maximal energy in the updated Ek_grid.
     """
-    (E, si, dband) = (sys.qd.Ea, sys.si, sys.leads.dlst[0,1])
-    lst = []
+    #(E, si, dband) = (sys.qd.Ea, sys.si, sys.leads.dlst[0,1])
+    (E, si, dmin, dmax) = (sys.qd.Ea, sys.si, sys.funcp.dmin, sys.funcp.dmax)
+    lst = [dmin, dmax]
     for charge in range(si.ncharge):
         for b, bp in itertools.product(si.statesdm[charge], si.statesdm[charge]):
-            lst.append(+dband-E[b]+E[bp])
-            lst.append(-dband-E[b]+E[bp])
+            lst.append(dmax-E[b]+E[bp])
+            lst.append(dmin-E[b]+E[bp])
     for charge in range(si.ncharge-2):
         for d, b in itertools.product(si.statesdm[charge+2], si.statesdm[charge]):
-            lst.append(-dband+E[d]-E[b])
-            lst.append(+dband+E[d]-E[b])
-    sys.funcp.emax = max(lst)-dband
-    sys.funcp.emin = min(lst)+dband
+            lst.append(dmin+E[d]-E[b])
+            lst.append(dmax+E[d]-E[b])
+    sys.funcp.emax = max(lst)
+    sys.funcp.emin = min(lst)
     return 0
 
 def get_grid_ext(sys):
@@ -477,14 +478,17 @@ def get_grid_ext(sys):
     sys.funcp.kpnt_left, sys.funcp.kpnt_right : int
         Number of points Ek_grid is extended to the left and the right.
     """
-    (emin_, emax_, dband, ext_fct) = (sys.funcp.emin, sys.funcp.emax, sys.leads.dlst[0,1], sys.funcp.ext_fct)
+    (emin_, emax_, dmin, dmax, ext_fct) = (sys.funcp.emin, sys.funcp.emax,
+                                           sys.funcp.dmin, sys.funcp.dmax,
+                                           sys.funcp.ext_fct)
     Ek_grid = sys.Ek_grid
     step = Ek_grid[1]-Ek_grid[0]
-    emin = ext_fct*emin_
-    emax = ext_fct*emax_
-    ext_left = np.sort(-np.arange(dband+step, dband-emin+step, step))
-    ext_right = np.arange(dband+step, dband+emax+step, step)
-    sys.Ek_grid_ext, sys.funcp.kpnt_left, sys.funcp.kpnt_right = np.concatenate((ext_left, Ek_grid, ext_right)), len(ext_left), len(ext_right)
+    emin = ext_fct*(emin_-dmin)+dmin
+    emax = ext_fct*(emax_-dmax)+dmax
+    ext_left = np.sort(-np.arange(-dmin+step, -emin+step, step))
+    ext_right = np.arange(dmax+step, emax+step, step)
+    sys.Ek_grid_ext = np.concatenate((ext_left, Ek_grid, ext_right))
+    sys.funcp.kpnt_left, sys.funcp.kpnt_right = len(ext_left), len(ext_right)
     return 0
 
 def get_htransf_phi1k(phi1k, funcp):
