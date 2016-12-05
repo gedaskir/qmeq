@@ -54,6 +54,7 @@ tutorial/example_anderson.py
 # Build directories
 .cache/
 build/
+dist/
 docs/build
 qmeq.egg-info/
 qmeq/build

@@ -63,6 +63,7 @@ from .various import sort_eigenstates
 from .various import remove_states
 from .various import use_all_states
 
+
 class Builder(object):
     """
     Class for building the system for stationary transport calculations.
@@ -90,8 +91,8 @@ class Builder(object):
         Dictionary, list or array containing chemical potentials of the leads.
     tlst : dict, list or array
         Dictionary, list or array containing temperatures of the leads.
-    dlst : dict, list or array
-        Dictionary, list or array containing bandwidths of the leads.
+    dband : float, dict, list or array
+        Float, dictionary, list or array determining bandwidths of the leads.
     indexing : str
         String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
         Note that 'sz' indexing for Fock states is used for 'ssq' indexing, with
@@ -166,11 +167,36 @@ class Builder(object):
     """
 
     def __init__(self, nsingle, hsingle, coulomb,
-                       nleads, tleads, mulst, tlst, dlst,
+                       nleads, tleads, mulst, tlst, dband,
                        indexing='charge', kpnt=None,
-                       kerntype='1vN', symq=True, norm_row=0, solmethod='n',
+                       kerntype='Pauli', symq=True, norm_row=0, solmethod='n',
                        itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
                        mtype_qd=complex, mtype_leads=complex):
+
+        if not indexing in {'Lin', 'charge', 'sz', 'ssq'}:
+            print("WARNING: Allowed indexing values are: \'Lin\', \'charge\', \'sz\', \'ssq\'. "+
+                  "Using default indexing=\'charge\'.")
+            indexing = 'charge'
+
+        if not itype in {0,1,2,3}:
+            print("WARNING: itype needs to be 0, 1, 2, or 3. Using default itype=1.")
+            itype = 1
+
+        if not kerntype in {'Pauli', 'Lindblad', 'Redfield', '1vN', '2vN', 'pyPauli', 'pyLindblad', 'py1vN', 'py2vN'}:
+            print("WARNING: Allowed kerntype values are: "+
+                  "\'Pauli\', \'Lindblad\', \'Redfield\', \'1vN\', \'2vN\', "+
+                  "\'pyPauli\', \'pyLindblad\', \'py1vN\', \'py2vN\'. "+
+                  "Using default kerntype=\'Pauli\'.")
+            kerntype = 'Pauli'
+
+        if not indexing in {'Lin', 'charge'} and kerntype in {'py2vN', '2vN'}:
+            print("WARNING: For 2vN method indexing needs to be \'Lin\' or \'charge\'. "+
+                  "Using indexing=\'charge\' as a default.")
+            indexing = 'charge'
+
+        if kpnt is None and kerntype in {'py2vN', '2vN'}:
+            raise ValueError('For 2vN method kpnt needs to be specified.')
+            print("WARNING: For 2vN method kpnt needs to be specified.")
 
         # Make copies of initialized parameters.
         hsingle = copy.deepcopy(hsingle)
@@ -178,31 +204,26 @@ class Builder(object):
         tleads = copy.deepcopy(tleads)
         mulst = copy.deepcopy(mulst)
         tlst = copy.deepcopy(tlst)
-        dlst = copy.deepcopy(dlst)
+        dband = copy.deepcopy(dband)
         phi0_init = copy.deepcopy(phi0_init)
 
         funcp = FunctionProperties(kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,
                                    itype=itype, dqawc_limit=dqawc_limit, mfreeq=mfreeq, phi0_init=phi0_init,
-                                   mtype_qd=mtype_qd, mtype_leads=mtype_leads, kpnt=kpnt)
+                                   mtype_qd=mtype_qd, mtype_leads=mtype_leads, kpnt=kpnt, dband=dband)
 
         if kerntype in {'py2vN', '2vN'}:
-            if kpnt is None:
-                raise ValueError('For 2vN method kpnt needs to be specified.')
-                print('WARNING: For 2vN method kpnt needs to be specified.')
-            if not indexing in ['Lin', 'charge']:
-                print('WARNING: For 2vN method indexing needs to be \'Lin\' or \'charge\'. Using \'charge\' as a default.')
-                indexing = 'charge'
             si = StateIndexingDMc(nsingle, indexing)
             qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
-            leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst, mtype_leads)
+            leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dband, mtype_leads)
             tt = Transport2vN(qd, leads, si, funcp)
         else:
             si = StateIndexingDM(nsingle, indexing)
             qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
-            leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst, mtype_leads)
+            leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dband, mtype_leads)
             tt = Transport(qd, leads, si, funcp)
 
-        if mfreeq and phi0_init is None and not kerntype in {'Pauli', 'pyPauli'}:
+        if mfreeq and phi0_init is None and not kerntype in {'Pauli', 'pyPauli', '2vN', 'py2vN'}:
+            print('"WARNING: For mfreeq=True no phi0_init is specified. Using phi0_init[0]=1.0 as a default.')
             funcp.phi0_init = np.zeros(si.ndm0r, dtype=doublenp)
             funcp.phi0_init[0] = 1.0
 
@@ -260,6 +281,14 @@ class Builder(object):
             print('WARNING: Cannot change indexing from \''+self.si.indexing+'\' to \''+value
                   +'\' Consider contructing a new system using \'indexing='+value+'\'')
     indexing = property(get_indexing, set_indexing)
+
+    # dband
+    def get_dband(self):
+        return self.funcp.dband
+    def set_dband(self, value):
+        self.funcp.dband = value
+        self.leads.change(dlst=dband)
+    dband = property(get_dband, set_dband)
 
     def add(self, hsingle=None, coulomb=None, tleads=None, mulst=None, tlst=None, dlst=None):
         """
@@ -395,7 +424,7 @@ class FunctionProperties(object):
 
     def __init__(self, kerntype='2vN', symq=True, norm_row=0, solmethod='n',
                        itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
-                       mtype_qd=float, mtype_leads=complex, kpnt=None):
+                       mtype_qd=float, mtype_leads=complex, kpnt=None, dband=None):
         self.kerntype = kerntype
         self.symq = symq
         self.norm_row = norm_row
@@ -411,6 +440,7 @@ class FunctionProperties(object):
         self.mtype_leads = mtype_leads
         #
         self.kpnt = kpnt
+        self.dband = dband
         #
         self.kpnt_left = 0
         self.kpnt_right = 0
@@ -692,30 +722,29 @@ class Transport2vN(object):
             raise TypeError('The state indexing class for 2vN approach has to be StateIndexingDMc')
 
     def make_Ek_grid(self):
-        dmin = np.min(self.leads.dlst)
-        dmax = np.max(self.leads.dlst)
-        Ek_grid, kpnt = self.Ek_grid, self.funcp.kpnt
-        if Ek_grid[0] != dmin or Ek_grid[-1] != dmax or Ek_grid.shape[0] != kpnt:
-            self.funcp.dmin = dmin
-            self.funcp.dmax = dmax
-            self.Ek_grid = np.linspace(dmin, dmax, kpnt)
-            #
-            if self.niter != -1:
-                print("WARNING: Ek_grid has changed. Restarting the calculation.")
-                self.restart()
-            #
-            if ((dmin*np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[0].tolist() or
-                (dmax*np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[1].tolist()):
-                print("WARNING: The bandwidth and Ek_grid for all leads will be the same: from "+
-                      "dmin="+str(dmin)+" to dmax="+str(dmax)+".")
+        if self.si.nleads > 0:
+            dmin = np.min(self.leads.dlst)
+            dmax = np.max(self.leads.dlst)
+            Ek_grid, kpnt = self.Ek_grid, self.funcp.kpnt
+            if Ek_grid[0] != dmin or Ek_grid[-1] != dmax or Ek_grid.shape[0] != kpnt:
+                self.funcp.dmin = dmin
+                self.funcp.dmax = dmax
+                self.Ek_grid = np.linspace(dmin, dmax, kpnt)
+                #
+                if self.niter != -1:
+                    print("WARNING: Ek_grid has changed. Restarting the calculation.")
+                    self.restart()
+                #
+                if ((dmin*np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[0].tolist() or
+                    (dmax*np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[1].tolist()):
+                    print("WARNING: The bandwidth and Ek_grid for all leads will be the same: from "+
+                          "dmin="+str(dmin)+" to dmax="+str(dmax)+".")
 
     # kpnt
     def get_kpnt(self):
         return self.funcp.kpnt
     def set_kpnt(self, value):
         self.funcp.kpnt = value
-        #dband = self.leads.dlst[0,1]
-        #self.Ek_grid = np.linspace(-dband, dband, value)
         self.make_Ek_grid()
     kpnt = property(get_kpnt, set_kpnt)
 

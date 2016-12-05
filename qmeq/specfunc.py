@@ -47,7 +47,7 @@ def func_pauli(Ecb, mu, T, Dm, Dp, itype):
     """
     alpha = (Ecb-mu)/T
     Rm, Rp = (Dm-mu)/T, (Dp-mu)/T
-    if itype == 1 or (alpha < Rp and alpha > Rm):
+    if itype == 1 or itype == 3 or (alpha < Rp and alpha > Rm):
         cur0 = fermi_func(alpha)
         cur1 = 1-cur0
         rez = 2*pi*np.array([cur0, cur1])

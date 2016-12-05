@@ -37,7 +37,7 @@ from libc.math cimport log
 
 @cython.cdivision(True)
 cdef double_t fermi_func(double_t x):
-    return 1/(exp(x)+1)
+    return 1./(exp(x)+1.)
 
 @cython.boundscheck(False)
 @cython.cdivision(True)
@@ -47,7 +47,7 @@ cdef int_t func_pauli(double_t Ecb, double_t mu, double_t T,
     cdef double_t alpha, Rm, Rp, cur0, cur1
     alpha = (Ecb-mu)/T
     Rm, Rp = (Dm-mu)/T, (Dp-mu)/T
-    if itype == 1 or (alpha < Rp and alpha > Rm):
+    if itype == 1 or itype == 3 or (alpha < Rp and alpha > Rm):
         cur0 = fermi_func(alpha)
         cur1 = 1.0-cur0
         rez[0] = 2*pi*cur0
