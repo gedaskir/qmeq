@@ -1,4 +1,4 @@
-qmeq package
+QmeQ package
 ============
 
 Submodules
