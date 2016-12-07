@@ -1,8 +1,12 @@
 #from __future__ import absolute_import
 #from __future__ import division
 from __future__ import print_function
-from setuptools import setup
-from setuptools import Extension
+#
+try:
+    from setuptools import setup, Extension
+except:
+    from distutils.core import setup, Extension
+#
 from Cython.Build import cythonize
 import numpy as np
 
@@ -34,7 +38,7 @@ setup(name='qmeq',
       author='Gediminas Kirsanskas',
       author_email='gediminas.kirsanskas@teorfys.lu.se',
       license='BSD 2-Clause',
-      packages=['qmeq'],
+      packages=['qmeq', 'qmeq/approach'],
       package_data={'qmeq': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so']},
       zip_safe=False,
       install_requires=['numpy', 'scipy'],
