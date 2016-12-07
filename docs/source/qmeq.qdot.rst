@@ -1,7 +1,7 @@
-qmeq.manyham module
+qmeq.qdot module
 ===================
 
-.. automodule:: qmeq.manyham
+.. automodule:: qmeq.qdot
     :members:
     :undoc-members:
     :show-inheritance:

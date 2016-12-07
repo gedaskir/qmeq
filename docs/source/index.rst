@@ -8,8 +8,8 @@ Contents:
 
    qmeq.rst
    Indexing of states <qmeq.indexing.rst>
-   Quantum dot Hamiltonian <qmeq.manyham.rst>
-   Tunneling Hamiltonian <qmeq.constructxba.rst>
+   Quantum dot Hamiltonian <qmeq.qdot.rst>
+   Tunneling Hamiltonian <qmeq.leadstun.rst>
    Master equations <qmeq.mastereq.rst>
    Special functions <qmeq.specfunc.rst>
    Various functions <qmeq.various.rst>

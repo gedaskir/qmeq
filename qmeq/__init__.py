@@ -6,8 +6,8 @@ from .indexing import StateIndexing
 from .indexing import StateIndexingPauli
 from .indexing import StateIndexingDM
 from .indexing import StateIndexingDMc
-from .manyham import QuantumDot
-from .constructxba import LeadsTunneling
+from .qdot import QuantumDot
+from .leadstun import LeadsTunneling
 from .mastereq import Builder
 from .mastereq import Transport
 from .mastereq import Transport2vN

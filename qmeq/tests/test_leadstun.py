@@ -1,8 +1,8 @@
 import numpy as np
 from numpy.linalg import norm
 from qmeq.indexing import StateIndexing, StateIndexingDM
-from qmeq.manyham import QuantumDot
-from qmeq.constructxba import *
+from qmeq.qdot import QuantumDot
+from qmeq.leadstun import *
 import qmeq
 
 EPS = 1e-14

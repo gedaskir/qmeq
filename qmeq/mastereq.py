@@ -52,8 +52,8 @@ from .mytypes import complexnp
 
 from .indexing import StateIndexingDM
 from .indexing import StateIndexingDMc
-from .manyham import QuantumDot
-from .constructxba import LeadsTunneling
+from .qdot import QuantumDot
+from .leadstun import LeadsTunneling
 
 from .various import get_phi0
 from .various import get_phi1

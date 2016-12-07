@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.linalg import norm
 from qmeq.indexing import StateIndexing
-from qmeq.manyham import *
+from qmeq.qdot import *
 
 EPS = 1e-13
 

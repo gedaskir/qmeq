@@ -6,15 +6,15 @@ Submodules
 
 .. toctree::
 
-   qmeq.constructxba
    qmeq.indexing
-   qmeq.manyham
+   qmeq.leadstun
    qmeq.mastereq
    qmeq.neumann2c
    qmeq.neumann2py
    qmeq.neumannc
    qmeq.neumannpy
    qmeq.neumannpy_complex
+   qmeq.qdot
    qmeq.specfunc
    qmeq.various
 
