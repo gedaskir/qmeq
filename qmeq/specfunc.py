@@ -108,8 +108,8 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
         cur1 = cur0 + log(abs(Rm/Rp))
         cur1 = cur1 + 1.0j*pi
         #
-        en0 = -Dm + Ecb*cur0
-        en1 = -Dp + Ecb*cur1
+        en0 = -T*Rm + Ecb*cur0
+        en1 = -T*Rp + Ecb*cur1
     elif itype == 2:
         cur0 = -1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0
         cur1 = cur0 + (1.0j*pi if alpha < Rp and alpha > Rm else 0)

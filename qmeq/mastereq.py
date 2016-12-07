@@ -455,8 +455,9 @@ class FunctionProperties(object):
     def print_error(self, exept):
         if not self.suppress_err:
             print(str(exept))
-            print("WARNING: Could not invert the kernel. All the transport channels may be outside the bandwidth."
-                 +"This warning will not be shown again.")
+            print("WARNING: Could not invert the kernel. "+
+                  "All the transport channels may be outside the bandwidth."+
+                  "This warning will not be shown again.")
             self.suppress_err = True
 
 class Transport(object):
@@ -510,11 +511,9 @@ class Transport(object):
         self.kerntype = None
         self.kern, self.bvec = None, None
         self.sol0, self.phi0, self.phi1 = None, None, None
-        #self.current, self.energy_current, self.heat_current = None, None, None
         self.current = np.zeros(self.si.nleads, dtype=doublenp)
         self.energy_current = np.zeros(self.si.nleads, dtype=doublenp)
         self.heat_current = np.zeros(self.si.nleads, dtype=doublenp)
-        #
         self.funcp = funcp
 
     def set_kern(self):
@@ -553,23 +552,8 @@ class Transport(object):
         try:
             self.sol0 = [None]
             if not self.kern is None:
-                self.mtrmethod = 'dense'
-                if self.mtrmethod == 'dense':
-                    if   solmethod == 'solve': self.sol0 = [np.linalg.solve(self.kern, self.bvec)]
-                    elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(self.kern, self.bvec)
-                '''
-                #The sparse solution methods are removed
-                elif self.mtrmethod == 'sparse':
-                    if   solmethod == 'solve':    self.sol0 = [sp.sparse.linalg.spsolve(self.kern, self.bvec)]
-                    elif solmethod == 'lsqr':     self.sol0 = sp.sparse.linalg.lsqr(self.kern, self.bvec)
-                    elif solmethod == 'lsmr':     self.sol0 = sp.sparse.linalg.lsmr(self.kern, self.bvec)
-                    elif solmethod == 'bicg':     self.sol0 = sp.sparse.linalg.bicg(self.kern, self.bvec)
-                    elif solmethod == 'bicgstab': self.sol0 = sp.sparse.linalg.bicgstab(self.kern, self.bvec)
-                    elif solmethod == 'cgs':      self.sol0 = sp.sparse.linalg.cgs(self.kern, self.bvec)
-                    elif solmethod == 'gmres':    self.sol0 = sp.sparse.linalg.gmres(self.kern, self.bvec)
-                    elif solmethod == 'lgmres':   self.sol0 = sp.sparse.linalg.lgmres(self.kern, self.bvec)
-                    elif solmethod == 'qmr':      self.sol0 = sp.sparse.linalg.qmr(self.kern, self.bvec)
-                '''
+                if   solmethod == 'solve': self.sol0 = [np.linalg.solve(self.kern, self.bvec)]
+                elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(self.kern, self.bvec)
             else:
                 print("WARNING: kern is not generated for calculation of phi0.")
             self.phi0 = self.sol0[0]
@@ -752,9 +736,9 @@ class Transport2vN(object):
         """Restart values of some variables for new calculations."""
         self.kern, self.bvec = None, None
         self.sol0, self.phi0, self.phi1 = None, None, None
-        self.current = None #np.zeros(self.si.nleads, dtype=doublenp) if not self.si is None else None
-        self.energy_current = None #np.zeros(self.si.nleads, dtype=doublenp) if not self.si is None else None
-        self.heat_current = None #np.zeros(self.si.nleads, dtype=doublenp) if not self.si is None else None
+        self.current = None
+        self.energy_current = None
+        self.heat_current = None
         #
         self.niter = -1
         self.phi1k = None
@@ -802,78 +786,8 @@ class Transport2vN(object):
         self.iters.append(Iterations2vN(self))
 
 
-    def save_data(self, dir_name, savekq=False):
-        """
-        Saves the data for given iteration niter.
-
-        Parameters
-        ----------
-        dir_name : 'string'
-            Directory for the data.
-        savekq : bool
-            If savekq=True save the energy resolved variables
-            kern1k, phi1k, phi1k_delta, hphi1k_delta.
-        """
-        if not os.path.exists(dir_name):
-            os.makedirs(dir_name)
-        if savekq:
-            np.savez_compressed(dir_name+'iter'+str(self.niter),
-                                Ek_grid=self.Ek_grid,
-                                Ek_grid_ext=self.Ek_grid_ext,
-                                kern1k=self.kern1k,
-                                phi1k=self.phi1k,
-                                phi1k_delta=self.phi1k_delta,
-                                hphi1k_delta=self.hphi1k_delta,
-                                phi0=self.phi0,
-                                phi1=self.phi1,
-                                current=self.current,
-                                energy_current=self.energy_current,
-                                heat_current=self.heat_current,
-                                niter=self.niter)
-        else:
-            np.savez_compressed(dir_name+'iter'+str(self.niter),
-                                phi0=self.phi0,
-                                phi1=self.phi1,
-                                current=self.current,
-                                energy_current=self.energy_current,
-                                heat_current=self.heat_current,
-                                niter=self.niter)
-
-    def get_data(self, dir_name, it):
-        """
-        Load the data for given iteration it.
-
-        Parameters
-        ----------
-        dir_name : 'string'
-            Directory for the data.
-        it : int
-            Number of the iteration.
-        """
-        npzfile = np.load(dir_name+'iter'+str(it)+'.npz')
-        try:
-            self.Ek_grid = npzfile['Ek_grid']
-            self.Ek_grid_ext = npzfile['Ek_grid_ext']
-            self.kern1k = npzfile['kern1k']
-            self.phi1k = npzfile['phi1k']
-            self.phi1k_delta = npzfile['phi1k_delta']
-            self.hphi1k_delta = npzfile['hphi1k_delta']
-        except:
-            self.Ek_grid = None
-            self.Ek_grid_ext = None
-            self.kern1k = None
-            self.phi1k = None
-            self.phi1k_delta = None
-            self.hphi1k_delta = None
-        self.phi0 = npzfile['phi0']
-        self.phi1 = npzfile['phi1']
-        self.current = npzfile['current']
-        self.energy_current = npzfile['energy_current']
-        self.heat_current = npzfile['heat_current']
-        self.niter = npzfile['niter']
-
-    def solve(self, qdq=True, rotateq=True, masterq=True, saveq=False, savekq=False, restartq=True,
-                    niter=None, dir_name='./iterations/', *args, **kwargs):
+    def solve(self, qdq=True, rotateq=True, masterq=True, restartq=True,
+                    niter=None, func_iter=None, *args, **kwargs):
         """
         Solves the 2vN approach integral equations iteratively.
 
@@ -886,17 +800,14 @@ class Transport2vN(object):
             Rotate the many-body tunneling matrix Tba.
         masterq : bool
             Solve the master equation.
-        saveq : bool
-            Save the data after each iteration in the directory dir_name.
-        savekq : bool
-            Also save the energy resolved variables.
         restartq : bool
             Call restart() and erase old values of variables.
             To continue from the last iteration set restarq=False.
         niter : int
             Number of iterations to perform.
-        dir_name : 'string'
-            Directory for the data.
+        func_iter : function
+            User defined function which is performed after every iteration and
+            takes Transport2vN object as an input.
         """
         if restartq:
             self.restart()
@@ -912,10 +823,9 @@ class Transport2vN(object):
             self.make_Ek_grid()
             #
             for it in range(niter):
-                #print(self.niter+1)
                 self.iterate()
-                if saveq: self.save_data(dir_name, savekq)
-                #print(self.current)
+                if not func_iter is None:
+                    func_iter(self)
 
 class Iterations2vN(object):
     """

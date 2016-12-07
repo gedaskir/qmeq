@@ -99,3 +99,19 @@ cdef int_t func_1vN(double_t Ecb, double_t mu, double_t T,
     #-------------------------
     rez[0], rez[1], rez[2], rez[3] = cur0, cur1, en0, en1
     return 0
+
+def c_fermi_func(double_t x):
+    return fermi_func(x)
+
+def c_func_pauli(double_t Ecb, double_t mu, double_t T,
+                 double_t Dm, double_t Dp, int_t itype):
+    rez = np.zeros(2, dtype=doublenp)
+    func_pauli(Ecb, mu, T, Dm, Dp, itype, rez)
+    return rez
+
+def c_func_1vN(double_t Ecb, double_t mu, double_t T,
+               double_t Dm, double_t Dp,
+               int_t itype, int_t limit):
+    rez = np.zeros(4, dtype=complexnp)
+    func_1vN(Ecb, mu, T, Dm, Dp, itype, limit, rez)
+    return rez

@@ -58,6 +58,7 @@ dist/
 docs/build
 qmeq.egg-info/
 qmeq/build
+qmeq/tests/__pycache__
 
 # Specific directories
 docs/source/_static
@@ -65,7 +66,6 @@ docs/source/_templates
 docs/source/_theme
 project
 qmeq/tests_
-qmeq/tests
 tutorial/.ipynb_checkpoints
 tutorial/various
 tutorial/papers
