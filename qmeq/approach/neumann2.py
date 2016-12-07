@@ -7,12 +7,12 @@ import numpy as np
 from scipy import pi
 import itertools
 
-from .mytypes import complexnp
-from .mytypes import doublenp
-from .mytypes import intnp
+from ..mytypes import complexnp
+from ..mytypes import doublenp
+from ..mytypes import intnp
 
-from .specfunc import kernel_fredriksen
-from .specfunc import hilbert_fredriksen
+from ..specfunc import kernel_fredriksen
+from ..specfunc import hilbert_fredriksen
 
 def func_2vN(Ek, Ek_grid, l, eta, hfk):
     """

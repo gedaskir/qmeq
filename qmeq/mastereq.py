@@ -10,43 +10,6 @@ from scipy import optimize
 import os
 import copy
 
-from .lindbladpy import generate_tLba
-from .lindbladpy import generate_kern_lindblad
-from .lindbladpy import generate_current_lindblad
-from .lindbladpy import generate_vec_lindblad
-from .lindbladc import c_generate_tLba
-from .lindbladc import c_generate_kern_lindblad
-from .lindbladc import c_generate_current_lindblad
-from .lindbladc import c_generate_vec_lindblad
-
-from .neumannpy import generate_phi1fct
-from .neumannpy import generate_paulifct
-from .neumannc import c_generate_phi1fct
-from .neumannc import c_generate_paulifct
-
-from .neumannpy import generate_kern_pauli
-from .neumannpy import generate_current_pauli
-from .neumannpy import generate_kern_1vN
-from .neumannpy import generate_phi1_1vN
-from .neumannpy import generate_vec_1vN
-
-from .neumannc import c_generate_kern_pauli
-from .neumannc import c_generate_current_pauli
-from .neumannc import c_generate_kern_redfield
-from .neumannc import c_generate_phi1_redfield
-from .neumannc import c_generate_vec_redfield
-from .neumannc import c_generate_kern_1vN
-from .neumannc import c_generate_phi1_1vN
-from .neumannc import c_generate_vec_1vN
-
-from .neumann2py import get_phi1_phi0_2vN
-from .neumann2py import kern_phi0_2vN
-from .neumann2py import generate_current_2vN
-from .neumann2py import iterate_2vN
-
-from .neumann2c import c_get_phi1_phi0_2vN
-from .neumann2c import c_iterate_2vN
-
 from .mytypes import doublenp
 from .mytypes import complexnp
 
@@ -63,6 +26,51 @@ from .various import sort_eigenstates
 from .various import remove_states
 from .various import use_all_states
 
+#-----------------------------------------------------------
+# Python modules
+
+from .approach.pauli import generate_paulifct
+from .approach.pauli import generate_kern_pauli
+from .approach.pauli import generate_current_pauli
+
+from .approach.lindblad import generate_tLba
+from .approach.lindblad import generate_kern_lindblad
+from .approach.lindblad import generate_current_lindblad
+from .approach.lindblad import generate_vec_lindblad
+
+from .approach.neumann1 import generate_phi1fct
+from .approach.neumann1 import generate_kern_1vN
+from .approach.neumann1 import generate_phi1_1vN
+from .approach.neumann1 import generate_vec_1vN
+
+from .approach.neumann2 import get_phi1_phi0_2vN
+from .approach.neumann2 import kern_phi0_2vN
+from .approach.neumann2 import generate_current_2vN
+from .approach.neumann2 import iterate_2vN
+
+# Cython compiled modules
+
+from .approach.c_pauli import c_generate_paulifct
+from .approach.c_pauli import c_generate_kern_pauli
+from .approach.c_pauli import c_generate_current_pauli
+
+from .approach.c_lindblad import c_generate_tLba
+from .approach.c_lindblad import c_generate_kern_lindblad
+from .approach.c_lindblad import c_generate_current_lindblad
+from .approach.c_lindblad import c_generate_vec_lindblad
+
+from .approach.c_redfield import c_generate_kern_redfield
+from .approach.c_redfield import c_generate_phi1_redfield
+from .approach.c_redfield import c_generate_vec_redfield
+
+from .approach.c_neumann1 import c_generate_phi1fct
+from .approach.c_neumann1 import c_generate_kern_1vN
+from .approach.c_neumann1 import c_generate_phi1_1vN
+from .approach.c_neumann1 import c_generate_vec_1vN
+
+from .approach.c_neumann2 import c_get_phi1_phi0_2vN
+from .approach.c_neumann2 import c_iterate_2vN
+#-----------------------------------------------------------
 
 class Builder(object):
     """

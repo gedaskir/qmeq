@@ -1,7 +1,7 @@
-qmeq.various module
+qmeq.mytypes module
 ===================
 
-.. automodule:: qmeq.various
+.. automodule:: qmeq.mytypes
     :members:
     :undoc-members:
     :show-inheritance:

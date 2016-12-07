@@ -1,5 +1,5 @@
 qmeq.qdot module
-===================
+================
 
 .. automodule:: qmeq.qdot
     :members:

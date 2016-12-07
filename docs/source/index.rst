@@ -6,6 +6,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
+   Ajajai <INSTALL.md>
    qmeq.rst
    Indexing of states <qmeq.indexing.rst>
    Quantum dot Hamiltonian <qmeq.qdot.rst>

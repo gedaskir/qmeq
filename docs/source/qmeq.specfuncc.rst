@@ -1,7 +1,7 @@
-qmeq.neumannpy module
+qmeq.specfuncc module
 =====================
 
-.. automodule:: qmeq.neumannpy
+.. automodule:: qmeq.specfuncc
     :members:
     :undoc-members:
     :show-inheritance:

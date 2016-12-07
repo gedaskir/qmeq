@@ -1,27 +1,25 @@
 QmeQ package
 ============
 
-Submodules
-----------
+Modules
+-------
 
 .. toctree::
 
+   qmeq.approach
    qmeq.indexing
    qmeq.leadstun
    qmeq.mastereq
-   qmeq.neumann2c
-   qmeq.neumann2py
-   qmeq.neumannc
-   qmeq.neumannpy
-   qmeq.neumannpy_complex
+   qmeq.mytypes
    qmeq.qdot
    qmeq.specfunc
    qmeq.various
 
-Module contents
----------------
+Cython modules
+--------------
 
-.. automodule:: qmeq
-    :members:
-    :undoc-members:
-    :show-inheritance:
+.. toctree::
+
+   qmeq.approachc
+   qmeq.specfuncc
+

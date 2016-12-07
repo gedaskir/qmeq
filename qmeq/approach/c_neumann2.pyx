@@ -1,5 +1,5 @@
 """Module containing cython functions, which solve 2vN approach integral equations.
-   For docstrings see documentation of module neumann2py."""
+   For docstrings see documentation of module neumann2."""
 
 # cython: profile=True
 
@@ -9,15 +9,15 @@ from __future__ import print_function
 import numpy as np
 import itertools
 
-from .specfunc import kernel_fredriksen
-from .specfunc import hilbert_fredriksen
-from .neumann2py import get_emin_emax
-from .neumann2py import get_grid_ext
-from .neumann2py import get_htransf_phi1k
-from .neumann2py import get_htransf_fk
+from ..specfunc import kernel_fredriksen
+from ..specfunc import hilbert_fredriksen
+from .neumann2 import get_emin_emax
+from .neumann2 import get_grid_ext
+from .neumann2 import get_htransf_phi1k
+from .neumann2 import get_htransf_fk
 
-from .mytypes import doublenp
-from .mytypes import complexnp
+from ..mytypes import doublenp
+from ..mytypes import complexnp
 
 cimport numpy as np
 cimport cython
