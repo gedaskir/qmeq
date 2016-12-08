@@ -243,11 +243,11 @@ class Builder(object):
             return getattr(self.tt, item)
         elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit', 'mfreeq', 'phi0_init'}:
             return getattr(self.funcp, item)
-        elif item in {'tleads', 'mulst', 'tlst', 'dlst'}:
+        elif item in {'tleads', 'mulst', 'tlst', 'dlst', 'Tba'}:
             return getattr(self.leads, item)
         elif item in {'nsingle', 'nleads'}:
             return getattr(self.si, item)
-        elif item in {'hsingle', 'coulomb', 'Ea', 'Tba'}:
+        elif item in {'hsingle', 'coulomb', 'Ea'}:
             return getattr(self.qd, item)
         else:
             #return self.__getattribute__(item)
@@ -259,11 +259,11 @@ class Builder(object):
             setattr(self.tt, item, value)
         elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit', 'mfreeq', 'phi0_init'}:
             setattr(self.funcp, item, value)
-        elif item in {'tleads', 'mulst', 'tlst', 'dlst'}:
+        elif item in {'tleads', 'mulst', 'tlst', 'dlst', 'Tba'}:
             setattr(self.leads, item, value)
         elif item in {'nsingle', 'nleads'}:
             setattr(self.si, item, value)
-        elif item in {'hsingle', 'coulomb', 'Ea', 'Tba'}:
+        elif item in {'hsingle', 'coulomb', 'Ea'}:
             setattr(self.qd, item, value)
         else:
             super(Builder, self).__setattr__(item, value)
@@ -464,7 +464,7 @@ class FunctionProperties(object):
         if not self.suppress_err:
             print(str(exept))
             print("WARNING: Could not invert the kernel. "+
-                  "All the transport channels may be outside the bandwidth."+
+                  "All the transport channels may be outside the bandwidth. "+
                   "This warning will not be shown again.")
             self.suppress_err = True
 

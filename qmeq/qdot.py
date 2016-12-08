@@ -549,10 +549,9 @@ def make_hsingle_mtr(hsingle, nsingle, mtype=float):
         hsingle by hsingle numpy array containing single particle Hamiltonian.
     """
     hsingle_mtr = np.zeros((nsingle, nsingle), dtype=mtype)
-    htype = type(hsingle).__name__
     for j0 in hsingle:
-        if htype == 'list':    j1, j2, hop = j0
-        elif htype == 'dict': (j1, j2), hop = j0, hsingle[j0]
+        if isinstance(hsingle, list):    j1, j2, hop = j0
+        elif isinstance(hsingle, dict): (j1, j2), hop = j0, hsingle[j0]
         hsingle_mtr[j1, j2] += hop
         if j1 != j2:
             hsingle_mtr[j2, j1] += hop.conjugate()
@@ -573,14 +572,13 @@ def make_hsingle_dict(hsingle):
         Dictionary containing single particle Hamiltonian.
         hsingle[(state1, state2)] gives the matrix element.
     """
-    htype = type(hsingle).__name__
-    if htype == 'list':
+    if isinstance(hsingle, list):
         hsingle_dict = {}
         for j0 in hsingle:
             j1, j2, hop = j0
             hsingle_dict.update({(j1, j2):hop})
         return hsingle_dict
-    elif htype == 'ndarray':
+    elif isinstance(hsingle, np.ndarray):
         nsingle = hsingle.shape[0]
         hsingle_dict = {}
         for j1 in range(nsingle):
@@ -588,7 +586,7 @@ def make_hsingle_dict(hsingle):
                 if hsingle[j1, j2] != 0:
                     hsingle_dict.update({(j1, j2):hsingle[j1, j2]})
         return hsingle_dict
-    elif htype == 'dict':
+    elif isinstance(hsingle, dict):
         return hsingle
 
 def make_coulomb_dict(coulomb):
@@ -606,14 +604,13 @@ def make_coulomb_dict(coulomb):
         Dictionary containing coulomb matrix element.
         coulomb[(state1, state2, state3, state4)] gives the coulomb matrix element U.
     """
-    htype = type(coulomb).__name__
-    if htype == 'list' or htype == 'ndarray':
+    if isinstance(coulomb, (list, np.ndarray)):
         coulomb_dict = {}
         for j0 in coulomb:
             m, n, k, l, U = j0
             coulomb_dict.update({(m, n, k, l):U})
         return coulomb_dict
-    elif htype == 'dict':
+    elif isinstance(coulomb, dict):
         return coulomb
 #---------------------------------------------------------------------------------------------------
 
@@ -748,8 +745,8 @@ class QuantumDot(object):
             hsingle = {} if hsingle is None else hsingle
             coulomb = {} if coulomb is None else coulomb
             #
-            hsinglep = hsingle if type(hsingle).__name__ == 'dict' else make_hsingle_dict(hsingle)
-            coulombp = coulomb if type(coulomb).__name__ == 'dict' else make_coulomb_dict(coulomb)
+            hsinglep = hsingle if isinstance(hsingle, dict) else make_hsingle_dict(hsingle)
+            coulombp = coulomb if isinstance(coulomb, dict) else make_coulomb_dict(coulomb)
             #
             hsingle_add = {}
             coulomb_add = {}

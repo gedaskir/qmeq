@@ -232,5 +232,3 @@ def test_QuantumDot():
             assert norm(qd.hamlst[3][0] - [[145.23, 0.77], [0.77, 65.01]]) < EPS
             assert qd.hamlst[3][1] == None
             assert norm(qd.hamlst[4][0] - [[207.01]]) < EPS
-
-test_QuantumDot()

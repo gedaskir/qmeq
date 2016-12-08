@@ -49,6 +49,6 @@ License
 QmeQ has [The BSD 2-Clause License][license] and it can be found
 in [LICENSE.md](LICENSE.md).
 
-[tutorial]: https://github.com/gedaskir/qmeq/tree/master/tutorial/tutorial.ipynb
-[examples]: https://github.com/gedaskir/qmeq/tree/master/tutorial
+[tutorial]: https://github.com/gedaskir/qmeq-examples/tree/master/tutorial/tutorial.ipynb
+[examples]: https://github.com/gedaskir/qmeq-examples
 [license]: https://opensource.org/licenses/BSD-2-Clause

@@ -9,7 +9,7 @@ import itertools
 from ..mytypes import complexnp
 from ..mytypes import doublenp
 
-from ..specfunc import func_pauli
+from ..specfunc import func_1vN
 
 def generate_phi1fct(sys):
     """

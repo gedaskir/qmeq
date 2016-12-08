@@ -29,7 +29,6 @@ def test_szrange():
     assert szrange(3, 6) == [-3, -1, 1, 3]
     assert szrange(4, 6) == [-2, 0, 2]
 
-
 def test_empty_szlst():
     assert empty_szlst(4) == [[[]],
                               [[], []],

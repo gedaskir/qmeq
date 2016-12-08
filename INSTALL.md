@@ -4,7 +4,7 @@ Installation of QmeQ
 For now QmeQ can be installed by building it from source. To be able to use and
 build QmeQ you need to have:
 
-* [Python][Python] 2.7 or 3.0 with [setuptools][setuptools] installed,
+* [Python][Python] 2.7 or 3.3 with [setuptools][setuptools] installed,
 * [Cython][Cython] 0.22 and a C compiler compatible with it,
 * [NumPy][NumPy] package,
 * [SciPy][Scipy] package.

@@ -3,6 +3,9 @@
 # Library files .o
 *.o
 
+# Library files .so
+*.so
+
 # Python byte files *.pyc
 *.pyc
 
@@ -12,32 +15,18 @@
 # Text files *.txt
 *.txt
 
-# Sublime workspace files
-*.sublime-workspace
-
-# Corel Draw files
-*.cdr
-
 # Specific files
+docs/index.html.lnk
+docs/run.bat
+qmeq/pylintrc
+qmeq/specfuncc.c
 qmeq/approach/c_pauli.c
 qmeq/approach/c_lindblad.c
 qmeq/approach/c_redfield.c
 qmeq/approach/c_neumann1.c
 qmeq/approach/c_neumann2.c
-qmeq/specfuncc.c
-#
 qmeq/approach/_complex_redfield.py
 qmeq/approach/_complex_neumann1.py
-#
-qmeq/pylintrc
-#
-docs/index.html.lnk
-docs/run.bat
-docs/source/conf_scipy.py
-docs/source/conf_standard.py
-#
-tutorial/example_anderson.ipynb
-tutorial/example_anderson.py
 
 ### Directories
 
@@ -51,11 +40,5 @@ qmeq/build
 qmeq/tests/__pycache__
 
 # Specific directories
-docs/source/_static
-docs/source/_templates
-docs/source/_theme
-project
+project/
 qmeq/tests_
-tutorial/.ipynb_checkpoints
-tutorial/various
-tutorial/papers

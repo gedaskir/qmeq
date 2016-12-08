@@ -11,16 +11,18 @@ dirs = ['./.cache',
         './qmeq.egg-info',
         './qmeq/__pycache__',
         './qmeq/build',
-        './qmeq/tests/__pycache__']
+        './qmeq/approach/__pycache__',
+        './qmeq/tests/__pycache__',
+        './qmeq/tests_/__pycache__']
 
 for dr in dirs:
     try: shutil.rmtree(dr)
     except: pass
 
-files = ( glob('./qmeq/*.pyd')
-         +glob('./qmeq/*.pyc')
-         +glob('./qmeq/*.c')
-         +glob('./qmeq/*.html') )
+files = ( glob('./qmeq/*.pyd') + glob('./qmeq/approach/*.pyd')
+         +glob('./qmeq/*.pyc') + glob('./qmeq/approach/*.pyc')
+         +glob('./qmeq/*.c') + glob('./qmeq/approach/*.c')
+         +glob('./qmeq/*.html') + glob('./qmeq/approach/*.html') )
 
 for f in files:
     os.remove(f)

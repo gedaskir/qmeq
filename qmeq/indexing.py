@@ -109,7 +109,7 @@ def szrange(charge, nsingle):
         List containing :math:`S_{z}` values for given charge.
     """
     szmax = min(charge, nsingle-charge)
-    return range(-szmax, szmax+1, +2)
+    return list(range(-szmax, szmax+1, +2))
     #return range(szmax, -szmax-1, -2)
 
 def empty_szlst(nsingle, noneq=False):
@@ -200,7 +200,7 @@ def ssqrange(charge, sz, nsingle):
         List of all possible :math:`S^{2}` values for given charge and :math:`S_{z}`.
     """
     szmax = min(charge, nsingle-charge)
-    return range(abs(sz), szmax+1, +2)
+    return list(range(abs(sz), szmax+1, +2))
 
 def empty_ssqlst(nsingle, noneq=False):
     """
@@ -304,7 +304,7 @@ def enum_chargelst(chargelst_lin):
     counter1 = 0
     for j1 in range(ncharge):
         counter2 = counter1 + len(chargelst_lin[j1])
-        chargelst[j1] = range(counter1, counter2)
+        chargelst[j1] = list(range(counter1, counter2))
         counter1 = counter2
     return chargelst
 
@@ -329,7 +329,7 @@ def enum_szlst(szlst_lin):
     for j1 in range(ncharge):
         for j2 in range(len(szlst_lin[j1])):
             counter2 = counter1 + len(szlst_lin[j1][j2])
-            szlst[j1][j2] = range(counter1, counter2)
+            szlst[j1][j2] = list(range(counter1, counter2))
             counter1 = counter2
     return szlst
 
@@ -479,20 +479,20 @@ class StateIndexing(object):
             print("WARNING: For 'sz' or 'ssq' indexing, nsingle has to be even. Using 'Lin' indexing.")
             self.indexing = 'Lin'
             self.chargelst = construct_chargelst(nsingle)
-            self.i = range(self.nmany)
+            self.i = list(range(self.nmany))
         elif indexing == 'Lin':
             self.chargelst = construct_chargelst(nsingle)
-            self.i = range(self.nmany)
+            self.i = list(range(self.nmany))
         else:
             print("WARNING: The indexing has to be 'Lin', 'charge', or 'sz'. Using 'Lin' indexing.")
             self.indexing = 'Lin'
             self.chargelst = construct_chargelst(nsingle)
-            self.i = range(self.nmany)
+            self.i = list(range(self.nmany))
         self.j = make_inverse_map(self.i)
         # Note that these quantum numbers to state and state to quantum numbers dictionaries
         # are necessary only for ssq indexing
         self.qn_ind, self.ind_qn = make_quantum_numbers(self)
-        self.states_order = range(self.nmany)
+        self.states_order = list(range(self.nmany))
 
     def get_state(self, ind, linq=False, strq=False):
         """

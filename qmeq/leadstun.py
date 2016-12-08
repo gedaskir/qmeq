@@ -5,6 +5,7 @@ from __future__ import division
 from __future__ import print_function
 import numpy as np
 import itertools
+import numbers
 
 from .indexing import szrange
 from .indexing import ssqrange
@@ -214,10 +215,9 @@ def make_tleads_mtr(tleads, nleads, nsingle, mtype=complex):
         nleads by nsingle numpy array containing single particle tunneling amplitudes.
     """
     tleads_mtr = np.zeros((nleads, nsingle), dtype=mtype)
-    htype = type(tleads).__name__
     for j0 in tleads:
-        if htype == 'list':    j1, j2, tamp = j0
-        elif htype == 'dict': (j1, j2), tamp = j0, tleads[j0]
+        if isinstance(tleads, list):    j1, j2, tamp = j0
+        elif isinstance(tleads, dict): (j1, j2), tamp = j0, tleads[j0]
         tleads_mtr[j1, j2] += tamp
     return tleads_mtr
 
@@ -236,14 +236,13 @@ def make_tleads_dict(tleads):
         Dictionary containing tunneling amplitudes.
         tleads[(lead, state)] gives the tunneling amplitude.
     """
-    htype = type(tleads).__name__
-    if htype == 'list':
+    if isinstance(tleads, list):
         tleads_dict = {}
         for j0 in tleads:
             j1, j2, tamp = j0
             tleads_dict.update({(j1, j2):tamp})
         return tleads_dict
-    elif htype == 'ndarray':
+    elif isinstance(tleads, np.ndarray):
         nleads, nsingle = tleads.shape
         tleads_dict = {}
         for j1 in range(nleads):
@@ -251,7 +250,7 @@ def make_tleads_dict(tleads):
                 if tleads[j1, j2] != 0:
                     tleads_dict.update({(j1, j2):tleads[j1, j2]})
         return tleads_dict
-    elif htype == 'dict':
+    elif isinstance(tleads, dict):
         return tleads
 
 def make_array(lst, nleads):
@@ -270,35 +269,33 @@ def make_array(lst, nleads):
     lst_arr : array
         Numpy array containing lead parameters.
     """
-    htype = type(lst).__name__
-    if htype == 'dict':
+    if isinstance(lst, dict):
         lst_arr = np.zeros(nleads, dtype=doublenp)
         for j1 in lst:
             lst_arr[j1] = lst[j1]
         return lst_arr
-    elif htype in {'list', 'ndarray'}:
+    elif isinstance(lst, (list, np.ndarray)):
         return np.array(lst, dtype=doublenp)
     else:
         return np.zeros(nleads, dtype=doublenp)
 
 def make_array_dlst(dlst, nleads):
-    htype = type(dlst).__name__
     lst_arr = np.zeros((nleads,2), dtype=doublenp)
-    if htype == 'dict':
+    if isinstance(dlst, numbers.Number):
+        lst_arr[:,0] = -dlst*np.ones(nleads, dtype=doublenp)
+        lst_arr[:,1] = +dlst*np.ones(nleads, dtype=doublenp)
+    elif isinstance(dlst, dict):
         for j1 in dlst:
-            if type(dlst[j1]).__name__ in {'float', 'int'}:
+            if isinstance(dlst[j1], numbers.Number):
                 lst_arr[j1] = (-dlst[j1], dlst[j1])
             else:
                 lst_arr[j1] = dlst[j1]
-    elif htype in {'float', 'int'}:
-        lst_arr[:,0] = -dlst*np.ones(nleads, dtype=doublenp)
-        lst_arr[:,1] = +dlst*np.ones(nleads, dtype=doublenp)
-    elif htype in {'list', 'ndarray'}:
-        if type(dlst[0]).__name__ in {'list', 'tuple', 'ndarray'}:
-            lst_arr = np.array(dlst, dtype=doublenp)
-        else:
+    elif isinstance(dlst, (list, np.ndarray)):
+        if isinstance(dlst[0], numbers.Number):
             lst_arr[:,0] = -np.array(dlst, dtype=doublenp)
             lst_arr[:,1] = +np.array(dlst, dtype=doublenp)
+        else:
+            lst_arr = np.array(dlst, dtype=doublenp)
     return lst_arr
 #---------------------------------------------------------------------------------------------------
 
@@ -363,7 +360,7 @@ class LeadsTunneling(object):
             self.tlst = self.tlst if tlst is None else self.tlst + make_array(tlst, self.stateind.nleads)
             self.dlst = self.dlst if dlst is None else self.dlst + make_array_dlst(dlst, self.stateind.nleads)
         if not tleads is None:
-            tleadsp = tleads if type(tleads).__name__ == 'dict' else make_tleads_dict(tleads)
+            tleadsp = tleads if isinstance(tleads, dict) else make_tleads_dict(tleads)
             self.Tba0 = construct_Tba(tleadsp, self.stateind, self.mtype, self.Tba0)
             if updateq:
                 for j0 in tleadsp:
@@ -385,23 +382,23 @@ class LeadsTunneling(object):
             The many-body tunneling amplitudes Tba will be updates in either case.
         """
         if not mulst is None:
-            if type(mulst).__name__ == 'dict':
+            if isinstance(mulst, dict):
                 for j0 in mulst:
                     self.mulst[j0] = mulst[j0]
             else:
                 self.mulst = make_array(mulst, self.stateind.nleads)
         #
         if not tlst is None:
-            if type(tlst).__name__ == 'dict':
+            if isinstance(tlst, dict):
                 for j0 in tlst:
                     self.tlst[j0] = tlst[j0]
             else:
                 self.tlst = make_array(tlst, self.stateind.nleads)
         #
         if not dlst is None:
-            if type(dlst).__name__ == 'dict':
+            if isinstance(dlst, dict):
                 for j0 in dlst:
-                    if type(dlst[j0]).__name__ in {'int', 'float'}:
+                    if isinstance(dlst[j0], numbers.Number):
                         self.dlst[j0] = (-dlst[j0], dlst[j0])
                     else:
                         self.dlst[j0] = dlst[j0]
@@ -409,7 +406,7 @@ class LeadsTunneling(object):
                 self.dlst = make_array_dlst(dlst, self.stateind.nleads)
         #
         if not tleads is None:
-            tleadsp = tleads if type(tleads).__name__ == 'dict' else make_tleads_dict(tleads)
+            tleadsp = tleads if isinstance(tleads, dict) else make_tleads_dict(tleads)
             # Find the differences from the previous tunneling amplitudes
             tleads_add = {}
             for j0 in tleadsp:

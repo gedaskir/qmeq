@@ -3,8 +3,6 @@ from numpy.linalg import norm
 from qmeq.mastereq import *
 import qmeq
 import itertools
-import pickle
-import os
 
 EPS = 1e-11
 CHECK_PY = False
@@ -84,30 +82,29 @@ class Calcs(object):
     def __init__(self):
         pass
 
-def save_Builder_double_dot_spinful(fname='test_mastereq.pkl'):
+def save_Builder_double_dot_spinful(fname='data_mastereq.py'):
     p = Parameters_double_dot_spinful()
-    data = {}
+    #data = {}
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad', 'pyPauli', 'py1vN', 'pyLindblad']
+    #kerns = ['Pauli']
     itypes = [0, 1, 2]
+    data = 'data = {\n'
+    dataR = ''
     for kerntype, itype in itertools.product(kerns, itypes):
         if not ( kerntype in {'Pauli', 'pyPauli', 'Lindblad', 'pyLindblad'} and itype in [0, 1] ):
             system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
                              kerntype=kerntype, itype=itype)
             system.solve()
             attr = kerntype+str(itype)
-            data.update({attr+'current': system.current})
-            data.update({attr+'energy_current': system.energy_current})
-            if kerntype is 'Redfield':
-                data.update({attr+'phi1fct': system.tt.phi1fct})
-                data.update({attr+'phi1fct_energy': system.tt.phi1fct_energy})
+            data = data+' '*4+'\''+attr+'current\': '+str(system.current.tolist())+',\n'
+            data = data+' '*4+'\''+attr+'energy_current\': '+str(system.energy_current.tolist())
+            data = data + ('\n    }' if kerntype is 'pyLindblad' and itype is 2 else ',\n' )
     #
-    with open(fname, 'wb') as f:
-        pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+    with open(fname, 'w') as f:
+        f.write(data)
 
 def test_Builder_double_dot_spinful():
-    fname = os.path.join(os.path.dirname(__file__), 'test_mastereq.pkl')
-    with open(fname, 'rb') as f:
-        data = pickle.load(f)
+    from data_mastereq import data
     p = Parameters_double_dot_spinful()
     calcs = Calcs()
 
@@ -131,15 +128,9 @@ def test_Builder_double_dot_spinful():
                 print( data[attr+'energy_current'] )
                 print( norm(system.current - data[attr+'current']) )
                 print( norm(system.energy_current - data[attr+'energy_current']) )
-                if kerntype is 'Redfield':
-                    print( norm(system.tt.phi1fct- data[attr+'phi1fct']) )
-                    print( norm(system.tt.phi1fct_energy - data[attr+'phi1fct_energy']) )
             #
             assert norm(system.current - data[attr+'current']) < EPS
             assert norm(system.energy_current - data[attr+'energy_current']) < EPS
-            if kerntype is 'Redfield':
-                assert norm(system.tt.phi1fct- data[attr+'phi1fct']) < EPS
-                assert norm(system.tt.phi1fct_energy - data[attr+'phi1fct_energy']) < EPS
 
     # Check least-squares solution with non-square matrix, i.e., symq=False
     for kerntype in kerns:
@@ -243,11 +234,3 @@ def test_Transport2vN_make_Ek_grid():
     tt.leads.change(dlst={0: [-1400, 1000], 1: [-1000, 1000]})
     tt.make_Ek_grid()
     assert tt.Ek_grid.tolist() == [-1400.0, -800.0, -200.0, 400.0, 1000.0]
-
-if __name__ == "__main__":
-    #test_Builder_double_dot_spinful()
-    #test_Transport2vN_kpnt()
-    #test_Transport2vN_make_Ek_grid()
-    #test_Builder_double_dot_spinless_2vN()
-    pass
-
