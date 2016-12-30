@@ -65,8 +65,8 @@ cdef int_t func_1vN(double_t Ecb, double_t mu, double_t T,
     cdef double_t alpha, Rm, Rp, err
     cdef complex_t cur0, cur1, en0, en1, const0, const1
     #-------------------------
-    alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
     if itype == 0:
+        alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
         cur0, err = quad(fermi_func, Rm, Rp, weight='cauchy', wvar=alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
         cur0 = cur0 + (-1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0.0j)
         cur1 = cur0 + log(abs((Rm-alpha)/(Rp-alpha)))
@@ -79,6 +79,7 @@ cdef int_t func_1vN(double_t Ecb, double_t mu, double_t T,
         en0 = const0 + Ecb*cur0
         en1 = const1 + Ecb*cur1
     elif itype == 1:
+        alpha, Rm, Rp = (Ecb-mu)/T, Dm/T, Dp/T
         cur0 = digamma(0.5+1.0j*alpha/(2*pi)).real - log(abs(Rm)/(2*pi))
         cur0 = cur0 - 1.0j*pi*fermi_func(alpha)
         cur1 = cur0 + log(abs(Rm/Rp))
@@ -87,11 +88,13 @@ cdef int_t func_1vN(double_t Ecb, double_t mu, double_t T,
         en0 = -T*Rm + Ecb*cur0
         en1 = -T*Rp + Ecb*cur1
     elif itype == 2:
+        alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
         cur0 = -1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0.0j
         cur1 = cur0 + (1.0j*pi if alpha < Rp and alpha > Rm else 0.0j)
         en0 = Ecb*cur0
         en1 = Ecb*cur1
     elif itype == 3:
+        alpha = (Ecb-mu)/T
         cur0 = -1.0j*pi*fermi_func(alpha)
         cur1 = cur0 + 1.0j*pi
         en0 = Ecb*cur0

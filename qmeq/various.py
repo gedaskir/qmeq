@@ -304,7 +304,11 @@ def print_state(sys, b_, eps=0.0, prntq=True, filename=None, separator=''):
         sout = 'S^z [in units of 1/2]: '+ str(sz) + '\n' + sout
         szind = sz_to_ind(sz, charge, si.nsingle)
         ind = si.szlst[charge][szind].index(b)
-        for j1 in range(len(si.szlst[charge][szind])):
+        coeffs = np.array([abs(sys.qd.vecslst[charge][szind][:, ind]),
+                           range(len(si.szlst[charge][szind]))])
+        coeffs = np.array(multiarray_sort(coeffs)[1], dtype=int)
+        #for j1 in range(len(si.szlst[charge][szind])):
+        for j1 in reversed(coeffs):
             sn = si.szlst[charge][szind][j1]
             val = sys.qd.vecslst[charge][szind][j1, ind]
             if abs(val) >= eps:
@@ -316,7 +320,11 @@ def print_state(sys, b_, eps=0.0, prntq=True, filename=None, separator=''):
         szind = sz_to_ind(sz, charge, si.nsingle)
         ssqind = ssq_to_ind(ssq, sz)
         ind = si.ssqlst[charge][szind][ssqind].index(b)
-        for j1 in range(len(si.szlst[charge][szind])):
+        coeffs = np.array([abs(sys.qd.vecslst[charge][szind][ssqind][:, ind]),
+                           range(len(si.szlst[charge][szind]))])
+        coeffs = np.array(multiarray_sort(coeffs)[1], dtype=int)
+        #for j1 in range(len(si.szlst[charge][szind])):
+        for j1 in reversed(coeffs):
             sn = si.szlst[charge][szind][j1]
             val = sys.qd.vecslst[charge][szind][ssqind][j1, ind]
             if abs(val) >= eps:
@@ -325,7 +333,11 @@ def print_state(sys, b_, eps=0.0, prntq=True, filename=None, separator=''):
         charge, alpha = si.ind_qn[b]
         #ind = si.dictdm[b]
         ind = si.chargelst[charge].index(b)
-        for j1 in range(len(si.chargelst[charge])):
+        coeffs = np.array([abs(sys.qd.vecslst[charge][:, ind]),
+                           range(len(si.chargelst[charge]))])
+        coeffs = np.array(multiarray_sort(coeffs)[1], dtype=int)
+        #for j1 in range(len(si.chargelst[charge])):
+        for j1 in reversed(coeffs):
             sn = si.chargelst[charge][j1]
             val = sys.qd.vecslst[charge][j1, ind]
             if abs(val) >= eps:

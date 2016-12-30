@@ -90,8 +90,8 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
         en0 - particle energy current amplitude.
         en1 - hol energy current amplitude.
     """
-    alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
     if itype == 0:
+        alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
         cur0, err = quad(fermi_func, Rm, Rp, weight='cauchy', wvar=alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
         cur0 = cur0 + (-1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0)
         cur1 = cur0 + log(abs((Rm-alpha)/(Rp-alpha)))
@@ -104,6 +104,7 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
         en0 = const0 + Ecb*cur0
         en1 = const1 + Ecb*cur1
     elif itype == 1:
+        alpha, Rm, Rp = (Ecb-mu)/T, Dm/T, Dp/T
         cur0 = digamma(0.5+1.0j*alpha/(2*pi)).real - log(abs(Rm)/(2*pi))
         cur0 = cur0 - 1.0j*pi*fermi_func(alpha)
         cur1 = cur0 + log(abs(Rm/Rp))
@@ -112,11 +113,13 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
         en0 = -T*Rm + Ecb*cur0
         en1 = -T*Rp + Ecb*cur1
     elif itype == 2:
+        alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
         cur0 = -1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0
         cur1 = cur0 + (1.0j*pi if alpha < Rp and alpha > Rm else 0)
         en0 = Ecb*cur0
         en1 = Ecb*cur1
     elif itype == 3:
+        alpha = (Ecb-mu)/T
         cur0 = -1.0j*pi*fermi_func(alpha)
         cur1 = cur0 + 1.0j*pi
         en0 = Ecb*cur0

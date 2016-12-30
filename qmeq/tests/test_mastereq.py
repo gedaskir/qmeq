@@ -29,12 +29,7 @@ class Parameters_double_dot_spinful(object):
         vbias, temp, dband = 5.0, 50.0, 1000.0
         self.mulst = [vbias/2, -vbias/2, vbias/2, -vbias/2]
         self.tlst = [temp, temp, temp, temp]
-        #self.dlst = [dband, dband, dband, dband]
-        self.dlst = [[-dband+vbias/2, dband+vbias/2],
-                     [-dband-vbias/2, dband-vbias/2],
-                     [-dband+vbias/2, dband+vbias/2],
-                     [-dband-vbias/2, dband-vbias/2]]
-        #
+        self.dlst = [dband, dband, dband, dband]
         self.nsingle, self.nleads = 4, 4
 
 class Parameters_double_dot_spinless(object):
