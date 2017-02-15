@@ -123,7 +123,7 @@ def get_phi0(sys, b_, bp_):
 
 def get_phi1(sys, l, c_, b_):
     '''
-    Get the momentum integrated current amplitudes corresponding to
+    Get the energy integrated current amplitudes corresponding to
     lead l and many-body states c and b.
 
     Parameters

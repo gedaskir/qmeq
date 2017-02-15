@@ -339,7 +339,7 @@ class Builder(object):
 
     def get_phi1(self, l, c, b):
         '''
-        Get the momentum integrated current amplitudes corresponding to
+        Get the energy integrated current amplitudes corresponding to
         lead l and many-body states c and b.
         '''
         return get_phi1(self, l, c, b)

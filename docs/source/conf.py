@@ -22,8 +22,8 @@ project = u'qmeq'
 copyright = u'2016, Gediminas Kirsanskas'
 author = u'Gediminas Kirsanskas'
 
-version = u'0.0'
-release = u'0.0'
+version = u'1.0'
+release = u'1.0'
 
 language = None
 #today = ''

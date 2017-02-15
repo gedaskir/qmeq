@@ -32,7 +32,7 @@ ext = [# Pauli
 cext = cythonize(ext)
 
 setup(name='qmeq',
-      version='0.0',
+      version='1.0',
       description='Package for solving master equations',
       url='http://github.com/gedaskir/qmeq',
       author='Gediminas Kirsanskas',

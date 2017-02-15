@@ -54,12 +54,12 @@ def construct_Tba(tleads, stateind, mtype=complex, Tba_=None):
                 statep = list(state)
                 statep[j2] = 1
                 ind = stateind.get_ind(statep)
-                Tba[j3, ind, j1] += fsign*np.conj(tamp)
+                Tba[j3, ind, j1] += fsign*tamp
             else:
                 statep = list(state)
                 statep[j2] = 0
                 ind = stateind.get_ind(statep)
-                Tba[j3, ind, j1] += fsign*tamp
+                Tba[j3, ind, j1] += fsign*np.conj(tamp)
     return Tba
 
 def construct_full_pmtr(vecslst, stateind, mtype=complex):
