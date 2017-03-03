@@ -32,6 +32,7 @@ from .various import use_all_states
 from .approach.pauli import generate_paulifct
 from .approach.pauli import generate_kern_pauli
 from .approach.pauli import generate_current_pauli
+from .approach.pauli import generate_vec_pauli
 
 from .approach.lindblad import generate_tLba
 from .approach.lindblad import generate_kern_lindblad
@@ -53,6 +54,7 @@ from .approach.neumann2 import iterate_2vN
 from .approach.c_pauli import c_generate_paulifct
 from .approach.c_pauli import c_generate_kern_pauli
 from .approach.c_pauli import c_generate_current_pauli
+from .approach.c_pauli import c_generate_vec_pauli
 
 from .approach.c_lindblad import c_generate_tLba
 from .approach.c_lindblad import c_generate_kern_lindblad
@@ -229,11 +231,6 @@ class Builder(object):
             qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
             leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dband, mtype_leads)
             tt = Transport(qd, leads, si, funcp)
-
-        if mfreeq and phi0_init is None and not kerntype in {'Pauli', 'pyPauli', '2vN', 'py2vN'}:
-            print('"WARNING: For mfreeq=True no phi0_init is specified. Using phi0_init[0]=1.0 as a default.')
-            funcp.phi0_init = np.zeros(si.ndm0r, dtype=doublenp)
-            funcp.phi0_init[0] = 1.0
 
         self.funcp, self.si, self.qd, self.leads, self.tt = funcp, si, qd, leads, tt
 
@@ -459,6 +456,7 @@ class FunctionProperties(object):
         self.ext_fct = 1.1
         #
         self.suppress_err = False
+        self.suppress_wrn = [False]
 
     def print_error(self, exept):
         if not self.suppress_err:
@@ -467,6 +465,11 @@ class FunctionProperties(object):
                   "All the transport channels may be outside the bandwidth. "+
                   "This warning will not be shown again.")
             self.suppress_err = True
+
+    def print_warning(self, i, message):
+        if not self.suppress_wrn[i]:
+            print(message)
+            self.suppress_wrn[i] = True
 
 class Transport(object):
     """
@@ -572,18 +575,27 @@ class Transport(object):
 
     def solve_matrix_free(self):
         """Finds the stationary state using matrix free methods like broyden, krylov, etc."""
-        if self.funcp.kerntype in {'Pauli', 'pyPauli'}:
-            return 0
-        if self.funcp.phi0_init is None:
-            print("WARNING: The initial guess phi0_init is not specified.")
-            return 0
         solmethod = self.funcp.solmethod
         kerntype = self.funcp.kerntype
+        #
         phi0_init = self.funcp.phi0_init
+        if phi0_init is None:
+            self.funcp.print_warning(0, "WARNING: For mfreeq=True no phi0_init is specified. "+
+                                        "Using phi0_init[0]=1.0 as a default. "+
+                                        "This warning will not be shown again.")
+            if kerntype in {'Pauli', 'pyPauli'}:
+                phi0_init = np.zeros(self.si.npauli, dtype=doublenp)
+            else:
+                phi0_init = np.zeros(self.si.ndm0r, dtype=doublenp)
+            phi0_init[0] = 1.0
+        #
         solmethod = solmethod if solmethod != 'n' else 'krylov'
         try:
             self.sol0 = None
-            if kerntype == 'Redfield':
+            if kerntype == 'Pauli':
+                self.paulifct = c_generate_paulifct(self)
+                self.sol0 = optimize.root(c_generate_vec_pauli, phi0_init, args=(self), method=solmethod)
+            elif kerntype == 'Redfield':
                 self.phi1fct, self.phi1fct_energy = c_generate_phi1fct(self)
                 self.sol0 = optimize.root(c_generate_vec_redfield, phi0_init, args=(self), method=solmethod)
             elif kerntype == '1vN':
@@ -592,6 +604,9 @@ class Transport(object):
             elif kerntype == 'Lindblad':
                 self.tLba = c_generate_tLba(self)
                 self.sol0 = optimize.root(c_generate_vec_lindblad, phi0_init, args=(self), method=solmethod)
+            elif kerntype == 'pyPauli':
+                self.paulifct = generate_paulifct(self)
+                self.sol0 = optimize.root(generate_vec_pauli, phi0_init, args=(self), method=solmethod)
             elif kerntype == 'py1vN':
                 self.phi1fct, self.phi1fct_energy = generate_phi1fct(self)
                 self.sol0 = optimize.root(generate_vec_1vN, phi0_init, args=(self), method=solmethod)

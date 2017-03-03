@@ -120,3 +120,45 @@ def generate_current_pauli(sys):
                     current[l] += fct1 + fct2
                     energy_current[l] += -(E[b]-E[c])*(fct1 + fct2)
     return current, energy_current
+
+def generate_vec_pauli(phi0, sys):
+    """
+    Acts on given phi0 with Liouvillian of Pauli approach.
+
+    Parameters
+    ----------
+    phi0 : array
+        Some values of zeroth order density matrix elements.
+    sys : Transport
+        Transport object.
+
+    Returns
+    -------
+    dphi0_dt : array
+        Values of zeroth order density matrix elements
+        after acting with Liouvillian, i.e., dphi0_dt=L(phi0p).
+    """
+    (paulifct, si, norm_row) = (sys.paulifct, sys.si, sys.funcp.norm_row)
+    dphi0_dt = np.zeros(si.npauli, dtype=doublenp)
+    norm = 0
+    for charge in range(si.ncharge):
+        for b in si.statesdm[charge]:
+            bb = si.get_ind_dm0(b, b, charge)
+            bb_bool = si.get_ind_dm0(b, b, charge, 2)
+            norm += phi0[bb]
+            if bb_bool:
+                for a in si.statesdm[charge-1]:
+                    aa = si.get_ind_dm0(a, a, charge-1)
+                    ba = si.get_ind_dm1(b, a, charge-1)
+                    for l in range(si.nleads):
+                        dphi0_dt[bb] -= paulifct[l, ba, 1]*phi0[bb]
+                        dphi0_dt[bb] += paulifct[l, ba, 0]*phi0[aa]
+                for c in si.statesdm[charge+1]:
+                    cc = si.get_ind_dm0(c, c, charge+1)
+                    cb = si.get_ind_dm1(c, b, charge)
+                    for l in range(si.nleads):
+                        dphi0_dt[bb] -= paulifct[l, cb, 0]*phi0[bb]
+                        dphi0_dt[bb] += paulifct[l, cb, 1]*phi0[cc]
+    dphi0_dt[norm_row] = norm-1
+    return dphi0_dt
+#---------------------------------------------------------------------------------------------------------

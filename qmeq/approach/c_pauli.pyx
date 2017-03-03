@@ -68,7 +68,7 @@ def c_generate_kern_pauli(sys):
     cdef bint symq = sys.funcp.symq
     cdef long_t norm_rowp = sys.funcp.norm_row
     #
-    cdef bb_bool
+    cdef bool_t bb_bool
     cdef long_t b, bb, a, aa, c, cc, ba, cb
     cdef int_t acharge, bcharge, ccharge, charge, l
     cdef int_t norm_row, last_row
@@ -145,3 +145,48 @@ def c_generate_current_pauli(sys):
                     current[l] = current[l] + fct1 + fct2
                     energy_current[l] = energy_current[l] - (E[b]-E[c])*(fct1 + fct2)
     return current, energy_current
+
+@cython.boundscheck(False)
+def c_generate_vec_pauli(np.ndarray[double_t, ndim=1] phi0, sys):
+    cdef np.ndarray[double_t, ndim=3] paulifct = sys.paulifct
+    si = sys.si
+    cdef long_t norm_row = sys.funcp.norm_row
+    #
+    cdef bool_t bb_bool
+    cdef long_t b, bb, a, aa, c, cc, ba, cb
+    cdef int_t acharge, bcharge, ccharge, charge, l
+    cdef int_t nleads = si.nleads
+    cdef double_t norm = 0
+    #
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
+    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
+    #
+    cdef np.ndarray[double_t, ndim=1] dphi0_dt = np.zeros(si.npauli, dtype=doublenp)
+    for charge in range(si.ncharge):
+        acharge = charge-1
+        bcharge = charge
+        ccharge = charge+1
+        for b in si.statesdm[charge]:
+            bb = mapdm0[lenlst[bcharge]*dictdm[b] + dictdm[b] + shiftlst0[bcharge]]
+            bb_bool = booldm0[lenlst[bcharge]*dictdm[b] + dictdm[b] + shiftlst0[bcharge]]
+            norm = norm + phi0[bb]
+            if bb_bool:
+                for a in si.statesdm[charge-1]:
+                    aa = mapdm0[lenlst[acharge]*dictdm[a] + dictdm[a] + shiftlst0[acharge]]
+                    ba = lenlst[acharge]*dictdm[b] + dictdm[a] + shiftlst1[acharge]
+                    for l in range(nleads):
+                        dphi0_dt[bb] = dphi0_dt[bb] - paulifct[l, ba, 1]*phi0[bb]
+                        dphi0_dt[bb] = dphi0_dt[bb] + paulifct[l, ba, 0]*phi0[aa]
+                for c in si.statesdm[charge+1]:
+                    cc = mapdm0[lenlst[ccharge]*dictdm[c] + dictdm[c] + shiftlst0[ccharge]]
+                    cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
+                    for l in range(nleads):
+                        dphi0_dt[bb] = dphi0_dt[bb] - paulifct[l, cb, 0]*phi0[bb]
+                        dphi0_dt[bb] = dphi0_dt[bb] + paulifct[l, cb, 1]*phi0[cc]
+    dphi0_dt[norm_row] = norm-1
+    return dphi0_dt
+#---------------------------------------------------------------------------------------------------------

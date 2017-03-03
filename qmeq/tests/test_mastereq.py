@@ -137,8 +137,8 @@ def test_Builder_double_dot_spinful():
             assert norm(getattr(system, param) - getattr(getattr(calcs, attr), param)) < EPS
 
     # Check matrix-free methods
-    kerns = ['Redfield', '1vN', 'Lindblad']
-    kerns += ['py1vN', 'pyLindblad'] if CHECK_PY else []
+    kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
+    kerns += ['pyPauli', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     for kerntype in kerns:
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
                          kerntype=kerntype, itype=2, mfreeq=True)
