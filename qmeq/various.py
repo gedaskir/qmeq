@@ -234,6 +234,51 @@ def construct_Ea_extended(sys):
                 Ea_ext[1,sn] = charge
     return Ea_ext
 
+def remove_coherences(sys, dE):
+    '''
+    Remove the coherences with energy difference larger than dE.
+
+    Parameters
+    ----------
+    sys : Transport, Transport2vN or Builder
+        The system given as Transport, Transport2vN or Builder object.
+    dE : float
+        Energy difference.
+
+    Modifies:
+    sys.si.mapdm0 : list
+        List showing which density matrix elements are mapped to each other due to symmetries
+        and which density matrix elements are neglected (entries with values -1).
+    '''
+    # Find which coherences to remove
+    si, E = sys.si, sys.qd.Ea
+    ilst, indlst = [], []
+    for i in range(si.ndm0_):
+        if si.mapdm0[i] != -1:
+            ind = si.mapdm0[i]
+            b, bp = si.inddm0[ind]
+            if abs(E[b]-E[bp]) > dE:
+                si.mapdm0[i] = -1
+            else:
+                ilst.append(i)
+                indlst.append(ind)
+    # Count the new number of density matrix elements
+    srt = multiarray_sort(np.array([ilst, indlst]), [1,0])
+    ilst, indlst = srt[0], srt[1]
+    ind, count = 0, 0
+    for i in range(len(indlst)):
+        if indlst[i] == ind:
+            indlst[i] = count
+        else:
+            count += 1
+            ind = indlst[i]
+            indlst[i] = count
+    # Relabel the density matrix elements
+    si.ndm0 = count+1
+    si.ndm0r = 2*si.ndm0-si.npauli
+    for i in range(len(indlst)):
+        si.mapdm0[ilst[i]] = indlst[i]
+
 def remove_states(sys, dE):
     '''
     Remove the states with energy dE larger than the ground state

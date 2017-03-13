@@ -1,7 +1,7 @@
 QmeQ: Quantum master equation for Quantum dot transport calculations
 ====================================================================
 
-QmeQ is an open-source Python package for transport calculations through
+QmeQ is an open-source Python package for calculations of transport through
 quantum  dot devices. The so-called Anderson-type models are used to describe
 the quantum dot device, where quantum dots are coupled to the leads by
 tunneling. QmeQ can calculate the stationary state **particle** and
@@ -27,7 +27,7 @@ Physics disclaimer
 All the methods in QmeQ are approximate so depending on parameter regime they
 **can fail**, and a good knowledge of the method is required whether to trust
 the result or not. For example, Redfield, 1vN, and 2vN approaches can **violate
-positivity** of the reduced density matrix and lead to **currents going against
+positivity** of the reduced density matrix and lead to **currents flowing against
 the bias**. We still think it is important to have a package where a user can
 duplicate existing calculations, check applicability of different methods, or
 simply discover new kind of physics using different approximate master equations.

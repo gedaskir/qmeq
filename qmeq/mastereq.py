@@ -23,6 +23,7 @@ from .various import get_phi1
 from .various import print_state
 from .various import print_all_states
 from .various import sort_eigenstates
+from .various import remove_coherences
 from .various import remove_states
 from .various import use_all_states
 
@@ -358,6 +359,12 @@ class Builder(object):
         Sort many-body states of the system by given order of properties.
         '''
         sort_eigenstates(self, srt=srt)
+
+    def remove_coherences(self, dE):
+        '''
+        Remove the coherences with energy difference larger than dE.
+        '''
+        remove_coherences(self, dE)
 
     def remove_states(self, dE):
         '''
