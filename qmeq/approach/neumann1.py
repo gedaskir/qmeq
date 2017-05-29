@@ -60,7 +60,7 @@ def generate_kern_1vN(sys):
     Returns
     -------
     kern : array
-        Kernel matrix for 1vN, Redfield approaches.
+        Kernel matrix for 1vN approach.
     bvec : array
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.

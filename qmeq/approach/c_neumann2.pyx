@@ -1,8 +1,6 @@
 """Module containing cython functions, which solve 2vN approach integral equations.
    For docstrings see documentation of module neumann2."""
 
-# cython: profile=True
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

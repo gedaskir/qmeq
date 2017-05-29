@@ -1,8 +1,6 @@
 """Module containing cython functions, which generate first order 1vN kernel.
    For docstrings see documentation of module neumann1."""
 
-# cython: profile=True
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

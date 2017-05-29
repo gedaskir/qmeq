@@ -52,7 +52,6 @@ def func_pauli(Ecb, mu, T, Dm, Dp, itype):
         cur1 = 1-cur0
         rez = 2*pi*np.array([cur0, cur1])
     else:
-        print(alpha, Rp, Rm)
         rez = np.zeros(2)
     return rez
 

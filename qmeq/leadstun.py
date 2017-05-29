@@ -364,8 +364,8 @@ class LeadsTunneling(object):
             self.Tba0 = construct_Tba(tleadsp, self.stateind, self.mtype, self.Tba0)
             if updateq:
                 for j0 in tleadsp:
-                    try:    self.tleads[j0] += tleadsp[j0]      # if tleads[j0] != 0:
-                    except: self.tleads.update({j0:tleads[j0]}) # if tleads[j0] != 0:
+                    try:    self.tleads[j0] += tleadsp[j0]       # if tleads[j0] != 0:
+                    except: self.tleads.update({j0:tleadsp[j0]}) # if tleads[j0] != 0:
 
     def change(self, tleads=None, mulst=None, tlst=None, dlst=None, updateq=True):
         """

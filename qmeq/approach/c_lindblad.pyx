@@ -63,7 +63,6 @@ def c_generate_tLba(sys):
 @cython.boundscheck(False)
 def c_generate_kern_lindblad(sys):
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] tLba = sys.tLba
     si = sys.si
     cdef bint symq = sys.funcp.symq
@@ -190,7 +189,6 @@ def c_generate_kern_lindblad(sys):
 def c_generate_current_lindblad(sys):
     cdef np.ndarray[double_t, ndim=1] phi0p = sys.phi0
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] tLba = sys.tLba
     si = sys.si
     #
@@ -239,7 +237,6 @@ def c_generate_current_lindblad(sys):
 def c_generate_vec_lindblad(np.ndarray[double_t, ndim=1] phi0p, sys):
     #cdef np.ndarray[double_t, ndim=1] phi0p = sys.phi0
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] tLba = sys.tLba
     si = sys.si
     cdef long_t norm_row = sys.funcp.norm_row

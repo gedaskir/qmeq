@@ -1,8 +1,6 @@
 """Module containing cython functions, which generate first order Pauli kernel.
    For docstrings see documentation of module pauli."""
 
-# cython: profile=True
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function

@@ -33,10 +33,11 @@ cext = cythonize(ext)
 
 setup(name='qmeq',
       version='1.0',
-      description='Package for solving master equations',
+      description='Package for transport calculations in quantum dots \
+                   using approximate quantum master equations',
       url='http://github.com/gedaskir/qmeq',
       author='Gediminas Kirsanskas',
-      author_email='gediminas.kirsanskas@teorfys.lu.se',
+      author_email='qmeq.package@gmail.com',
       license='BSD 2-Clause',
       packages=['qmeq', 'qmeq/approach'],
       package_data={'qmeq': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so']},

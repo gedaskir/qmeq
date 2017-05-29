@@ -58,12 +58,12 @@ def generate_kern_lindblad(sys):
     Returns
     -------
     kern : array
-        Kernel matrix for 1vN, Redfield approaches.
+        Kernel matrix for first-order Lindblad approach.
     bvec : array
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
     """
-    (E, Tba, tLba) = (sys.qd.Ea, sys.leads.Tba, sys.tLba)
+    (E, tLba) = (sys.qd.Ea, sys.tLba)
     (si, symq, norm_rowp) = (sys.si, sys.funcp.symq, sys.funcp.norm_row)
     norm_row = norm_rowp if symq else si.ndm0r
     last_row = si.ndm0r-1 if symq else si.ndm0r
@@ -176,7 +176,7 @@ def generate_current_lindblad(sys):
     energy_current : array
         Values of the energy current having nleads entries.
     """
-    (phi0p, E, Tba, tLba, si) = (sys.phi0, sys.qd.Ea, sys.leads.Tba, sys.tLba, sys.si)
+    (phi0p, E, tLba, si) = (sys.phi0, sys.qd.Ea, sys.tLba, sys.si)
     current = np.zeros(si.nleads, dtype=complexnp)
     energy_current = np.zeros(si.nleads, dtype=complexnp)
     #
@@ -222,7 +222,7 @@ def generate_vec_lindblad(phi0p, sys):
         Values of zeroth order density matrix elements
         after acting with Liouvillian, i.e., phi0=L(phi0p).
     """
-    (E, Tba, tLba, si, norm_row) = (sys.qd.Ea, sys.leads.Tba, sys.tLba, sys.si, sys.funcp.norm_row)
+    (E, tLba, si, norm_row) = (sys.qd.Ea, sys.tLba, sys.si, sys.funcp.norm_row)
     #
     phi0 = np.zeros(si.ndm0, dtype=complexnp)
     phi0[0:si.npauli] = phi0p[0:si.npauli]

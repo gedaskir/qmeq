@@ -190,8 +190,8 @@ class Builder(object):
             indexing = 'charge'
 
         if not itype in {0,1,2,3}:
-            print("WARNING: itype needs to be 0, 1, 2, or 3. Using default itype=1.")
-            itype = 1
+            print("WARNING: itype needs to be 0, 1, 2, or 3. Using default itype=0.")
+            itype = 0
 
         if not kerntype in {'Pauli', 'Lindblad', 'Redfield', '1vN', '2vN', 'pyPauli', 'pyLindblad', 'py1vN', 'py2vN'}:
             print("WARNING: Allowed kerntype values are: "+
