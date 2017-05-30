@@ -11,6 +11,7 @@ from ..mytypes import doublenp
 from ..mytypes import complexnp
 
 from ..specfuncc cimport func_pauli
+from ..aprclass import Approach
 
 cimport numpy as np
 cimport cython
@@ -58,7 +59,8 @@ def c_generate_tLba(sys):
                 func_pauli(Eba, mulst[l], tlst[l], dlst[l,0], dlst[l,1], itype, rez)
                 tLba[l, b, a] = sqrt(rez[0])*Tba[l, b, a]
                 tLba[l, a, b] = sqrt(rez[1])*Tba[l, a, b]
-    return tLba
+    sys.tLba = tLba
+    return 0
 
 @cython.boundscheck(False)
 def c_generate_kern_lindblad(sys):
@@ -183,7 +185,9 @@ def c_generate_kern_lindblad(sys):
         for b in si.statesdm[charge]:
             bb = mapdm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
             kern[norm_row, bb] += 1
-    return kern, bvec
+    sys.kern = kern
+    sys.bvec = bvec
+    return 0
 
 @cython.boundscheck(False)
 def c_generate_current_lindblad(sys):
@@ -231,7 +235,10 @@ def c_generate_current_lindblad(sys):
                         current[l] = current[l] + fctc
                         energy_current[l] = energy_current[l] + (E[c]-0.5*(E[b]+E[bp]))*fctc
     #
-    return current, energy_current
+    sys.current = current
+    sys.energy_current = energy_current
+    sys.heat_current = energy_current - current*sys.leads.mulst
+    return 0
 
 @cython.boundscheck(False)
 def c_generate_vec_lindblad(np.ndarray[double_t, ndim=1] phi0p, sys):
@@ -323,4 +330,12 @@ def c_generate_vec_lindblad(np.ndarray[double_t, ndim=1] phi0p, sys):
                     #--------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real))
+
+class Approach_Lindblad(Approach):
+
+    kerntype = 'Lindblad'
+    generate_fct = c_generate_tLba
+    generate_kern = c_generate_kern_lindblad
+    generate_current = c_generate_current_lindblad
+    generate_vec = c_generate_vec_lindblad
 #---------------------------------------------------------------------------------------------------------

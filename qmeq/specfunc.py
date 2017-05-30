@@ -70,7 +70,7 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
     Dm, Dp : float
         Bandwidth.
     itype : int
-        Type of integral for first order method calculations.
+        Type of integral for first-order approach calculations.
         itype=0: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
         itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
         itype=2: the principal parts are neglected.

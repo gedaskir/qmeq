@@ -452,7 +452,7 @@ class StateIndexing(object):
         nsingle : int
             Number of single-particle states.
         indexing : str
-            String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz'.
+            String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
         """
         self.nsingle = nsingle
         self.indexing = indexing

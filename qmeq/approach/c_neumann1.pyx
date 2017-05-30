@@ -11,6 +11,7 @@ from ..mytypes import doublenp
 from ..mytypes import complexnp
 
 from ..specfuncc cimport func_1vN
+from ..aprclass import Approach
 
 cimport numpy as np
 cimport cython
@@ -58,7 +59,9 @@ def c_generate_phi1fct(sys):
                 phi1fct[l, cb, 1] = rez[1]
                 phi1fct_energy[l, cb, 0] = rez[2]
                 phi1fct_energy[l, cb, 1] = rez[3]
-    return phi1fct, phi1fct_energy
+    sys.phi1fct = phi1fct
+    sys.phi1fct_energy = phi1fct_energy
+    return 0
 
 #---------------------------------------------------------------------------------------------------------
 # 1 von Neumann approach
@@ -199,10 +202,12 @@ def c_generate_kern_1vN(sys):
         for b in si.statesdm[charge]:
             bb = mapdm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
             kern[norm_row, bb] += 1
-    return kern, bvec
+    sys.kern = kern
+    sys.bvec = bvec
+    return 0
 
 @cython.boundscheck(False)
-def c_generate_phi1_1vN(sys):
+def c_generate_current_1vN(sys):
     cdef np.ndarray[double_t, ndim=1] phi0p = sys.phi0
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
     cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
@@ -262,7 +267,11 @@ def c_generate_phi1_1vN(sys):
     for l in range(nleads):
         current[l] = -2*current[l].imag
         energy_current[l] = -2*energy_current[l].imag
-    return phi1, current, energy_current
+    sys.phi1 = phi1
+    sys.current = current
+    sys.energy_current = energy_current
+    sys.heat_current = energy_current - current*sys.leads.mulst
+    return 0
 
 @cython.boundscheck(False)
 def c_generate_vec_1vN(np.ndarray[double_t, ndim=1] phi0p, sys):
@@ -367,4 +376,12 @@ def c_generate_vec_1vN(np.ndarray[double_t, ndim=1] phi0p, sys):
                     #--------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real))
+
+class Approach_1vN(Approach):
+
+    kerntype = '1vN'
+    generate_fct = c_generate_phi1fct
+    generate_kern = c_generate_kern_1vN
+    generate_current = c_generate_current_1vN
+    generate_vec = c_generate_vec_1vN
 #---------------------------------------------------------------------------------------------------------

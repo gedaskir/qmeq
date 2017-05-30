@@ -1,7 +1,7 @@
-qmeq.mastereq module
+qmeq.aprclass module
 ====================
 
-.. automodule:: qmeq.mastereq
+.. automodule:: qmeq.aprclass
     :members:
     :undoc-members:
     :show-inheritance:

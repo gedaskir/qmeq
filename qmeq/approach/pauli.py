@@ -10,6 +10,7 @@ from ..mytypes import complexnp
 from ..mytypes import doublenp
 
 from ..specfunc import func_pauli
+from ..aprclass import Approach
 
 def generate_paulifct(sys):
     """
@@ -17,12 +18,11 @@ def generate_paulifct(sys):
 
     Parameters
     ----------
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
-    Returns
-    -------
-    paulifct : array
+    Modifies:
+    sys.paulifct : array
         Factors used for generating Pauli master equation kernel.
     """
     (E, Tba, si, mulst, tlst, dlst) = (sys.qd.Ea, sys.leads.Tba, sys.si, sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
@@ -39,7 +39,8 @@ def generate_paulifct(sys):
                 rez = func_pauli(Ecb, mulst[l], tlst[l], dlst[l,0], dlst[l,1], itype)
                 paulifct[l, cb, 0] = xcb*rez[0]
                 paulifct[l, cb, 1] = xcb*rez[1]
-    return paulifct
+    sys.paulifct = paulifct
+    return 0
 
 #---------------------------------------------------------------------------------------------------------
 # Pauli master equation
@@ -50,14 +51,13 @@ def generate_kern_pauli(sys):
 
     Parameters
     ----------
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
-    Returns
-    -------
-    kern : array
+    Modifies:
+    sys.kern : array
         Kernel matrix for Pauli master equation.
-    bvec : array
+    sys.bvec : array
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
     """
@@ -85,23 +85,26 @@ def generate_kern_pauli(sys):
                     for l in range(si.nleads):
                         kern[bb, bb] -= paulifct[l, cb, 0]
                         kern[bb, cc] += paulifct[l, cb, 1]
-    return kern, bvec
+    sys.kern = kern
+    sys.bvec = bvec
+    return 0
 
 def generate_current_pauli(sys):
     """
-    Calculates currents using Pauli master equation method.
+    Calculates currents using Pauli master equation approach.
 
     Parameters
     ----------
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
-    Returns
-    -------
-    current : array
+    Modifies:
+    sys.current : array
         Values of the current having nleads entries.
-    energy_current : array
+    sys.energy_current : array
         Values of the energy current having nleads entries.
+    sys.heat_current : array
+        Values of the heat current having nleads entries.
     """
     (phi0, E, paulifct, si) = (sys.phi0, sys.qd.Ea, sys.paulifct, sys.si)
     current = np.zeros(si.nleads, dtype=complexnp)
@@ -119,7 +122,10 @@ def generate_current_pauli(sys):
                     fct2 = -phi0[cc]*paulifct[l, cb, 1]
                     current[l] += fct1 + fct2
                     energy_current[l] += -(E[b]-E[c])*(fct1 + fct2)
-    return current, energy_current
+    sys.current = current
+    sys.energy_current = energy_current
+    sys.heat_current = energy_current - current*sys.leads.mulst
+    return 0
 
 def generate_vec_pauli(phi0, sys):
     """
@@ -129,8 +135,8 @@ def generate_vec_pauli(phi0, sys):
     ----------
     phi0 : array
         Some values of zeroth order density matrix elements.
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
     Returns
     -------
@@ -161,4 +167,12 @@ def generate_vec_pauli(phi0, sys):
                         dphi0_dt[bb] += paulifct[l, cb, 1]*phi0[cc]
     dphi0_dt[norm_row] = norm-1
     return dphi0_dt
+
+class Approach_pyPauli(Approach):
+
+    kerntype = 'pyPauli'
+    generate_fct = staticmethod(generate_paulifct)
+    generate_kern = staticmethod(generate_kern_pauli)
+    generate_current = staticmethod(generate_current_pauli)
+    generate_vec = staticmethod(generate_vec_pauli)
 #---------------------------------------------------------------------------------------------------------

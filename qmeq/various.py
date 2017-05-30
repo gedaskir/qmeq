@@ -16,8 +16,8 @@ def get_charge(sys, b):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN
-        The system given as Transport or Transport2vN object.
+    sys : Approach, Approach2vN
+        The system given as Approach or Approach2vN object.
     b : int
         Label of the many-body state.
 
@@ -54,8 +54,8 @@ def sort_eigenstates(sys, srt='n'):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN or Builder
-        The system given as Transport, Transport2vN or Builder object.
+    sys : Approach, Approach2vN or Builder
+        The system given as Approach, Approach2vN or Builder object.
     srt : list
         List specifying in which order of properties to sort.
         For example, in the case of 'ssq' indexing we have  such convention:
@@ -89,8 +89,8 @@ def get_phi0(sys, b_, bp_):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN or Builder
-        The system given as Transport, Transport2vN or Builder object.
+    sys : Approach, Approach2vN or Builder
+        The system given as Approach, Approach2vN or Builder object.
     b_, bp_ : int
         Labels of the many-body states.
 
@@ -128,8 +128,8 @@ def get_phi1(sys, l, c_, b_):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN or Builder
-        The system given as Transport, Transport2vN or Builder object.
+    sys : Approach, Approach2vN or Builder
+        The system given as Approach, Approach2vN or Builder object.
     l : int
         Label of the lead channel.
     c_, b_ : int
@@ -164,8 +164,8 @@ def construct_Ea_extended(sys):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN or Builder
-        The system given as Transport, Transport2vN or Builder object.
+    sys : Approach, Approach2vN or Builder
+        The system given as Approach, Approach2vN or Builder object.
 
     Returns
     --------
@@ -240,8 +240,8 @@ def remove_coherences(sys, dE):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN or Builder
-        The system given as Transport, Transport2vN or Builder object.
+    sys : Approach, Approach2vN or Builder
+        The system given as Approach, Approach2vN or Builder object.
     dE : float
         Energy difference.
 
@@ -286,8 +286,8 @@ def remove_states(sys, dE):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN or Builder
-        The system given as Transport, Transport2vN or Builder object.
+    sys : Approach, Approach2vN or Builder
+        The system given as Approach, Approach2vN or Builder object.
     dE : float
         Energy above the ground state.
 
@@ -309,8 +309,8 @@ def use_all_states(sys):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN or Builder
-        The system given as Transport, Transport2vN or Builder object.
+    sys : Approach, Approach2vN or Builder
+        The system given as Approach, Approach2vN or Builder object.
 
     Modifies:
     sys.si.statesdm : list
@@ -324,8 +324,8 @@ def print_state(sys, b_, eps=0.0, prntq=True, filename=None, separator=''):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN or Builder
-        The system given as Transport, Transport2vN or Builder object.
+    sys : Approach, Approach2vN or Builder
+        The system given as Approach, Approach2vN or Builder object.
     b_ : int
         Index of the many-body eigenstate.
     eps : float
@@ -406,8 +406,8 @@ def print_all_states(sys, filename, eps=0.0, separator='', mode='w'):
 
     Parameters
     ----------
-    sys : Transport, Transport2vN or Builder
-        The system given as Transport, Transport2vN or Builder object.
+    sys : Approach, Approach2vN or Builder
+        The system given as Approach, Approach2vN or Builder object.
     filename : string
         File to which to print eigenstate properties. The output is appended to this file.
     eps : float

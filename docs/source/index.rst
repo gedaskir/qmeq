@@ -10,7 +10,8 @@ Contents:
    Indexing of states <qmeq.indexing.rst>
    Quantum dot Hamiltonian <qmeq.qdot.rst>
    Tunneling Hamiltonian <qmeq.leadstun.rst>
-   Master equations <qmeq.mastereq.rst>
+   Builder class <qmeq.builder.rst>
+   Approach class for master equations <qmeq.aprclass.rst>
    Special functions <qmeq.specfunc.rst>
    Various functions <qmeq.various.rst>
 

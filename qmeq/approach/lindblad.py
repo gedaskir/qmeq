@@ -10,6 +10,7 @@ from ..mytypes import complexnp
 from ..mytypes import doublenp
 
 from ..specfunc import func_pauli
+from ..aprclass import Approach
 
 #---------------------------------------------------------------------------------------------------------
 # Lindblad approach
@@ -20,15 +21,12 @@ def generate_tLba(sys):
 
     Parameters
     ----------
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
-    Returns
-    -------
-    phi1fct : array
-        Factors used for generating 1vN, Redfield master equation kernels.
-    phi1fct_energy : array
-        Factors used to calculate energy and heat currents in 1vN, Redfield methods.
+    Modifies:
+    sys.tLba : array
+        Jump operator matrix in many-body basis.
     """
     (Tba, E, si) = (sys.leads.Tba, sys.qd.Ea, sys.si)
     (mulst, tlst, dlst) = (sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
@@ -44,7 +42,8 @@ def generate_tLba(sys):
                 fct1, fct2 = func_pauli(Eba, mulst[l], tlst[l], dlst[l,0], dlst[l,1], itype)
                 tLba[l, b, a] = np.sqrt(fct1)*Tba[l, b, a]
                 tLba[l, a, b] = np.sqrt(fct2)*Tba[l, a, b]
-    return tLba
+    sys.tLba = tLba
+    return 0
 
 def generate_kern_lindblad(sys):
     """
@@ -52,14 +51,13 @@ def generate_kern_lindblad(sys):
 
     Parameters
     ----------
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
-    Returns
-    -------
-    kern : array
+    Modifies:
+    sys.kern : array
         Kernel matrix for first-order Lindblad approach.
-    bvec : array
+    sys.bvec : array
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
     """
@@ -158,7 +156,9 @@ def generate_kern_lindblad(sys):
         for b in si.statesdm[charge]:
             bb = si.get_ind_dm0(b, b, charge)
             kern[norm_row, bb] += 1
-    return kern, bvec
+    sys.kern = kern
+    sys.bvec = bvec
+    return 0
 
 def generate_current_lindblad(sys):
     """
@@ -166,15 +166,16 @@ def generate_current_lindblad(sys):
 
     Parameters
     ----------
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
-    Returns
-    -------
-    current : array
+    Modifies:
+    sys.current : array
         Values of the current having nleads entries.
-    energy_current : array
+    sys.energy_current : array
         Values of the energy current having nleads entries.
+    sys.heat_current : array
+        Values of the heat current having nleads entries.
     """
     (phi0p, E, tLba, si) = (sys.phi0, sys.qd.Ea, sys.tLba, sys.si)
     current = np.zeros(si.nleads, dtype=complexnp)
@@ -203,7 +204,10 @@ def generate_current_lindblad(sys):
                         current[l] += fctc
                         energy_current[l] += (E[c]-0.5*(E[b]+E[bp]))*fctc
     #
-    return current, energy_current
+    sys.current = current
+    sys.energy_current = energy_current
+    sys.heat_current = energy_current - current*sys.leads.mulst
+    return 0
 
 def generate_vec_lindblad(phi0p, sys):
     """
@@ -213,8 +217,8 @@ def generate_vec_lindblad(phi0p, sys):
     ----------
     phi0p : array
         Some values of zeroth order density matrix elements.
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
     Returns
     -------
@@ -284,4 +288,12 @@ def generate_vec_lindblad(phi0p, sys):
                     #--------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[si.npauli:si.ndm0].real))
+
+class Approach_pyLindblad(Approach):
+
+    kerntype = 'pyLindblad'
+    generate_fct = staticmethod(generate_tLba)
+    generate_kern = staticmethod(generate_kern_lindblad)
+    generate_current = staticmethod(generate_current_lindblad)
+    generate_vec = staticmethod(generate_vec_lindblad)
 #---------------------------------------------------------------------------------------------------------

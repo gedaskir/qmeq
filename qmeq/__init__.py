@@ -43,9 +43,8 @@ from .indexing import StateIndexingPauli
 from .indexing import StateIndexingDM
 from .indexing import StateIndexingDMc
 from .leadstun import LeadsTunneling
-from .mastereq import Builder
-from .mastereq import Transport
-from .mastereq import Transport2vN
+from .builder import Builder
+from .builder import FunctionProperties
 from .qdot import QuantumDot
 
 __version__ = '1.0'

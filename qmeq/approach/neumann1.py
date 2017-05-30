@@ -10,6 +10,7 @@ from ..mytypes import complexnp
 from ..mytypes import doublenp
 
 from ..specfunc import func_1vN
+from ..aprclass import Approach
 
 def generate_phi1fct(sys):
     """
@@ -17,15 +18,14 @@ def generate_phi1fct(sys):
 
     Parameters
     ----------
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
-    Returns
-    -------
-    phi1fct : array
+    Modifies:
+    sys.phi1fct : array
         Factors used for generating 1vN, Redfield master equation kernels.
-    phi1fct_energy : array
-        Factors used to calculate energy and heat currents in 1vN, Redfield methods.
+    sys.phi1fct_energy : array
+        Factors used to calculate energy and heat currents in 1vN, Redfield approaches.
     """
     (E, si, mulst, tlst, dlst) = (sys.qd.Ea, sys.si, sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
     (itype, limit) = (sys.funcp.itype, sys.funcp.dqawc_limit)
@@ -43,7 +43,9 @@ def generate_phi1fct(sys):
                 phi1fct[l, cb, 1] = rez[1]
                 phi1fct_energy[l, cb, 0] = rez[2]
                 phi1fct_energy[l, cb, 1] = rez[3]
-    return phi1fct, phi1fct_energy
+    sys.phi1fct = phi1fct
+    sys.phi1fct_energy = phi1fct_energy
+    return 0
 
 #---------------------------------------------------------------------------------------------------------
 # 1 von Neumann approach
@@ -54,14 +56,13 @@ def generate_kern_1vN(sys):
 
     Parameters
     ----------
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
-    Returns
-    -------
-    kern : array
+    Modifies:
+    sys.kern : array
         Kernel matrix for 1vN approach.
-    bvec : array
+    sys.bvec : array
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
     """
@@ -169,26 +170,29 @@ def generate_kern_1vN(sys):
         for b in si.statesdm[charge]:
             bb = si.get_ind_dm0(b, b, charge)
             kern[norm_row, bb] += 1
-    return kern, bvec
+    sys.kern = kern
+    sys.bvec = bvec
+    return 0
 
-def generate_phi1_1vN(sys):
+def generate_current_1vN(sys):
     """
     Calculates currents using 1vN approach.
 
     Parameters
     ----------
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
-    Returns
-    -------
-    phi1 : array
+    Modifies:
+    sys.phi1 : array
         Values of first order density matrix elements
         stored in nleads by ndm1 numpy array.
-    current : array
+    sys.current : array
         Values of the current having nleads entries.
-    energy_current : array
+    sys.energy_current : array
         Values of the energy current having nleads entries.
+    sys.heat_current : array
+        Values of the heat current having nleads entries.
     """
     (phi0p, E, Tba, phi1fct, phi1fct_energy, si) = (sys.phi0, sys.qd.Ea, sys.leads.Tba, sys.phi1fct, sys.phi1fct_energy, sys.si)
     phi1 = np.zeros((si.nleads, si.ndm1), dtype=complexnp)
@@ -228,7 +232,11 @@ def generate_phi1_1vN(sys):
     for l in range(si.nleads):
         current[l] = -2*current[l].imag
         energy_current[l] = -2*energy_current[l].imag
-    return phi1, current, energy_current
+    sys.phi1 = phi1
+    sys.current = current
+    sys.energy_current = energy_current
+    sys.heat_current = energy_current - current*sys.leads.mulst
+    return 0
 
 def generate_vec_1vN(phi0p, sys):
     """
@@ -238,8 +246,8 @@ def generate_vec_1vN(phi0p, sys):
     ----------
     phi0p : array
         Some values of zeroth order density matrix elements.
-    sys : Transport
-        Transport object.
+    sys : Approach
+        Approach object.
 
     Returns
     -------
@@ -319,4 +327,12 @@ def generate_vec_1vN(phi0p, sys):
                     #--------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[si.npauli:si.ndm0].real))
+
+class Approach_py1vN(Approach):
+
+    kerntype = 'py1vN'
+    generate_fct = staticmethod(generate_phi1fct)
+    generate_kern = staticmethod(generate_kern_1vN)
+    generate_current = staticmethod(generate_current_1vN)
+    generate_vec = staticmethod(generate_vec_1vN)
 #---------------------------------------------------------------------------------------------------------

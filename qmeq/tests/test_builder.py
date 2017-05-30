@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.linalg import norm
-from qmeq.mastereq import *
+from qmeq.builder import *
 import qmeq
 import itertools
 
@@ -77,7 +77,7 @@ class Calcs(object):
     def __init__(self):
         pass
 
-def save_Builder_double_dot_spinful(fname='data_mastereq.py'):
+def save_Builder_double_dot_spinful(fname='data_builder.py'):
     p = Parameters_double_dot_spinful()
     #data = {}
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad', 'pyPauli', 'py1vN', 'pyLindblad']
@@ -99,7 +99,7 @@ def save_Builder_double_dot_spinful(fname='data_mastereq.py'):
         f.write(data)
 
 def test_Builder_double_dot_spinful():
-    from data_mastereq import data
+    from data_builder import data
     p = Parameters_double_dot_spinful()
     calcs = Calcs()
 
@@ -201,31 +201,3 @@ def test_Builder_single_orbital_spinful():
         system.solve(niter=5)
         assert norm(system.current - data_current['2vN']) < EPS
         assert norm(system.energy_current - data_energy_current['2vN']) < EPS
-
-def test_Transport2vN_kpnt():
-    # Check generation of energy grid
-    si = qmeq.StateIndexingDMc(1)
-    qd = qmeq.QuantumDot({}, {}, si)
-    leads = qmeq.LeadsTunneling(1, {}, si, {}, {}, {0: 1000})
-    funcp = FunctionProperties(kpnt=5, kerntype='2vN')
-    tt = Transport2vN(qd, leads, si, funcp)
-    assert tt.Ek_grid.tolist() == [-1000, -500, 0, 500, 1000]
-    tt.kpnt = 6
-    assert tt.Ek_grid.tolist() == [-1000, -600,  -200, 200, 600, 1000]
-    #
-    system = Builder(1, {}, {}, 1, {}, {}, {}, {0: 1000}, kpnt=5, kerntype='2vN')
-    assert system.tt.Ek_grid.tolist() == [-1000, -500, 0, 500, 1000]
-    system.kpnt = 6
-    assert system.tt.Ek_grid.tolist() == [-1000, -600,  -200, 200, 600, 1000]
-
-def test_Transport2vN_make_Ek_grid():
-    si = qmeq.StateIndexingDMc(1)
-    qd = qmeq.QuantumDot({}, {}, si)
-    leads = qmeq.LeadsTunneling(2, {}, si, {}, {}, {0: [-1000, 1000], 1: [-1000, 1000]})
-    funcp = FunctionProperties(kpnt=5, kerntype='2vN')
-    tt = Transport2vN(qd, leads, si, funcp)
-    tt.make_Ek_grid()
-    assert tt.Ek_grid.tolist() == [-1000, -500, 0, 500, 1000]
-    tt.leads.change(dlst={0: [-1400, 1000], 1: [-1000, 1000]})
-    tt.make_Ek_grid()
-    assert tt.Ek_grid.tolist() == [-1400.0, -800.0, -200.0, 400.0, 1000.0]

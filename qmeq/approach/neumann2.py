@@ -13,6 +13,7 @@ from ..mytypes import intnp
 
 from ..specfunc import kernel_fredriksen
 from ..specfunc import hilbert_fredriksen
+from ..aprclass import Approach2vN
 
 def func_2vN(Ek, Ek_grid, l, eta, hfk):
     """
@@ -298,15 +299,14 @@ def get_phi1_phi0_2vN(sys):
 
     Parameters
     ----------
-    sys : Transport2vN
-        Transport2vN object.
+    sys : Approach2vN
+        Approach2vN object.
 
-    Returns
-    -------
-    phi1_phi0 : array
+    Modifies:
+    sys.phi1_phi0 : array
         Numpy array with dimensions (nleads, ndm1, ndm0),
         corresponding to energy integrated Phi[1](k).
-    e_phi1_phi0 : array
+    sys.e_phi1_phi0 : array
         Numpy array with dimensions (nleads, ndm1, ndm0),
         corresponding to energy integrated Ek*Phi[1](k).
     """
@@ -324,7 +324,10 @@ def get_phi1_phi0_2vN(sys):
         else:               dx = Ek_grid[j1+1] - Ek_grid[j1-1]
         phi1_phi0 += 1/2*dx*phi1k[j1]
         e_phi1_phi0 += 1/2*dx*Ek_grid[j1]*phi1k[j1]
-    return phi1_phi0, e_phi1_phi0
+    #
+    sys.phi1_phi0 = phi1_phi0
+    sys.e_phi1_phi0 = e_phi1_phi0
+    return 0
 
 def kern_phi0_2vN(sys):
     """
@@ -332,14 +335,13 @@ def kern_phi0_2vN(sys):
 
     Parameters
     ----------
-    sys : Transport2vN
-        Transport2vN object.
+    sys : Approach2vN
+        Approach2vN object.
 
-    Returns
-    -------
-    kern : array
+    Modifies:
+    sys.kern : array
         Kernel for master equation involving just Phi[0].
-    bvec : array
+    sys.bvec : array
         Right hand side column vector for master equation.
     """
     #(phi1_phi0, E, Tba, si, funcp, mulst, tlst, dlst)
@@ -387,27 +389,31 @@ def kern_phi0_2vN(sys):
                     kern[bbp] += +Tba[l, b, c1]*phi1_phi0[l, c1bp]
                     kern[bbp] += -phi1_phi0_conj[l, c1b]*Tba[l, c1, bp]
     kern[norm_row] = norm_vec
-    return kern, bvec
+    #
+    sys.kern = kern
+    sys.bvec = bvec
+    return 0
 
 def generate_current_2vN(sys):
     """
-    Finds the currents for 2vN method after an approximate
+    Finds the currents for 2vN approach after an approximate
     solution for integral 2vN equations was found.
 
     Parameters
     ----------
-    sys : Transport2vN
-        Transport2vN object.
+    sys : Approach2vN
+        Approach2vN object.
 
-    Returns
-    -------
-    phi1 : array
+    Modifies:
+    sys.phi1 : array
         nleads by ndm1 numpy array, which gives energy integrated
         Phi[1](k) after the values for Phi[0] were inserted.
-    current : array
+    sys.current : array
         Values of the current having nleads entries.
-    energy_current : array
+    sys.energy_current : array
         Values of the energy current having nleads entries.
+    sys.heat_current : array
+        Values of the heat current having nleads entries.
     """
     #(phi1_phi0, e_phi1_phi0, phi0, Tba, si)
     (phi1_phi0, e_phi1_phi0) = (sys.phi1_phi0, sys.e_phi1_phi0)
@@ -432,7 +438,12 @@ def generate_current_2vN(sys):
     for l in range(si.nleads):
         current[l] = -2*current[l].imag
         energy_current[l] = -2*energy_current[l].imag
-    return phi1, current, energy_current
+    #
+    sys.phi1 = phi1
+    sys.current = current
+    sys.energy_current = energy_current
+    sys.heat_current = energy_current - current*sys.leads.mulst
+    return 0
 
 def get_emin_emax(sys):
     """
@@ -441,8 +452,8 @@ def get_emin_emax(sys):
 
     Parameters
     ----------
-    sys : Transport2vN
-        Transport2vN object.
+    sys : Approach2vN
+        Approach2vN object.
 
     Modifies:
     sys.funcp.emin, sys.funcp.emax : float
@@ -469,8 +480,8 @@ def get_grid_ext(sys):
 
     Parameters
     ----------
-    sys : Transport2vN
-        Transport2vN object.
+    sys : Approach2vN
+        Approach2vN object.
 
     Modifies:
     sys.Ek_grid_ext : array
@@ -584,8 +595,8 @@ def iterate_2vN(sys):
 
     Parameters
     ----------
-    sys : Transport2vN
-        Transport2vN object.
+    sys : Approach2vN
+        Approach2vN object.
 
     Modifies:
     sys.funcp.emin, sys.funcp.emax
@@ -646,4 +657,16 @@ def iterate_2vN(sys):
         for j1 in range(Eklen):
             ind = j1 + funcp.kpnt_left
             phi1k_delta[j1] = phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta, sys.fkp, kern1k[j1], E, Tba, si)
-    return phi1k_delta, hphi1k_delta, kern1k
+    #
+    sys.phi1k_delta = phi1k_delta
+    sys.hphi1k_delta = hphi1k_delta
+    sys.kern1k = kern1k
+    return 0
+
+class Approach_py2vN(Approach2vN):
+
+    kerntype = 'py2vN'
+    iterate = staticmethod(iterate_2vN)
+    get_phi1_phi0 = staticmethod(get_phi1_phi0_2vN)
+    kern_phi0 = staticmethod(kern_phi0_2vN)
+    generate_current = staticmethod(generate_current_2vN)

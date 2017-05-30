@@ -11,6 +11,7 @@ from ..mytypes import doublenp
 from ..mytypes import complexnp
 
 from ..specfuncc cimport func_pauli
+from ..aprclass import Approach
 
 cimport numpy as np
 cimport cython
@@ -54,7 +55,8 @@ def c_generate_paulifct(sys):
                 func_pauli(Ecb, mulst[l], tlst[l], dlst[l,0], dlst[l,1], itype, rez)
                 paulifct[l, cb, 0] = xcb*rez[0]
                 paulifct[l, cb, 1] = xcb*rez[1]
-    return paulifct
+    sys.paulifct = paulifct
+    return 0
 
 #---------------------------------------------------------------------------------------------------------
 # Pauli master equation
@@ -106,7 +108,9 @@ def c_generate_kern_pauli(sys):
                     for l in range(nleads):
                         kern[bb, bb] = kern[bb, bb] - paulifct[l, cb, 0]
                         kern[bb, cc] = kern[bb, cc] + paulifct[l, cb, 1]
-    return kern, bvec
+    sys.kern = kern
+    sys.bvec = bvec
+    return 0
 
 @cython.boundscheck(False)
 def c_generate_current_pauli(sys):
@@ -142,7 +146,10 @@ def c_generate_current_pauli(sys):
                     fct2 = -phi0[cc]*paulifct[l, cb, 1]
                     current[l] = current[l] + fct1 + fct2
                     energy_current[l] = energy_current[l] - (E[b]-E[c])*(fct1 + fct2)
-    return current, energy_current
+    sys.current = current
+    sys.energy_current = energy_current
+    sys.heat_current = energy_current - current*sys.leads.mulst
+    return 0
 
 @cython.boundscheck(False)
 def c_generate_vec_pauli(np.ndarray[double_t, ndim=1] phi0, sys):
@@ -187,4 +194,12 @@ def c_generate_vec_pauli(np.ndarray[double_t, ndim=1] phi0, sys):
                         dphi0_dt[bb] = dphi0_dt[bb] + paulifct[l, cb, 1]*phi0[cc]
     dphi0_dt[norm_row] = norm-1
     return dphi0_dt
+
+class Approach_Pauli(Approach):
+
+    kerntype = 'Pauli'
+    generate_fct = c_generate_paulifct
+    generate_kern = c_generate_kern_pauli
+    generate_current = c_generate_current_pauli
+    generate_vec = c_generate_vec_pauli
 #---------------------------------------------------------------------------------------------------------

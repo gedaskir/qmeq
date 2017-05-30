@@ -13,9 +13,13 @@ from .neumann2 import get_emin_emax
 from .neumann2 import get_grid_ext
 from .neumann2 import get_htransf_phi1k
 from .neumann2 import get_htransf_fk
+from .neumann2 import kern_phi0_2vN
+from .neumann2 import generate_current_2vN
 
 from ..mytypes import doublenp
 from ..mytypes import complexnp
+
+from ..aprclass import Approach2vN
 
 cimport numpy as np
 cimport cython
@@ -296,7 +300,9 @@ def c_get_phi1_phi0_2vN(sys):
         else:               dx = Ek_grid[j1+1] - Ek_grid[j1-1]
         phi1_phi0 += 0.5*dx*phi1k[j1]
         e_phi1_phi0 += 0.5*dx*Ek_grid[j1]*phi1k[j1]
-    return phi1_phi0, e_phi1_phi0
+    sys.phi1_phi0 = phi1_phi0
+    sys.e_phi1_phi0 = e_phi1_phi0
+    return 0
 
 @cython.boundscheck(False)
 def c_iterate_2vN(sys):
@@ -350,4 +356,15 @@ def c_iterate_2vN(sys):
         for j1 in range(Eklen):
             ind = j1 + kpnt_left
             phi1k_delta[j1] = c_phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta, sys.fkp, kern1k[j1], E, Tba, si)
-    return phi1k_delta, hphi1k_delta, kern1k
+    sys.phi1k_delta = phi1k_delta
+    sys.hphi1k_delta = hphi1k_delta
+    sys.kern1k = kern1k
+    return 0
+
+class Approach_2vN(Approach2vN):
+
+    kerntype = '2vN'
+    iterate = c_iterate_2vN
+    get_phi1_phi0 = c_get_phi1_phi0_2vN
+    kern_phi0 = staticmethod(kern_phi0_2vN)
+    generate_current = staticmethod(generate_current_2vN)

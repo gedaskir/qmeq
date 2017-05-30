@@ -7,9 +7,10 @@ Modules
 .. toctree::
 
    qmeq.approach
+   qmeq.aprclass
+   qmeq.builder
    qmeq.indexing
    qmeq.leadstun
-   qmeq.mastereq
    qmeq.mytypes
    qmeq.qdot
    qmeq.specfunc

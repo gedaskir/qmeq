@@ -10,6 +10,9 @@ import itertools
 from ..mytypes import doublenp
 from ..mytypes import complexnp
 
+from ..aprclass import Approach
+from .c_neumann1 import c_generate_phi1fct
+
 cimport numpy as np
 cimport cython
 
@@ -158,10 +161,12 @@ def c_generate_kern_redfield(sys):
         for b in si.statesdm[charge]:
             bb = mapdm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
             kern[norm_row, bb] += 1
-    return kern, bvec
+    sys.kern = kern
+    sys.bvec = bvec
+    return 0
 
 @cython.boundscheck(False)
-def c_generate_phi1_redfield(sys):
+def c_generate_current_redfield(sys):
     cdef np.ndarray[double_t, ndim=1] phi0p = sys.phi0
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
     cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
@@ -223,7 +228,11 @@ def c_generate_phi1_redfield(sys):
     for l in range(nleads):
         current[l] = -2*current[l].imag
         energy_current[l] = -2*energy_current[l].imag
-    return phi1, current, energy_current
+    sys.phi1 = phi1
+    sys.current = current
+    sys.energy_current = energy_current
+    sys.heat_current = energy_current - current*sys.leads.mulst
+    return 0
 
 @cython.boundscheck(False)
 def c_generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, sys):
@@ -327,3 +336,12 @@ def c_generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, sys):
                     #--------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real))
+
+class Approach_Redfield(Approach):
+
+    kerntype = 'Redfield'
+    generate_fct = c_generate_phi1fct
+    generate_kern = c_generate_kern_redfield
+    generate_current = c_generate_current_redfield
+    generate_vec = c_generate_vec_redfield
+#---------------------------------------------------------------------------------------------------------
