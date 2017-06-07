@@ -70,16 +70,21 @@ class Builder(object):
         String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
         Note that 'sz' indexing for Fock states is used for 'ssq' indexing, with
         additional specification of eigensates in Fock basis.
+    symmetry : str
+        String determining that the states will be augmented by the symmetry.
+        Possible value is 'spin'.
     kpnt : int
         Number of energy grid points on which 2vN approach equations are solved.
     kerntype : string
         String describing what master equation approach to use.
-        For Approach class the possible values are 'Pauli', '1vN', 'Redfield', 'Lindblad', 'pyPauli', 'py1vN', 'pyLindblad'.
+        For Approach class the possible values are 'Pauli', '1vN', 'Redfield', 'Lindblad',
+        'pyPauli', 'py1vN', 'pyLindblad'.
         For Approach2vN class the possible values are '2vN' and 'py2vN'.
         The approaches with 'py' in front are not compiled using cython.
     symq : bool
         For symq=False keep all equations in the kernel, and the matrix is of size N by N+1.
-        For symq=True replace one equation by the normalisation condition, and the matrix is square N by N.
+        For symq=True replace one equation by the normalisation condition,
+        and the matrix is square N by N.
     norm_row : int
         If symq=True this row will be replaced by normalisation condition in the kernel matrix.
     solmethod : string
@@ -89,9 +94,11 @@ class Builder(object):
         For matrix free methods (used when mfreeq=True) the possible values are
         'krylov', 'broyden', etc.
     itype : int
-        Type of integral for first-order approach calculations.
-        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
-        itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
+        Type of integral for first order approach calculations.
+        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK
+                 routine dqawc through SciPy.
+        itype=1: the principal parts are kept, but approximated by digamma function valid for
+                 large bandwidht D.
         itype=2: the principal parts are neglected.
         itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
     dqawc_limit : int
@@ -105,6 +112,20 @@ class Builder(object):
         Type for the many-body quantum dot Hamiltonian matrix.
     mtype_leads : float or complex
         Type for the many-body tunneling matrix Tba.
+    symmetry : str
+        String determining if the states will be augmented by a symmetry.
+        Possible value is 'spin'.
+    herm_hs : bool
+        When herm_hs=True the conjugated elements are added automatically to many-body Hamiltonian
+        from hsingle. For example, when hsingle={(0,1): val} the element {(1,0): val.conjugate()}
+        will also be added.
+    herm_c : bool
+        When herm_c=True the conjugated elements are added automatically to many-body Hamiltonian
+        from coulomb. For example, when coulomb={(0,2,3,1): val} the element
+        {(1,3,2,0): val.conjugate()} will also be added. However, we note that for m_less_n=True
+        if coulomb={(0,2,1,3): val} the element (3,1,2,0) will not be included.
+    m_less_n : bool
+        When m_less_n=True the coulomb matrix element (m, n, k, l) has to have m<n.
     qd : QuantumDot
         QuantumDot object.
     leads : LeadsTunneling
@@ -139,12 +160,19 @@ class Builder(object):
         Iterations2vN object, which is present just for 2vN approach.
     """
 
-    def __init__(self, nsingle, hsingle, coulomb,
-                       nleads, tleads, mulst, tlst, dband,
-                       indexing='charge', kpnt=None,
+    def __init__(self, nsingle=0, hsingle={}, coulomb={},
+                       nleads=0, tleads={}, mulst={}, tlst={}, dband={},
+                       indexing='n', kpnt=None,
                        kerntype='Pauli', symq=True, norm_row=0, solmethod='n',
                        itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
-                       mtype_qd=complex, mtype_leads=complex):
+                       mtype_qd=complex, mtype_leads=complex,
+                       symmetry='n', herm_hs=True, herm_c=False, m_less_n=True):
+
+        if indexing is 'n':
+            if symmetry is 'spin' and kerntype not in {'py2vN', '2vN'}:
+                indexing = 'ssq'
+            else:
+                indexing = 'charge'
 
         if not indexing in {'Lin', 'charge', 'sz', 'ssq'}:
             print("WARNING: Allowed indexing values are: \'Lin\', \'charge\', \'sz\', \'ssq\'. "+
@@ -155,7 +183,8 @@ class Builder(object):
             print("WARNING: itype needs to be 0, 1, 2, or 3. Using default itype=0.")
             itype = 0
 
-        if not kerntype in {'Pauli', 'Lindblad', 'Redfield', '1vN', '2vN', 'pyPauli', 'pyLindblad', 'py1vN', 'py2vN'}:
+        if not kerntype in {'Pauli', 'Lindblad', 'Redfield', '1vN', '2vN',
+                            'pyPauli', 'pyLindblad', 'py1vN', 'py2vN'}:
             print("WARNING: Allowed kerntype values are: "+
                   "\'Pauli\', \'Lindblad\', \'Redfield\', \'1vN\', \'2vN\', "+
                   "\'pyPauli\', \'pyLindblad\', \'py1vN\', \'py2vN\'. "+
@@ -180,23 +209,25 @@ class Builder(object):
         dband = copy.deepcopy(dband)
         phi0_init = copy.deepcopy(phi0_init)
 
-        funcp = FunctionProperties(kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,
-                                   itype=itype, dqawc_limit=dqawc_limit, mfreeq=mfreeq, phi0_init=phi0_init,
-                                   mtype_qd=mtype_qd, mtype_leads=mtype_leads, kpnt=kpnt, dband=dband)
+        funcp = FunctionProperties(kerntype=kerntype, symq=symq, norm_row=norm_row,
+                                   solmethod=solmethod, itype=itype, dqawc_limit=dqawc_limit,
+                                   mfreeq=mfreeq, phi0_init=phi0_init, mtype_qd=mtype_qd,
+                                   mtype_leads=mtype_leads, kpnt=kpnt, dband=dband)
 
         icn = globals()['Approach_'+kerntype].indexing_class_name
-        si = globals()[icn](nsingle, indexing)
-        qd = QuantumDot(hsingle, coulomb, si, mtype_qd)
+        si = globals()[icn](nsingle, indexing, symmetry)
+        qd = QuantumDot(hsingle, coulomb, si, herm_hs, herm_c, m_less_n, mtype_qd)
         leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dband, mtype_leads)
-        tt = globals()['Approach_'+kerntype](qd, leads, si, funcp)
 
-        self.funcp, self.si, self.qd, self.leads, self.tt = funcp, si, qd, leads, tt
+        self.funcp, self.si, self.qd, self.leads = funcp, si, qd, leads
+        self.tt = globals()['Approach_'+kerntype](self)
 
     def __getattr__(self, item):
         if item in {'solve', 'current', 'energy_current', 'heat_current', 'phi0', 'phi1',
                     'niter', 'iters', 'kpnt', 'kern'}:
             return getattr(self.tt, item)
-        elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit', 'mfreeq', 'phi0_init'}:
+        elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit',
+                      'mfreeq', 'phi0_init'}:
             return getattr(self.funcp, item)
         elif item in {'tleads', 'mulst', 'tlst', 'dlst', 'Tba'}:
             return getattr(self.leads, item)
@@ -212,7 +243,8 @@ class Builder(object):
         if item in {'solve', 'current', 'energy_current', 'heat_current', 'phi0', 'phi1',
                     'niter', 'iters', 'kpnt', 'kern'}:
             setattr(self.tt, item, value)
-        elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit', 'mfreeq', 'phi0_init'}:
+        elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit',
+                      'mfreeq', 'phi0_init'}:
             setattr(self.funcp, item, value)
         elif item in {'tleads', 'mulst', 'tlst', 'dlst', 'Tba'}:
             setattr(self.leads, item, value)
@@ -231,7 +263,7 @@ class Builder(object):
         k2 = 1 if self.tt.kerntype in {'2vN', 'py2vN'} else 0
         if k1 == k2:
             if self.tt.kerntype != value:
-                self.tt = globals()['Approach_'+value](self.qd, self.leads, self.si, self.funcp)
+                self.tt = globals()['Approach_'+value](self)
                 self.funcp.kerntype = value
         else:
             print('WARNING: Cannot change kernel type from \''+self.tt.kerntype+'\' to \''+value
@@ -352,7 +384,8 @@ class FunctionProperties(object):
         The approaches with 'py' in front are not compiled using cython.
     symq : bool
         For symq=False keep all equations in the kernel, and the matrix is of size N by N+1.
-        For symq=True replace one equation by the normalisation condition, and the matrix is square N by N.
+        For symq=True replace one equation by the normalisation condition,
+        and the matrix is square N by N.
     norm_row : int
         If symq=True this row will be replaced by normalisation condition in the kernel matrix.
     solmethod : string
@@ -362,9 +395,11 @@ class FunctionProperties(object):
         For matrix free methods (used when mfreeq=True) the possible values are
         'krylov', 'broyden', etc.
     itype : int
-        Type of integral for first-order approach calculations.
-        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
-        itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
+        Type of integral for first order approach calculations.
+        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK
+                 routine dqawc through SciPy.
+        itype=1: the principal parts are kept, but approximated by digamma function valid for
+                 large bandwidht D.
         itype=2: the principal parts are neglected.
         itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
     dqawc_limit : int

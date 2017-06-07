@@ -7,6 +7,7 @@ import itertools
 EPS = 1e-11
 CHECK_PY = False
 PRNTQ = False
+SERIAL_TRIPLE_DOT = False
 
 class Parameters_double_dot_spinful(object):
 
@@ -201,3 +202,220 @@ def test_Builder_single_orbital_spinful():
         system.solve(niter=5)
         assert norm(system.current - data_current['2vN']) < EPS
         assert norm(system.energy_current - data_energy_current['2vN']) < EPS
+
+def test_Builder_coulomb_symmetry_spin():
+
+    def intas(m, l):
+        m = m+1
+        l = l+1
+        return np.exp(1j*(np.sqrt(l)-np.sqrt(m)))*np.sqrt(1/(np.sqrt(m)+np.sqrt(l)))
+
+    def Vmnkl(m, n, k, l):
+        return intas(m, l)*intas(n, k)
+
+    nsingle = 4
+    # Spinless, m_less_n=False, herm_c=False
+    coulomb0 = {}
+    for m, n, k, l in itertools.product(range(nsingle), repeat=4):
+        coulomb0.update({(m, n, k, l): Vmnkl(m,n,k,l)/2})
+
+    sys0_spinless = Builder(nsingle=nsingle, coulomb=coulomb0, mtype_qd=complex, m_less_n=False, herm_c=False)
+    sys0_spinless.solve(masterq=False)
+
+    # Spinless, m_less_n=False, herm_c=True
+    coulomb1 = {}
+    for m, n, k, l in itertools.product(range(nsingle), repeat=4):
+        if not ((l, k, n, m) in coulomb1.keys()):
+            coulomb1.update({(m, n, k, l): Vmnkl(m,n,k,l)/2})
+
+    sys1_spinless = Builder(nsingle=nsingle, coulomb=coulomb1, mtype_qd=complex, m_less_n=False, herm_c=True)
+    sys1_spinless.solve(masterq=False)
+
+    # Spinless, m_less_n=True, herm_c=False
+    coulomb2 = {}
+    for m, n, k, l in itertools.product(range(nsingle), repeat=4):
+        if m <= n:
+            coulomb2.update({(m, n, k, l): Vmnkl(m,n,k,l)})
+
+    sys2_spinless = Builder(nsingle=nsingle, coulomb=coulomb2, mtype_qd=complex, m_less_n=True, herm_c=False)
+    sys2_spinless.solve(masterq=False)
+
+    # Spinless, m_less_n=True, herm_c=True
+    coulomb3 = {}
+    for m, n, k, l in itertools.product(range(nsingle), repeat=4):
+        if m <= n and not ((l, k, n, m) in coulomb3.keys()):
+            coulomb3.update({(m, n, k, l): Vmnkl(m,n,k,l)})
+
+    sys3_spinless = Builder(nsingle=nsingle, coulomb=coulomb3, mtype_qd=complex, m_less_n=True, herm_c=True)
+    sys3_spinless.solve(masterq=False)
+
+    assert sum(abs(sys1_spinless.Ea-sys0_spinless.Ea)) < EPS
+    assert sum(abs(sys2_spinless.Ea-sys0_spinless.Ea)) < EPS
+    assert sum(abs(sys3_spinless.Ea-sys0_spinless.Ea)) < EPS
+
+    nsingle = 8
+    ns = 4
+    # Spinful
+    coulomb = {}
+    for m, n, k, l in itertools.product(range(ns), repeat=4):
+        coulomb.update({(m, n, k, l): Vmnkl(m,n,k,l)/2})
+        coulomb.update({(m+ns, n, k, l+ns): Vmnkl(m,n,k,l)/2})
+        coulomb.update({(m, n+ns, k+ns, l): Vmnkl(m,n,k,l)/2})
+        coulomb.update({(m+ns, n+ns, k+ns, l+ns): Vmnkl(m,n,k,l)/2})
+
+    indexing = 'ssq'
+    sys_ref_spinful = Builder(nsingle=nsingle, coulomb=coulomb, mtype_qd=complex, m_less_n=False, herm_c=False, indexing=indexing)
+    sys_ref_spinful.solve(masterq=False)
+    sys0_spinful = Builder(nsingle=nsingle, coulomb=coulomb0, mtype_qd=complex, m_less_n=False, herm_c=False, symmetry='spin', indexing=indexing)
+    sys0_spinful.solve(masterq=False)
+    sys1_spinful = Builder(nsingle=nsingle, coulomb=coulomb1, mtype_qd=complex, m_less_n=False, herm_c=True, symmetry='spin', indexing=indexing)
+    sys1_spinful.solve(masterq=False)
+    sys2_spinful = Builder(nsingle=nsingle, coulomb=coulomb2, mtype_qd=complex, m_less_n=True, herm_c=False, symmetry='spin', indexing=indexing)
+    sys2_spinful.solve(masterq=False)
+    sys3_spinful = Builder(nsingle=nsingle, coulomb=coulomb3, mtype_qd=complex, m_less_n=True, herm_c=True, symmetry='spin', indexing=indexing)
+    sys3_spinful.solve(masterq=False)
+
+    assert sum(abs(sys0_spinful.Ea-sys_ref_spinful.Ea)) < EPS
+    assert sum(abs(sys1_spinful.Ea-sys_ref_spinful.Ea)) < EPS
+    assert sum(abs(sys2_spinful.Ea-sys_ref_spinful.Ea)) < EPS
+    assert sum(abs(sys3_spinful.Ea-sys_ref_spinful.Ea)) < EPS
+
+def serial_triple_dot_coulomb_symmetry_spin():
+    # Coulomb matrix elements
+    # Intradot terms: u, uex
+    # Interdot terms: un, udc, usc
+    u, uex, un, udc, usc = 10., 2., 3., -0.5, -0.2
+
+    #----------- Spinless -----------
+    nsingle = 5
+    dotindex = [0, 0, 1, 1, 2]
+    # m, n, k, l
+    coulomb = []
+    for m, n, k, l in itertools.product(range(nsingle), repeat=4):
+        if m == n == k == l:
+            coulomb.append([m,m,m,m,u/2]) # Direct
+        if dotindex[m] == dotindex[k]:
+            if m == n and k == l and m != k:
+                coulomb.append([m,m,k,k,uex/2]) # Exchange
+        if m != n and k != l:
+            # Intradot
+            if dotindex[m] == dotindex[n]:
+                if m == l and n == k: coulomb.append([m,n,n,m,u/2])   # Direct
+                if m == k and n == l: coulomb.append([m,n,m,n,uex/2]) # Exchange
+            # Interdot
+            # Note that the pairs (n,k) and (m,l) are located at different dots
+            if (dotindex[m] == dotindex[l] and
+                dotindex[n] == dotindex[k] and
+                abs(dotindex[m]-dotindex[n]) == 1):
+                if m == l and n == k:
+                    coulomb.append([m,n,n,m,un/2])   # Direct
+                if n == k and m != l:
+                    sgn = dotindex[m]-dotindex[n]
+                    coulomb.append([m,n,n,l,udc/2*sgn])  # Charge-dipole
+                if n != k and m == l:
+                    sgn = dotindex[n]-dotindex[m]
+                    coulomb.append([m,n,k,m,udc/2*sgn])  # Charge-dipole
+                if n != k and m != l:
+                    coulomb.append([m,n,k,l,usc/2])  # Charge-quadrupole
+    coulomb0 = coulomb
+
+    coulomb1 = {(0,0,0,0):u, (1,1,1,1):u, (2,2,2,2):u, (3,3,3,3):u, (4,4,4,4):u,
+                (0,1,1,0):u, (2,3,3,2):u,
+                #
+                (0,0,1,1):uex, (2,2,3,3):uex,
+                (0,1,0,1):uex, (2,3,2,3):uex,
+                #
+                (0,2,2,0):un, (0,3,3,0):un,
+                (1,2,2,1):un, (1,3,3,1):un,
+                (2,4,4,2):un, (3,4,4,3):un,
+                #
+                (0,2,2,1):-udc, (0,3,3,1):-udc, (2,4,4,3):-udc,
+                (0,2,3,0):+udc, (1,2,3,1):+udc,
+                #
+                (0,2,3,1):usc, (0,3,2,1):usc,
+                # Conjugated terms
+                (1,1,0,0):uex, (3,3,2,2):uex,
+                #
+                (1,2,2,0):-udc, (1,3,3,0):-udc, (3,4,4,2):-udc,
+                (0,3,2,0):+udc, (1,3,2,1):+udc,
+                #
+                (1,3,2,0):usc, (1,2,3,0):usc
+                }
+
+    coulomb2 = {(0,0,0,0):u, (1,1,1,1):u, (2,2,2,2):u, (3,3,3,3):u, (4,4,4,4):u,
+                (0,1,1,0):u, (2,3,3,2):u,
+                #
+                (0,0,1,1):uex, (2,2,3,3):uex,
+                (0,1,0,1):uex, (2,3,2,3):uex,
+                #
+                (0,2,2,0):un, (0,3,3,0):un,
+                (1,2,2,1):un, (1,3,3,1):un,
+                (2,4,4,2):un, (3,4,4,3):un,
+                #
+                (0,2,2,1):-udc, (0,3,3,1):-udc, (2,4,4,3):-udc,
+                (0,2,3,0):+udc, (1,2,3,1):+udc,
+                #
+                (0,2,3,1):usc, (0,3,2,1):usc
+                }
+
+    sys0_spinless = qmeq.Builder(nsingle=5, coulomb=coulomb0, symmetry='n', m_less_n=False, herm_c=False)
+    sys0_spinless.solve(masterq=False)
+    sys1_spinless = qmeq.Builder(nsingle=5, coulomb=coulomb1, symmetry='n', m_less_n=True, herm_c=False)
+    sys1_spinless.solve(masterq=False)
+    sys2_spinless = qmeq.Builder(nsingle=5, coulomb=coulomb2, symmetry='n', m_less_n=True, herm_c=True)
+    sys2_spinless.solve(masterq=False)
+
+    assert sum(abs(sys1_spinless.Ea-sys0_spinless.Ea)) < EPS
+    assert sum(abs(sys2_spinless.Ea-sys0_spinless.Ea)) < EPS
+
+    #----------- Spinful -----------
+    nsingle = 10
+    nssl = nsingle//2
+    dotindex = [0, 0, 1, 1, 2, 0, 0, 1, 1, 2]
+    # m, n, k, l
+    coulomb = []
+    for m, n, k, l in itertools.product(range(nsingle), repeat=4):
+        if m != n and k != l and m//nssl == l//nssl and n//nssl == k//nssl:
+            # Intradot
+            if dotindex[m] == dotindex[n]:
+                if m == l and n == k: coulomb.append([m,n,n,m,u/2]) # Direct
+                if m == k and n == l:
+                    coulomb.append([m,n,m,n,uex/2]) # Exchange
+                    if m+nssl < nsingle:
+                        coulomb.append([m,n+nssl,m+nssl,n,uex/2])
+                        coulomb.append([m+nssl,n,m,n+nssl,uex/2])
+                        coulomb.append([m,m+nssl,n+nssl,n,uex/2])
+                        coulomb.append([m+nssl,m,n,n+nssl,uex/2])
+            # Interdot
+            # Note that the pairs (n,k) and (m,l) are located at different dots
+            if (dotindex[m] == dotindex[l] and
+                dotindex[n] == dotindex[k] and
+                abs(dotindex[m]-dotindex[n]) == 1):
+                if m == l and n == k:
+                    coulomb.append([m,n,n,m,un/2])   # Direct
+                if n == k and m != l:
+                    sgn = dotindex[m]-dotindex[n]
+                    coulomb.append([m,n,n,l,udc/2*sgn])  # Charge-dipole
+                if n != k and m == l:
+                    sgn = dotindex[n]-dotindex[m]
+                    coulomb.append([m,n,k,m,udc/2*sgn])  # Charge-dipole
+                if n != k and m != l:
+                    coulomb.append([m,n,k,l,usc/2])  # Charge-quadrupole
+
+    indexing='ssq'
+    sys_ref_spinful = qmeq.Builder(nsingle=10, coulomb=coulomb, indexing=indexing)
+    sys_ref_spinful.solve(masterq=False)
+    sys0_spinful = qmeq.Builder(nsingle=10, coulomb=coulomb0, symmetry='spin', m_less_n=False, indexing=indexing)
+    sys0_spinful.solve(masterq=False)
+    sys1_spinful = qmeq.Builder(nsingle=10, coulomb=coulomb1, symmetry='spin', m_less_n=True, herm_c=False, indexing=indexing)
+    sys1_spinful.solve(masterq=False)
+    sys2_spinful = qmeq.Builder(nsingle=10, coulomb=coulomb2, symmetry='spin', m_less_n=True, herm_c=True, indexing=indexing)
+    sys2_spinful.solve(masterq=False)
+
+    assert sum(abs(sys0_spinful.Ea-sys_ref_spinful.Ea)) < 10*EPS
+    assert sum(abs(sys1_spinful.Ea-sys_ref_spinful.Ea)) < 10*EPS
+    assert sum(abs(sys2_spinful.Ea-sys_ref_spinful.Ea)) < 10*EPS
+
+def test_Builder_serial_triple_dot_coulomb_symmetry_spin():
+    if SERIAL_TRIPLE_DOT:
+        serial_triple_dot_coulomb_symmetry_spin()

@@ -137,7 +137,8 @@ def empty_szlst(nsingle, noneq=False):
 
 def construct_szlst(nsingle):
     """
-    Makes list of lists of lists containing Lin indices of the states for given charge and spin :math:`S_{z}`.
+    Makes list of lists of lists containing Lin indices of the states for given charge
+    and spin :math:`S_{z}`.
 
     Parameters
     ----------
@@ -352,14 +353,14 @@ def make_inverse_map(lst):
         rez[lst[j1]] = j1
     return rez
 
-def make_quantum_numbers(stateind):
+def make_quantum_numbers(si):
     """
     Make dictionaries between the state indices and
     quantum numbers corresponding to the states.
 
     Parameters
     ----------
-    stateind : StateIndexing.
+    si : StateIndexing.
         StateIndexing or StateIndexingDM object.
 
     Returns
@@ -369,34 +370,34 @@ def make_quantum_numbers(stateind):
     ind_qn : dict
         Dictionary from state index to quantum numbers of the state.
     """
-    ncharge = stateind.ncharge
-    nsingle = stateind.nsingle
+    ncharge = si.ncharge
+    nsingle = si.nsingle
     ind = 0
     qn_ind = {}
     ind_qn = {}
-    if stateind.indexing == 'ssq':
+    if si.indexing == 'ssq':
         for charge in range(ncharge):
             for sz in szrange(charge, nsingle):
                 szind = sz_to_ind(sz, charge, nsingle)
                 for ssq in ssqrange(charge, sz, nsingle):
                     ssqind = ssq_to_ind(ssq, sz)
-                    for alpha in range(len(stateind.ssqlst[charge][szind][ssqind])):
-                        ind = stateind.ssqlst[charge][szind][ssqind][alpha]
+                    for alpha in range(len(si.ssqlst[charge][szind][ssqind])):
+                        ind = si.ssqlst[charge][szind][ssqind][alpha]
                         qn_ind.update({(charge, sz, ssq, alpha):ind})
                         ind_qn.update({ind:(charge, sz, ssq, alpha)})
                         ind += 1
-    elif stateind.indexing == 'sz':
+    elif si.indexing == 'sz':
         for charge in range(ncharge):
             for sz in szrange(charge, nsingle):
                 szind = sz_to_ind(sz, charge, nsingle)
-                for alpha in range(len(stateind.szlst[charge][szind])):
-                    ind = stateind.szlst[charge][szind][alpha]
+                for alpha in range(len(si.szlst[charge][szind])):
+                    ind = si.szlst[charge][szind][alpha]
                     qn_ind.update({(charge, sz, alpha):ind})
                     ind_qn.update({ind:(charge, sz, alpha)})
     else:
         for charge in range(ncharge):
-            for alpha in range(len(stateind.chargelst[charge])):
-                ind = stateind.chargelst[charge][alpha]
+            for alpha in range(len(si.chargelst[charge])):
+                ind = si.chargelst[charge][alpha]
                 qn_ind.update({(charge, alpha):ind})
                 ind_qn.update({ind:(charge, alpha)})
     return qn_ind, ind_qn
@@ -413,6 +414,9 @@ class StateIndexing(object):
         String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
         Note that 'sz' indexing for Fock states is used for 'ssq' indexing, with
         additional specification of eigensates in Fock basis.
+    symmetry : str
+            String determining if the states will be augmented by a symmetry.
+            Possible value is 'spin'.
     ncharge : int
         Number of charge states.
     nmany : int
@@ -443,7 +447,7 @@ class StateIndexing(object):
         print_state() and print_all_states()
     """
 
-    def __init__(self, nsingle, indexing='Lin'):
+    def __init__(self, nsingle, indexing='Lin', symmetry='n'):
         """
         Initialization of the StateIndexing class
 
@@ -453,12 +457,19 @@ class StateIndexing(object):
             Number of single-particle states.
         indexing : str
             String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
+        symmetry : str
+            String determining that the states will be augmented by the symmetry.
+            Possible value is 'spin'.
         """
+        #
+        self.nsingle_sym = nsingle//2 if symmetry is 'spin' else nsingle
         self.nsingle = nsingle
         self.indexing = indexing
+        self.symmetry = symmetry
         self.ncharge = nsingle+1
         self.nmany = 2**nsingle
         self.nleads = 0
+        self.nleads_sym = 0
         #
         self.szlst_lin = None
         self.szlst = None
@@ -476,7 +487,8 @@ class StateIndexing(object):
             if indexing == 'ssq':
                 self.ssqlst = construct_ssqlst(self.szlst, nsingle)
         elif (indexing == 'sz' or indexing == 'ssq') and self.nsingle%2 != 0:
-            print("WARNING: For 'sz' or 'ssq' indexing, nsingle has to be even. Using 'Lin' indexing.")
+            print("WARNING: For 'sz' or 'ssq' indexing, nsingle has to be even. \
+                   Using 'Lin' indexing.")
             self.indexing = 'Lin'
             self.chargelst = construct_chargelst(nsingle)
             self.i = list(range(self.nmany))
@@ -484,7 +496,8 @@ class StateIndexing(object):
             self.chargelst = construct_chargelst(nsingle)
             self.i = list(range(self.nmany))
         else:
-            print("WARNING: The indexing has to be 'Lin', 'charge', or 'sz'. Using 'Lin' indexing.")
+            print("WARNING: The indexing has to be 'Lin', 'charge', or 'sz'. \
+                   Using 'Lin' indexing.")
             self.indexing = 'Lin'
             self.chargelst = construct_chargelst(nsingle)
             self.i = list(range(self.nmany))
@@ -591,11 +604,12 @@ class StateIndexingPauli(StateIndexing):
         For example mapdm0[1]=1, mapdm0[2]=1, shows that 1 and 2 are equivalent.
         Also mapdm0[ind]=-1 shows that the state is excluded.
     booldm0 : list
-        List giving states which will used. Other states will be mapped to states, which have booldm0[ind]=True.
+        List giving states which will used. Other states will be mapped to states,
+        which have booldm0[ind]=True.
         From example for mapdm0 we have booldm0[1]=True, booldm0[2]=False.
     """
 
-    def __init__(self, nsingle, indexing='Lin'):
+    def __init__(self, nsingle, indexing='Lin', symmetry='n'):
         """
         Initialization of the StateIndexingDM class
 
@@ -604,9 +618,11 @@ class StateIndexingPauli(StateIndexing):
         nsingle : int
             Number of single-particle states.
         indexing : str
-            String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz'.
+            String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
+        symmetry : str
+            String determining that the states will be augmented by the symmetry.
         """
-        StateIndexing.__init__(self, nsingle, indexing)
+        StateIndexing.__init__(self, nsingle, indexing, symmetry)
         self.shiftlst0 = np.zeros(self.ncharge+1, dtype=longnp)
         self.dictdm = np.zeros(self.nmany, dtype=longnp)
         self.statesdm = None
@@ -705,22 +721,31 @@ class StateIndexingDM(StateIndexing):
     Attributes
     ----------
     ndm0 : int
-        Number of density matrix elements to zeroth order corresponding to statesdm, when symmetries are used.
+        Number of density matrix elements to zeroth order corresponding to statesdm,
+        when symmetries are used.
     ndm0r : int
-        Number of unique density matrix elements to zeroth order corresponding to statesdm, when symmetries are used.
-        The real and imaginary parts of the off-diagonal matrix element are considered as separate entities.
+        Number of unique density matrix elements to zeroth order corresponding to statesdm,
+        when symmetries are used.
+        The real and imaginary parts of the off-diagonal matrix element are considered
+        as separate entities.
     ndm0\_ : int
-        Number of density matrix elements to zeroth order corresponding to statesdm, when no symmetries are used.
+        Number of density matrix elements to zeroth order corresponding to statesdm,
+        when no symmetries are used.
     ndm0_tot : int
-        Total number of density matrix elements to zeroth order for given nsingle, when no symmetries are used.
+        Total number of density matrix elements to zeroth order for given nsingle,
+        when no symmetries are used.
     ndm1, ndm1\_ : int, int
-        Number of density matrix elements to first order corresponding to statesdm, when no symmetries are used.
+        Number of density matrix elements to first order corresponding to statesdm,
+        when no symmetries are used.
     ndm1_tot : int
-        Total number of density matrix elements to first order for given nsingle, when no symmetries are used.
+        Total number of density matrix elements to first order for given nsingle,
+        when no symmetries are used.
     npauli\_ : int
-        Number of diagonal density matrix elements to zeroth order corresponding to statesdm, when no symmetries are used.
+        Number of diagonal density matrix elements to zeroth order corresponding to statesdm,
+        when no symmetries are used.
     npauli : int
-        Number of diagonal density matrix elements to zeroth order corresponding to statesdm, when symmetries are used.
+        Number of diagonal density matrix elements to zeroth order corresponding to statesdm,
+        when symmetries are used.
     statesdm : list
         List of states considered in calculations involving density matrix.
     shiftlst0 : numpy array
@@ -745,7 +770,7 @@ class StateIndexingDM(StateIndexing):
         List showing, which density matrix elements are complex conjugate and are not unique.
     """
 
-    def __init__(self, nsingle, indexing='Lin'):
+    def __init__(self, nsingle, indexing='Lin', symmetry='n'):
         """
         Initialization of the StateIndexingDM class
 
@@ -754,9 +779,11 @@ class StateIndexingDM(StateIndexing):
         nsingle : int
             Number of single-particle states.
         indexing : str
-            String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz'.
+            String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
+        symmetry : str
+            String determining that the states will be augmented by the symmetry.
         """
-        StateIndexing.__init__(self, nsingle, indexing)
+        StateIndexing.__init__(self, nsingle, indexing, symmetry)
         self.ndm0_tot = int(factorial(2*self.nsingle)/factorial(self.nsingle)**2)
         self.ndm1_tot = int(self.nsingle/(self.nsingle+1)*self.ndm0_tot)
         #
@@ -795,7 +822,8 @@ class StateIndexingDM(StateIndexing):
             self.lenlst[j1] = len(self.statesdm[j1])
             self.shiftlst0[j1+1] = self.shiftlst0[j1] + len(self.statesdm[j1])**2
             if j1 < self.ncharge-1:
-                self.shiftlst1[j1+1] = self.shiftlst1[j1] + len(self.statesdm[j1])*len(self.statesdm[j1+1])
+                self.shiftlst1[j1+1] = (self.shiftlst1[j1]
+                                       +len(self.statesdm[j1])*len(self.statesdm[j1+1]))
             counter = 0
             for j2 in self.statesdm[j1]:
                 self.dictdm[j2] = counter
@@ -883,13 +911,17 @@ class StateIndexingDM(StateIndexing):
         # shiftas = self.shiftlst0[charge]
         # print('index is', l*i + j + shiftas)
         if maptype == 0:
-            return self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp] + self.shiftlst0[charge]
+            return (self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp]
+                   + self.shiftlst0[charge])
         elif maptype == 1:
-            return self.mapdm0[self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp] + self.shiftlst0[charge]]
+            return (self.mapdm0[self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp]
+                   + self.shiftlst0[charge]])
         elif maptype == 2:
-            return self.booldm0[self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp] + self.shiftlst0[charge]]
+            return (self.booldm0[self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp]
+                   + self.shiftlst0[charge]])
         elif maptype == 3:
-            return self.conjdm0[self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp] + self.shiftlst0[charge]]
+            return (self.conjdm0[self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp]
+                   + self.shiftlst0[charge]])
 
     def get_ind_dm1(self, c, b, bcharge, maptype=1):
         """
@@ -930,7 +962,7 @@ class StateIndexingDMc(StateIndexing):
     Same as in StateIndexingDM.
     """
 
-    def __init__(self, nsingle, indexing='Lin'):
+    def __init__(self, nsingle, indexing='Lin', symmetry='n'):
         """
         Initialization of the StateIndexingDMc class
 
@@ -939,9 +971,11 @@ class StateIndexingDMc(StateIndexing):
         nsingle : int
             Number of single-particle states.
         indexing : str
-            String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz'.
+            String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
+        symmetry : str
+            String determining that the states will be augmented by the symmetry.
         """
-        StateIndexing.__init__(self, nsingle, indexing)
+        StateIndexing.__init__(self, nsingle, indexing, symmetry)
         self.ndm0_tot = int(factorial(2*self.nsingle)/factorial(self.nsingle)**2)
         self.ndm1_tot = int(self.nsingle/(self.nsingle+1)*self.ndm0_tot)
         #
@@ -980,7 +1014,8 @@ class StateIndexingDMc(StateIndexing):
             self.lenlst[j1] = len(self.statesdm[j1])
             self.shiftlst0[j1+1] = self.shiftlst0[j1] + len(self.statesdm[j1])**2
             if j1 < self.ncharge-1:
-                self.shiftlst1[j1+1] = self.shiftlst1[j1] + len(self.statesdm[j1])*len(self.statesdm[j1+1])
+                self.shiftlst1[j1+1] = (self.shiftlst1[j1]
+                                       +len(self.statesdm[j1])*len(self.statesdm[j1+1]))
             counter = 0
             for j2 in self.statesdm[j1]:
                 self.dictdm[j2] = counter
@@ -1065,9 +1100,11 @@ class StateIndexingDMc(StateIndexing):
         if maptype == 0:
             return self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp] + self.shiftlst0[charge]
         elif maptype == 1:
-            return self.mapdm0[self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp] + self.shiftlst0[charge]]
+            return (self.mapdm0[self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp]
+                   + self.shiftlst0[charge]])
         elif maptype == 2:
-            return self.booldm0[self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp] + self.shiftlst0[charge]]
+            return (self.booldm0[self.lenlst[charge]*self.dictdm[b] + self.dictdm[bp]
+                   + self.shiftlst0[charge]])
 
     def get_ind_dm1(self, c, b, bcharge, maptype=1):
         """

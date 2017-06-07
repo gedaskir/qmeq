@@ -36,8 +36,8 @@ def test_construct_Tba():
     p = Parameters_double_dot_spinful()
     for indexing in ['Lin', 'charge', 'sz', 'ssq']:
         si = StateIndexing(4, indexing=indexing)
-        si.nleads = 4
-        Tba = construct_Tba(p.tleads, si)
+        leads = LeadsTunneling(4, {}, si, {}, {}, {})
+        Tba = construct_Tba(leads, p.tleads)
         assert Tba.tolist() == data[indexing]
 
 def test_construct_full_pmtr():
@@ -59,38 +59,48 @@ def test_rotate_Tba():
     p = Parameters_double_dot_spinful()
     for indexing in ['Lin', 'charge', 'sz', 'ssq']: #'Lin', 'charge', 'sz', 'ssq'
         si = StateIndexing(4, indexing=indexing)
-        si.nleads = 4
-        Tba0 = construct_Tba(p.tleads, si)
+        leads = LeadsTunneling(4, {}, si, {}, {}, {})
+        Tba0 = construct_Tba(leads, p.tleads)
         Tba = rotate_Tba(Tba0, p.vecs[indexing], si)
         assert norm(Tba - data[indexing]) < EPS
 
 def test_make_tleads_mtr_and_dict():
+    nsingle = 4
+    nleads = 4
+    si = StateIndexing(nsingle)
+    si.nleads = nleads
+    #
     tL, tR = 2.0, 1.0
     tleads_dict = {(0,0): tL, (2,2): tL, (1,1): tR, (3,3): tR, (0,1): 0.3*tL, (2,3): 0.3*tL, (1,0): 0.1*tR, (3,2): 0.1*tR}
     tleads_list = [[0,0,tL], [2,2,tL], [1,1,tR], [3,3,tR], [0,1,0.3*tL], [2,3,0.3*tL], [1,0,0.1*tR], [3,2,0.1*tR]]
     tleads_mtr = [[tL, 0.3*tL, 0.0, 0.0], [0.1*tR, tR, 0.0, 0.0], [0.0, 0.0, tL, 0.3*tL], [0.0, 0.0, 0.1*tR, tR]]
-    assert make_tleads_mtr(tleads_dict, 4, 4, mtype=float).tolist()  == tleads_mtr
-    assert make_tleads_mtr(tleads_list, 4, 4, mtype=float).tolist()  == tleads_mtr
-    assert make_tleads_dict(tleads_list) == tleads_dict
-    assert make_tleads_dict(np.array(tleads_mtr)) == tleads_dict
-    assert make_tleads_dict(tleads_dict) == tleads_dict
+    assert make_tleads_mtr(tleads_dict, nleads, nsingle, mtype=float).tolist()  == tleads_mtr
+    assert make_tleads_mtr(tleads_list, nleads, nsingle, mtype=float).tolist()  == tleads_mtr
+    assert make_tleads_dict(tleads_list, si) == tleads_dict
+    assert make_tleads_dict(np.array(tleads_mtr), si) == tleads_dict
+    assert make_tleads_dict(tleads_dict, si) == tleads_dict
 
 def test_make_array():
-    assert make_array({0:0.3, 1:0.2, 2:0.1, 3:0.01, 6:1.0}, 7).tolist() == [0.3, 0.2, 0.1, 0.01, 0., 0., 1.]
-    assert make_array_dlst({0:0.3, 1:0.2, 2:0.1, 3:0.01, 6:1.0}, 7).tolist() == [[-0.3,0.3], [-0.2,0.2], [-0.1,0.1], [-0.01,0.01], [0.,0.], [0.,0.], [-1.,1.]]
+    si = StateIndexing(0)
+    si.nleads = 7
+    si.nleads_sym = 7
+    assert make_array(None, {0:0.3, 1:0.2, 2:0.1, 3:0.01, 6:1.0}, si).tolist() == [0.3, 0.2, 0.1, 0.01, 0., 0., 1.]
+    assert make_array(None, 2, si).tolist() == [2, 2, 2, 2, 2, 2, 2]
+    assert make_array_dlst(None, {0:0.3, 1:0.2, 2:0.1, 3:0.01, 6:1.0}, si).tolist() == [[-0.3,0.3], [-0.2,0.2], [-0.1,0.1], [-0.01,0.01], [0.,0.], [0.,0.], [-1.,1.]]
 
 def test_LeadsTunneling():
+    nsingle = 2
     nleads = 4
     t0, vbias, temp, dband = 0.1, 0.5, 1.0, 60.0
     mulst = {0: vbias/2, 1: -vbias/2, 2: vbias/2, 3: -vbias/2}
     tlst  = {0: temp,    1: temp,     2: temp,    3: temp}
     dlst  = {0: dband,   1: dband,    2: dband,   3: dband}
     tleads = np.array([[t0,0], [t0,0], [0,t0], [0,t0]])
-    si = StateIndexing(2)
+    si = StateIndexing(nsingle)
     leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst)
     #
     assert leads.tleads == {(0,0):t0, (1,0):t0, (2,1):t0, (3,1):t0}
-    assert leads.stateind.nleads == 4
+    assert leads.si.nleads == 4
     assert leads.mulst.tolist() == [vbias/2, -vbias/2, vbias/2, -vbias/2]
     assert leads.tlst.tolist() == [temp, temp, temp, temp]
     assert leads.dlst.tolist() == [[-dband,dband], [-dband,dband], [-dband,dband], [-dband,dband]]
@@ -123,6 +133,19 @@ def test_LeadsTunneling():
     assert leads.tlst.tolist() == [temp, 2*2.13, temp, temp]
     assert leads.dlst.tolist() == [[-dband,dband], [-dband,dband], [-2*3.21,2*3.21], [-dband,dband]]
     #
+    leads.change(mulst=1, tlst=2, dlst=3)
+    assert leads.mulst.tolist() == [1, 1, 1, 1]
+    assert leads.tlst.tolist() == [2, 2, 2, 2]
+    assert leads.dlst.tolist() == [[-3,3], [-3,3], [-3,3], [-3,3]]
+    leads.change(mulst=[vbias/2, -vbias/2, vbias/2, -vbias/2],
+                 tlst=[temp, temp, temp, temp],
+                 dlst=[dband, dband, dband, dband])
+    leads.add(mulst=1, tlst=2, dlst=3)
+    assert leads.mulst.tolist() == [vbias/2+1, -vbias/2+1, vbias/2+1, -vbias/2+1]
+    assert leads.tlst.tolist() == [temp+2, temp+2, temp+2, temp+2]
+    assert leads.dlst.tolist() == [[-dband-3,dband+3], [-dband-3,dband+3],
+                                   [-dband-3,dband+3], [-dband-3,dband+3]]
+    #
     leads.change(dlst=dband-10.0)
     leads.add(dlst=10.0)
     assert leads.dlst.tolist() == [[-dband,dband], [-dband,dband], [-dband,dband], [-dband,dband]]
@@ -130,6 +153,77 @@ def test_LeadsTunneling():
     assert leads.dlst.tolist() == [[1,1], [-dband,dband], [-dband,dband], [2,2]]
     leads.add(dlst={0:(1,1), 3:(2,2)})
     assert leads.dlst.tolist() == [[2,2], [-dband,dband], [-dband,dband], [4,4]]
+    #
+    Tba_tmp = np.array(leads.Tba)
+    leads.Tba = None
+    leads.use_Tba0()
+    assert norm(leads.Tba - Tba_tmp) < EPS
+
+def test_LeadsTunneling_spin():
+    nsingle = 2
+    nleads = 4
+    t0, vbias, temp, dband = 0.1, 0.5, 1.0, 60.0
+    mulst = {0: vbias/2, 1: -vbias/2}
+    tlst  = {0: temp,    1: temp}
+    dlst  = {0: dband,   1: dband}
+    tleads = np.array([[t0,0], [t0,0]])
+    si = StateIndexing(nsingle, symmetry='spin')
+    leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dlst)
+    #
+    assert leads.tleads == {(0,0):t0, (1,0):t0, (2,1):t0, (3,1):t0}
+    assert leads.si.nleads == 4
+    assert leads.mulst.tolist() == [vbias/2, -vbias/2, vbias/2, -vbias/2]
+    assert leads.tlst.tolist() == [temp, temp, temp, temp]
+    assert leads.dlst.tolist() == [[-dband,dband], [-dband,dband], [-dband,dband], [-dband,dband]]
+    #
+    leads.add(tleads={(0,0):1.0, (1,0):2.0},
+              mulst={0:0.1, 1:0.2},
+              tlst={0:1.0, 1:2.0},
+              dlst={0:10.0, 1:20.0})
+    assert leads.tleads == {(0,0):t0+1.0, (1,0):t0+2.0, (2,1):t0+1.0, (3,1):t0+2.0}
+    assert leads.mulst.tolist() == [vbias/2+0.1, -vbias/2+0.2, vbias/2+0.1, -vbias/2+0.2]
+    assert leads.tlst.tolist() == [temp+1.0, temp+2.0, temp+1.0, temp+2.0]
+    assert leads.dlst.tolist() == [[-dband-10.0,dband+10.0], [-dband-20.0,dband+20.0], [-dband-10.0,dband+10.0], [-dband-20.0,dband+20.0]]
+    #
+    leads.change(tleads={(0,0):t0, (1,0):t0},
+                 mulst=[vbias/2, -vbias/2],
+                 tlst=[temp, temp],
+                 dlst=[dband, dband])
+    # The change function introduces numerical errors to tleads
+    assert norm( make_tleads_mtr(leads.tleads, 4, 2) - make_tleads_mtr({(0,0):t0, (1,0):t0, (2,1):t0, (3,1):t0}, 4, 2) ) < EPS
+    assert leads.mulst.tolist() == [vbias/2, -vbias/2, vbias/2, -vbias/2]
+    assert leads.tlst.tolist() == [temp, temp, temp, temp]
+    assert leads.dlst.tolist() == [[-dband,dband], [-dband,dband], [-dband,dband], [-dband,dband]]
+    #
+    leads.change(mulst={0: 1.23}, tlst={1: 2.13}, dlst={1: 3.21})
+    assert leads.mulst.tolist() == [1.23, -vbias/2, 1.23, -vbias/2]
+    assert leads.tlst.tolist() == [temp, 2.13, temp, 2.13]
+    assert leads.dlst.tolist() == [[-dband,dband], [-3.21,3.21], [-dband,dband], [-3.21,3.21]]
+    leads.add(mulst={0: 1.23}, tlst={1: 2.13}, dlst={1: 3.21})
+    assert leads.mulst.tolist() == [2*1.23, -vbias/2, 2*1.23, -vbias/2]
+    assert leads.tlst.tolist() == [temp, 2*2.13, temp, 2*2.13]
+    assert leads.dlst.tolist() == [[-dband,dband], [-2*3.21,2*3.21], [-dband,dband], [-2*3.21,2*3.21]]
+    #
+    leads.change(mulst=1, tlst=2, dlst=3)
+    assert leads.mulst.tolist() == [1, 1, 1, 1]
+    assert leads.tlst.tolist() == [2, 2, 2, 2]
+    assert leads.dlst.tolist() == [[-3,3], [-3,3], [-3,3], [-3,3]]
+    leads.change(mulst=[vbias/2, -vbias/2],
+                 tlst=[temp, temp],
+                 dlst=[dband, dband])
+    leads.add(mulst=1, tlst=2, dlst=3)
+    assert leads.mulst.tolist() == [vbias/2+1, -vbias/2+1, vbias/2+1, -vbias/2+1]
+    assert leads.tlst.tolist() == [temp+2, temp+2, temp+2, temp+2]
+    assert leads.dlst.tolist() == [[-dband-3,dband+3], [-dband-3,dband+3],
+                                   [-dband-3,dband+3], [-dband-3,dband+3]]
+    #
+    leads.change(dlst=dband-10.0)
+    leads.add(dlst=10.0)
+    assert leads.dlst.tolist() == [[-dband,dband], [-dband,dband], [-dband,dband], [-dband,dband]]
+    leads.change(dlst={0:(1,1), 1:(2,2)})
+    assert leads.dlst.tolist() == [[1,1], [2,2], [1,1], [2,2]]
+    leads.add(dlst={0:(1,1), 1:(2,2)})
+    assert leads.dlst.tolist() == [[2,2], [4,4], [2,2], [4,4]]
     #
     Tba_tmp = np.array(leads.Tba)
     leads.Tba = None

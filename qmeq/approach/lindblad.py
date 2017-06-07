@@ -12,9 +12,9 @@ from ..mytypes import doublenp
 from ..specfunc import func_pauli
 from ..aprclass import Approach
 
-#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 # Lindblad approach
-#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 def generate_tLba(sys):
     """
     Make factors used for generating Lindblad master equation kernel.
@@ -249,7 +249,8 @@ def generate_vec_lindblad(phi0p, sys):
                             fct_aap = 0
                             for l in range(si.nleads):
                                 fct_aap += tLba[l, b, a]*tLba[l, bp, ap].conjugate()
-                            phi0aap = phi0[aap] if si.get_ind_dm0(a, ap, charge-1, maptype=3) else phi0[aap].conjugate()
+                            phi0aap = ( phi0[aap] if si.get_ind_dm0(a, ap, charge-1, maptype=3)
+                                                  else phi0[aap].conjugate() )
                             i_dphi0_dt[bbp] += 1.0j*fct_aap*phi0aap
                     #--------------------------------------------------
                     for bpp in si.statesdm[charge]:
@@ -262,7 +263,8 @@ def generate_vec_lindblad(phi0p, sys):
                             for c in si.statesdm[charge+1]:
                                 for l in range(si.nleads):
                                     fct_bppbp += -0.5*tLba[l, c, b].conjugate()*tLba[l, c, bpp]
-                            phi0bppbp = phi0[bppbp] if si.get_ind_dm0(bpp, bp, charge, maptype=3) else phi0[bppbp].conjugate()
+                            phi0bppbp = ( phi0[bppbp] if si.get_ind_dm0(bpp, bp, charge, maptype=3)
+                                                      else phi0[bppbp].conjugate() )
                             i_dphi0_dt[bbp] += 1.0j*fct_bppbp*phi0bppbp
                         #--------------------------------------------------
                         bbpp = si.get_ind_dm0(b, bpp, charge)
@@ -274,7 +276,8 @@ def generate_vec_lindblad(phi0p, sys):
                             for c in si.statesdm[charge+1]:
                                 for l in range(si.nleads):
                                     fct_bbpp += -0.5*tLba[l, c, bpp].conjugate()*tLba[l, c, bp]
-                            phi0bbpp = phi0[bbpp] if si.get_ind_dm0(b, bpp, charge, maptype=3) else phi0[bbpp].conjugate()
+                            phi0bbpp = ( phi0[bbpp] if si.get_ind_dm0(b, bpp, charge, maptype=3)
+                                                    else phi0[bbpp].conjugate() )
                             i_dphi0_dt[bbp] += 1.0j*fct_bbpp*phi0bbpp
                     #--------------------------------------------------
                     for c, cp in itertools.product(si.statesdm[charge+1], si.statesdm[charge+1]):
@@ -283,7 +286,8 @@ def generate_vec_lindblad(phi0p, sys):
                             fct_ccp = 0
                             for l in range(si.nleads):
                                 fct_ccp += tLba[l, b, c]*tLba[l, bp, cp].conjugate()
-                            phi0ccp = phi0[ccp] if si.get_ind_dm0(c, cp, charge+1, maptype=3) else phi0[ccp].conjugate()
+                            phi0ccp = ( phi0[ccp] if si.get_ind_dm0(c, cp, charge+1, maptype=3)
+                                                  else phi0[ccp].conjugate() )
                             i_dphi0_dt[bbp] += 1.0j*fct_ccp*phi0ccp
                     #--------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
@@ -296,4 +300,4 @@ class Approach_pyLindblad(Approach):
     generate_kern = staticmethod(generate_kern_lindblad)
     generate_current = staticmethod(generate_current_lindblad)
     generate_vec = staticmethod(generate_vec_lindblad)
-#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------

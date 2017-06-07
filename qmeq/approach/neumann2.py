@@ -160,30 +160,36 @@ def phi1k_local_2vN(ind, Ek_grid, fk, hfkp, hfkm, E, Tba, si):
                 for b1, a1 in itertools.product(si.statesdm[bcharge], si.statesdm[acharge]):
                     b1a1 = si.get_ind_dm1(b1, a1, acharge)
                     for l1 in range(si.nleads):
-                        kern1[l, cb, b1a1] -= +Tba[l1, c, b1]*Tba[l1, a1, b]*(+func_2vN(+(Ek-E[b1]+E[b]), Ek_grid, l1, +1, hfkp)
-                                                                              -func_2vN(-(Ek-E[c]+E[a1]), Ek_grid, l1, -1, hfkp) )
+                        kern1[l, cb, b1a1] -= +Tba[l1, c, b1]*Tba[l1, a1, b]*(
+                                                +func_2vN(+(Ek-E[b1]+E[b]), Ek_grid, l1, +1, hfkp)
+                                                -func_2vN(-(Ek-E[c]+E[a1]), Ek_grid, l1, -1, hfkp) )
                 # 6th and 8th terms
                 for b1 in si.statesdm[bcharge]:
                     cb1 = si.get_ind_dm1(c, b1, bcharge)
                     for l1 in range(si.nleads):
                         for c1 in si.statesdm[ccharge]:
-                            kern1[l, cb, cb1] -= +Tba[l1, b1, c1]*Tba[l1, c1, b]*func_2vN(+(Ek-E[c]+E[c1]), Ek_grid, l1, +1, hfkp)
+                            kern1[l, cb, cb1] -= ( +Tba[l1, b1, c1]*Tba[l1, c1, b]
+                                                *func_2vN(+(Ek-E[c]+E[c1]), Ek_grid, l1, +1, hfkp) )
                         for a1 in si.statesdm[acharge]:
-                            kern1[l, cb, cb1] -= -Tba[l1, b1, a1]*Tba[l1, a1, b]*func_2vN(-(Ek-E[c]+E[a1]), Ek_grid, l1, -1, hfkm)
+                            kern1[l, cb, cb1] -= ( -Tba[l1, b1, a1]*Tba[l1, a1, b]
+                                                *func_2vN(-(Ek-E[c]+E[a1]), Ek_grid, l1, -1, hfkm) )
                 # 1st and 3rd terms
                 for c1 in si.statesdm[ccharge]:
                     c1b = si.get_ind_dm1(c1, b, bcharge)
                     for l1 in range(si.nleads):
                         for b1 in si.statesdm[bcharge]:
-                            kern1[l, cb, c1b] -= +Tba[l1, c, b1]*Tba[l1, b1, c1]*func_2vN(+(Ek-E[b1]+E[b]), Ek_grid, l1, +1, hfkm)
+                            kern1[l, cb, c1b] -= ( +Tba[l1, c, b1]*Tba[l1, b1, c1]
+                                                *func_2vN(+(Ek-E[b1]+E[b]), Ek_grid, l1, +1, hfkm) )
                         for d1 in si.statesdm[dcharge]:
-                            kern1[l, cb, c1b] -= -Tba[l1, c, d1]*Tba[l1, d1, c1]*func_2vN(-(Ek-E[d1]+E[b]), Ek_grid, l1, -1, hfkp)
+                            kern1[l, cb, c1b] -= ( -Tba[l1, c, d1]*Tba[l1, d1, c1]
+                                                *func_2vN(-(Ek-E[d1]+E[b]), Ek_grid, l1, -1, hfkp) )
                 # 5th and 4th terms
                 for d1, c1 in itertools.product(si.statesdm[dcharge], si.statesdm[ccharge]):
                     d1c1 = si.get_ind_dm1(d1, c1, ccharge)
                     for l1 in range(si.nleads):
-                        kern1[l, cb, d1c1] -= +Tba[l1, c, d1]*Tba[l1, c1, b]*(+func_2vN(+(Ek-E[c]+E[c1]), Ek_grid, l1, +1, hfkm)
-                                                                              -func_2vN(-(Ek-E[d1]+E[b]), Ek_grid, l1, -1, hfkm) )
+                        kern1[l, cb, d1c1] -= +Tba[l1, c, d1]*Tba[l1, c1, b]*(
+                                                +func_2vN(+(Ek-E[c]+E[c1]), Ek_grid, l1, +1, hfkm)
+                                                -func_2vN(-(Ek-E[d1]+E[b]), Ek_grid, l1, -1, hfkm) )
     for l in range(si.nleads):
         kern0[l] = np.dot(np.linalg.inv(kern1[l]), kern0[l])
     return kern0, kern1
@@ -644,7 +650,8 @@ def iterate_2vN(sys):
         kern1k = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm1), dtype=complexnp)
         for j1 in range(Eklen):
             ind = j1 + funcp.kpnt_left
-            phi1k_delta[j1], kern1k[j1] = phi1k_local_2vN(ind, Ek_grid_ext, sys.fkp, sys.hfkp, sys.hfkm, E, Tba, si)
+            phi1k_delta[j1], kern1k[j1] = phi1k_local_2vN(ind, Ek_grid_ext, sys.fkp,
+                                                          sys.hfkp, sys.hfkm, E, Tba, si)
         hphi1k_delta = None
     elif kern1k is None:
         pass
@@ -656,7 +663,8 @@ def iterate_2vN(sys):
         phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
         for j1 in range(Eklen):
             ind = j1 + funcp.kpnt_left
-            phi1k_delta[j1] = phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta, sys.fkp, kern1k[j1], E, Tba, si)
+            phi1k_delta[j1] = phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta,
+                                                sys.fkp, kern1k[j1], E, Tba, si)
     #
     sys.phi1k_delta = phi1k_delta
     sys.hphi1k_delta = hphi1k_delta

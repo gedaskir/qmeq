@@ -65,12 +65,19 @@ class Approach(object):
     @staticmethod
     def generate_vec(sys): pass
 
-    def __init__(self, qd=None, leads=None, si=None, funcp=None):
-        """Initialization of the Approach class."""
-        self.qd = qd
-        self.leads = leads
-        self.si = si
-        self.funcp = funcp
+    def __init__(self, sys):
+        """
+        Initialization of the Approach class.
+
+        Parameters
+        ----------
+        sys : Approach, Builder, etc. object.
+            Any object having qd, leads, si, and funcp attributes.
+        """
+        self.qd = sys.qd
+        self.leads = sys.leads
+        self.si = sys.si
+        self.funcp = sys.funcp
         self.restart()
 
     def restart(self):
@@ -223,17 +230,25 @@ class Approach2vN(Approach):
     @staticmethod
     def generate_current(sys): pass
 
-    def __init__(self, qd, leads, si, funcp):
-        self.qd = qd
-        self.leads = leads
-        self.si = si
-        self.funcp = funcp
+    def __init__(self, sys):
+        """
+        Initialization of the Approach2vN class.
+
+        Parameters
+        ----------
+        sys : Approach, Builder, etc. object.
+            Any object having qd, leads, si, and funcp attributes.
+        """
+        self.qd = sys.qd
+        self.leads = sys.leads
+        self.si = sys.si
+        self.funcp = sys.funcp
         self.fkp, self.fkm = None, None
         self.hfkp, self.hfkm = None, None
         self.restart()
         self.Ek_grid = np.zeros(1, dtype=doublenp)
         self.Ek_grid_ext = np.zeros(0, dtype=doublenp)
-        self.kpnt = funcp.kpnt
+        self.kpnt = self.funcp.kpnt
         # Some exceptions
         if type(self.si).__name__ != self.indexing_class_name:
             raise TypeError('The state indexing class for 2vN approach has to be StateIndexingDMc')

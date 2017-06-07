@@ -2,12 +2,8 @@ from qmeq.aprclass import *
 import qmeq
 
 def test_Approach2vN_kpnt():
-    # Check generation of energy grid
-    si = qmeq.StateIndexingDMc(1)
-    qd = qmeq.QuantumDot({}, {}, si)
-    leads = qmeq.LeadsTunneling(1, {}, si, {}, {}, {0: 1000})
-    funcp = qmeq.FunctionProperties(kpnt=5, kerntype='2vN')
-    tt = Approach2vN(qd, leads, si, funcp)
+    system = qmeq.Builder(nleads=1, dband={0: 1000}, kpnt=5, kerntype='2vN')
+    tt = Approach2vN(system)
     assert tt.Ek_grid.tolist() == [-1000, -500, 0, 500, 1000]
     tt.kpnt = 6
     assert tt.Ek_grid.tolist() == [-1000, -600,  -200, 200, 600, 1000]
@@ -18,11 +14,8 @@ def test_Approach2vN_kpnt():
     assert system.tt.Ek_grid.tolist() == [-1000, -600,  -200, 200, 600, 1000]
 
 def test_Approach2vN_make_Ek_grid():
-    si = qmeq.StateIndexingDMc(1)
-    qd = qmeq.QuantumDot({}, {}, si)
-    leads = qmeq.LeadsTunneling(2, {}, si, {}, {}, {0: [-1000, 1000], 1: [-1000, 1000]})
-    funcp = qmeq.FunctionProperties(kpnt=5, kerntype='2vN')
-    tt = Approach2vN(qd, leads, si, funcp)
+    system = qmeq.Builder(nleads=2, dband={0: [-1000, 1000], 1: [-1000, 1000]}, kpnt=5, kerntype='2vN')
+    tt = Approach2vN(system)
     tt.make_Ek_grid()
     assert tt.Ek_grid.tolist() == [-1000, -500, 0, 500, 1000]
     tt.leads.change(dlst={0: [-1400, 1000], 1: [-1000, 1000]})

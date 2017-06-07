@@ -25,7 +25,8 @@ def generate_paulifct(sys):
     sys.paulifct : array
         Factors used for generating Pauli master equation kernel.
     """
-    (E, Tba, si, mulst, tlst, dlst) = (sys.qd.Ea, sys.leads.Tba, sys.si, sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
+    (E, Tba, si, mulst, tlst, dlst) = (sys.qd.Ea, sys.leads.Tba, sys.si,
+                                       sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
     itype = sys.funcp.itype
     paulifct = np.zeros((si.nleads, si.ndm1, 2), dtype=doublenp)
     for charge in range(si.ncharge-1):
@@ -42,9 +43,9 @@ def generate_paulifct(sys):
     sys.paulifct = paulifct
     return 0
 
-#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 # Pauli master equation
-#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 def generate_kern_pauli(sys):
     """
     Generate Pauli master equation kernel.
@@ -175,4 +176,4 @@ class Approach_pyPauli(Approach):
     generate_kern = staticmethod(generate_kern_pauli)
     generate_current = staticmethod(generate_current_pauli)
     generate_vec = staticmethod(generate_vec_pauli)
-#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------

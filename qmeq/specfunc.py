@@ -70,9 +70,11 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
     Dm, Dp : float
         Bandwidth.
     itype : int
-        Type of integral for first-order approach calculations.
-        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK routine dqawc through SciPy.
-        itype=1: the principal parts are kept, but approximated by digamma function valid for large bandwidht D.
+        Type of integral for first order approach calculations.
+        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK
+                 routine dqawc through SciPy.
+        itype=1: the principal parts are kept, but approximated by digamma function valid for
+                 large bandwidht D.
         itype=2: the principal parts are neglected.
         itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
     limit : int
@@ -91,7 +93,8 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
     """
     if itype == 0:
         alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
-        cur0, err = quad(fermi_func, Rm, Rp, weight='cauchy', wvar=alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
+        cur0, err = quad(fermi_func, Rm, Rp, weight='cauchy', wvar=alpha, epsabs=1.0e-6,
+                                             epsrel=1.0e-6, limit=limit)
         cur0 = cur0 + (-1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0)
         cur1 = cur0 + log(abs((Rm-alpha)/(Rp-alpha)))
         cur1 = cur1 + (1.0j*pi if alpha < Rp and alpha > Rm else 0)

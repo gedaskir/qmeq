@@ -27,7 +27,8 @@ def generate_phi1fct(sys):
     sys.phi1fct_energy : array
         Factors used to calculate energy and heat currents in 1vN, Redfield approaches.
     """
-    (E, si, mulst, tlst, dlst) = (sys.qd.Ea, sys.si, sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
+    (E, si, mulst, tlst, dlst) = (sys.qd.Ea, sys.si,
+                                  sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
     (itype, limit) = (sys.funcp.itype, sys.funcp.dqawc_limit)
     phi1fct = np.zeros((si.nleads, si.ndm1, 2), dtype=complexnp)
     phi1fct_energy = np.zeros((si.nleads, si.ndm1, 2), dtype=complexnp)
@@ -47,9 +48,9 @@ def generate_phi1fct(sys):
     sys.phi1fct_energy = phi1fct_energy
     return 0
 
-#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 # 1 von Neumann approach
-#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------
 def generate_kern_1vN(sys):
     """
     Generates a kernel (Liouvillian) matrix corresponding to first order von Neumann approach (1vN).
@@ -66,7 +67,8 @@ def generate_kern_1vN(sys):
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
     """
-    (E, Tba, phi1fct, si, symq, norm_rowp) = (sys.qd.Ea, sys.leads.Tba, sys.phi1fct, sys.si, sys.funcp.symq, sys.funcp.norm_row)
+    (E, Tba, phi1fct, si, symq, norm_rowp) = (sys.qd.Ea, sys.leads.Tba, sys.phi1fct, sys.si,
+                                              sys.funcp.symq, sys.funcp.norm_row)
     norm_row = norm_rowp if symq else si.ndm0r
     last_row = si.ndm0r-1 if symq else si.ndm0r
     kern = np.zeros((last_row+1, si.ndm0r), dtype=doublenp)
@@ -109,7 +111,8 @@ def generate_kern_1vN(sys):
                         for a in si.statesdm[charge-1]:
                             bpa = si.get_ind_dm1(bp, a, charge-1)
                             for l in range(si.nleads):
-                                fct_bppbp += +Tba[l, b, a]*Tba[l, a, bpp]*phi1fct[l, bpa, 1].conjugate()
+                                fct_bppbp += (+Tba[l, b, a]*Tba[l, a, bpp]
+                                               *phi1fct[l, bpa, 1].conjugate())
                         for c in si.statesdm[charge+1]:
                             cbp = si.get_ind_dm1(c, bp, charge)
                             for l in range(si.nleads):
@@ -134,7 +137,8 @@ def generate_kern_1vN(sys):
                         for c in si.statesdm[charge+1]:
                             cb = si.get_ind_dm1(c, b, charge)
                             for l in range(si.nleads):
-                                fct_bbpp += -Tba[l, bpp, c]*Tba[l, c, bp]*phi1fct[l, cb, 0].conjugate()
+                                fct_bbpp += (-Tba[l, bpp, c]*Tba[l, c, bp]
+                                              *phi1fct[l, cb, 0].conjugate())
                         bbppi = si.ndm0 + bbpp - si.npauli
                         bbpp_sgn = +1 if si.get_ind_dm0(b, bpp, charge, maptype=3) else -1
                         kern[bbp, bbpp] += fct_bbpp.imag                        # kern[bbp, bbpp] += fct_bbpp.imag
@@ -194,7 +198,8 @@ def generate_current_1vN(sys):
     sys.heat_current : array
         Values of the heat current having nleads entries.
     """
-    (phi0p, E, Tba, phi1fct, phi1fct_energy, si) = (sys.phi0, sys.qd.Ea, sys.leads.Tba, sys.phi1fct, sys.phi1fct_energy, sys.si)
+    (phi0p, E, Tba, phi1fct, phi1fct_energy, si) = (sys.phi0, sys.qd.Ea, sys.leads.Tba,
+                                                    sys.phi1fct, sys.phi1fct_energy, sys.si)
     phi1 = np.zeros((si.nleads, si.ndm1), dtype=complexnp)
     current = np.zeros(si.nleads, dtype=complexnp)
     energy_current = np.zeros(si.nleads, dtype=complexnp)
@@ -255,7 +260,8 @@ def generate_vec_1vN(phi0p, sys):
         Values of zeroth order density matrix elements
         after acting with Liouvillian, i.e., phi0=L(phi0p).
     """
-    (E, Tba, phi1fct, si, norm_row) = (sys.qd.Ea, sys.leads.Tba, sys.phi1fct, sys.si, sys.funcp.norm_row)
+    (E, Tba, phi1fct, si, norm_row) = (sys.qd.Ea, sys.leads.Tba, sys.phi1fct,
+                                       sys.si, sys.funcp.norm_row)
     #
     phi0 = np.zeros(si.ndm0, dtype=complexnp)
     phi0[0:si.npauli] = phi0p[0:si.npauli]
@@ -281,7 +287,8 @@ def generate_vec_1vN(phi0p, sys):
                             for l in range(si.nleads):
                                 fct_aap += (+Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bpa, 0].conjugate()
                                             -Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bap, 0])
-                            phi0aap = phi0[aap] if si.get_ind_dm0(a, ap, charge-1, maptype=3) else phi0[aap].conjugate()
+                            phi0aap = ( phi0[aap] if si.get_ind_dm0(a, ap, charge-1, maptype=3)
+                                                  else phi0[aap].conjugate() )
                             i_dphi0_dt[bbp] += fct_aap*phi0aap
                     #--------------------------------------------------
                     for bpp in si.statesdm[charge]:
@@ -296,7 +303,8 @@ def generate_vec_1vN(phi0p, sys):
                                 cbp = si.get_ind_dm1(c, bp, charge)
                                 for l in range(si.nleads):
                                     fct_bppbp += +Tba[l, b, c]*Tba[l, c, bpp]*phi1fct[l, cbp, 0]
-                            phi0bppbp = phi0[bppbp] if si.get_ind_dm0(bpp, bp, charge, maptype=3) else phi0[bppbp].conjugate()
+                            phi0bppbp = ( phi0[bppbp] if si.get_ind_dm0(bpp, bp, charge, maptype=3)
+                                                      else  phi0[bppbp].conjugate() )
                             i_dphi0_dt[bbp] += fct_bppbp*phi0bppbp
                         #--------------------------------------------------
                         bbpp = si.get_ind_dm0(b, bpp, charge)
@@ -309,8 +317,10 @@ def generate_vec_1vN(phi0p, sys):
                             for c in si.statesdm[charge+1]:
                                 cb = si.get_ind_dm1(c, b, charge)
                                 for l in range(si.nleads):
-                                    fct_bbpp += -Tba[l, bpp, c]*Tba[l, c, bp]*phi1fct[l, cb, 0].conjugate()
-                            phi0bbpp = phi0[bbpp] if si.get_ind_dm0(b, bpp, charge, maptype=3) else phi0[bbpp].conjugate()
+                                    fct_bbpp += ( -Tba[l, bpp, c]*Tba[l, c, bp]
+                                                   *phi1fct[l, cb, 0].conjugate() )
+                            phi0bbpp = ( phi0[bbpp] if si.get_ind_dm0(b, bpp, charge, maptype=3)
+                                                    else phi0[bbpp].conjugate() )
                             i_dphi0_dt[bbp] += fct_bbpp*phi0bbpp
                     #--------------------------------------------------
                     for c, cp in itertools.product(si.statesdm[charge+1], si.statesdm[charge+1]):
@@ -322,7 +332,8 @@ def generate_vec_1vN(phi0p, sys):
                             for l in range(si.nleads):
                                 fct_ccp += (+Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cbp, 1]
                                             -Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cpb, 1].conjugate())
-                            phi0ccp = phi0[ccp] if si.get_ind_dm0(c, cp, charge+1, maptype=3) else phi0[ccp].conjugate()
+                            phi0ccp = ( phi0[ccp] if si.get_ind_dm0(c, cp, charge+1, maptype=3)
+                                                  else phi0[ccp].conjugate() )
                             i_dphi0_dt[bbp] += fct_ccp*phi0ccp
                     #--------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
@@ -335,4 +346,4 @@ class Approach_py1vN(Approach):
     generate_kern = staticmethod(generate_kern_1vN)
     generate_current = staticmethod(generate_current_1vN)
     generate_vec = staticmethod(generate_vec_1vN)
-#---------------------------------------------------------------------------------------------------------
+#---------------------------------------------------------------------------------------------------

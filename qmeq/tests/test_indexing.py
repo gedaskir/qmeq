@@ -101,23 +101,23 @@ def test_make_inverse_map():
     assert make_inverse_map(i) == [0, 1, 2, 5, 3, 6, 7, 11, 4, 8, 9, 12, 10, 13, 14, 15]
 
 def test_make_quantum_numbers():
-    stateind = StateIndexing(4, indexing='Lin')
-    qn_ind, ind_qn = make_quantum_numbers(stateind)
+    si = StateIndexing(4, indexing='Lin')
+    qn_ind, ind_qn = make_quantum_numbers(si)
     assert qn_ind == {(1, 2): 4, (2, 5): 12, (0, 0): 0, (3, 3): 14, (3, 0): 7, (3, 1): 11, (3, 2): 13, (2, 1): 5, (2, 4): 10, (2, 0): 3, (1, 3): 8, (2, 3): 9, (2, 2): 6, (1, 0): 1, (1, 1): 2, (4, 0): 15}
     assert ind_qn == {0: (0, 0), 1: (1, 0), 2: (1, 1), 3: (2, 0), 4: (1, 2), 5: (2, 1), 6: (2, 2), 7: (3, 0), 8: (1, 3), 9: (2, 3), 10: (2, 4), 11: (3, 1), 12: (2, 5), 13: (3, 2), 14: (3, 3), 15: (4, 0)}
     #
-    stateind = StateIndexing(4, indexing='charge')
-    qn_ind, ind_qn = make_quantum_numbers(stateind)
+    si = StateIndexing(4, indexing='charge')
+    qn_ind, ind_qn = make_quantum_numbers(si)
     assert qn_ind == {(1, 2): 3, (2, 5): 10, (0, 0): 0, (3, 3): 14, (3, 0): 11, (3, 1): 12, (3, 2): 13, (2, 1): 6, (2, 4): 9, (2, 0): 5, (1, 3): 4, (2, 3): 8, (2, 2): 7, (1, 0): 1, (1, 1): 2, (4, 0): 15}
     assert ind_qn == {0: (0, 0), 1: (1, 0), 2: (1, 1), 3: (1, 2), 4: (1, 3), 5: (2, 0), 6: (2, 1), 7: (2, 2), 8: (2, 3), 9: (2, 4), 10: (2, 5), 11: (3, 0), 12: (3, 1), 13: (3, 2), 14: (3, 3), 15: (4, 0)}
     #
-    stateind = StateIndexing(4, indexing='sz')
-    qn_ind, ind_qn = make_quantum_numbers(stateind)
+    si = StateIndexing(4, indexing='sz')
+    qn_ind, ind_qn = make_quantum_numbers(si)
     assert qn_ind == {(3, -1, 1): 12, (1, 1, 0): 3, (2, -2, 0): 5, (2, 0, 3): 9, (4, 0, 0): 15, (2, 0, 2): 8, (1, -1, 0): 1, (2, 2, 0): 10, (3, 1, 0): 13, (0, 0, 0): 0, (1, -1, 1): 2, (2, 0, 1): 7, (3, 1, 1): 14, (3, -1, 0): 11, (1, 1, 1): 4, (2, 0, 0): 6}
     assert ind_qn == {0: (0, 0, 0), 1: (1, -1, 0), 2: (1, -1, 1), 3: (1, 1, 0), 4: (1, 1, 1), 5: (2, -2, 0), 6: (2, 0, 0), 7: (2, 0, 1), 8: (2, 0, 2), 9: (2, 0, 3), 10: (2, 2, 0), 11: (3, -1, 0), 12: (3, -1, 1), 13: (3, 1, 0), 14: (3, 1, 1), 15: (4, 0, 0)}
     #
-    stateind = StateIndexing(4, indexing='ssq')
-    qn_ind, ind_qn = make_quantum_numbers(stateind)
+    si = StateIndexing(4, indexing='ssq')
+    qn_ind, ind_qn = make_quantum_numbers(si)
     assert qn_ind == {(0, 0, 0, 0): 0,
                       (1, -1, 1, 0): 1,
                       (1, -1, 1, 1): 2,

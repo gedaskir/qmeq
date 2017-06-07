@@ -67,7 +67,8 @@ cdef int_t func_1vN(double_t Ecb, double_t mu, double_t T,
     #-------------------------
     if itype == 0:
         alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
-        cur0, err = quad(fermi_func, Rm, Rp, weight='cauchy', wvar=alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
+        cur0, err = quad(fermi_func, Rm, Rp, weight='cauchy', wvar=alpha,
+                                             epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
         cur0 = cur0 + (-1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0.0j)
         cur1 = cur0 + log(abs((Rm-alpha)/(Rp-alpha)))
         cur1 = cur1 + (1.0j*pi if alpha < Rp and alpha > Rm else 0.0j)
