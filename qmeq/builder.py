@@ -6,6 +6,7 @@ from __future__ import print_function
 
 import copy
 
+from .aprclass import Approach
 from .indexing import StateIndexingDM
 from .indexing import StateIndexingDMc
 from .qdot import QuantumDot
@@ -75,12 +76,13 @@ class Builder(object):
         Possible value is 'spin'.
     kpnt : int
         Number of energy grid points on which 2vN approach equations are solved.
-    kerntype : string
+    kerntype : string, Approach class
         String describing what master equation approach to use.
         For Approach class the possible values are 'Pauli', '1vN', 'Redfield', 'Lindblad',
-        'pyPauli', 'py1vN', 'pyLindblad'.
+                                                   'pyPauli', 'py1vN', 'pyLindblad'.
         For Approach2vN class the possible values are '2vN' and 'py2vN'.
         The approaches with 'py' in front are not compiled using cython.
+        kerntype can also be an Approach class defining a custom approach.
     symq : bool
         For symq=False keep all equations in the kernel, and the matrix is of size N by N+1.
         For symq=True replace one equation by the normalisation condition,
@@ -132,7 +134,7 @@ class Builder(object):
         LeadsTunneling object.
     si : StateIndexingDM
         StateIndexingDM object.
-    tt : Approach or Approach2vN.
+    appr : Approach or Approach2vN.
         Approach or Approach2vN object.
     funcp : FunctionProperties
         FunctionProperties object.
@@ -183,22 +185,24 @@ class Builder(object):
             print("WARNING: itype needs to be 0, 1, 2, or 3. Using default itype=0.")
             itype = 0
 
-        if not kerntype in {'Pauli', 'Lindblad', 'Redfield', '1vN', '2vN',
-                            'pyPauli', 'pyLindblad', 'py1vN', 'py2vN'}:
-            print("WARNING: Allowed kerntype values are: "+
-                  "\'Pauli\', \'Lindblad\', \'Redfield\', \'1vN\', \'2vN\', "+
-                  "\'pyPauli\', \'pyLindblad\', \'py1vN\', \'py2vN\'. "+
-                  "Using default kerntype=\'Pauli\'.")
-            kerntype = 'Pauli'
+        if isinstance(kerntype, str):
+            if not kerntype in {'Pauli', 'Lindblad', 'Redfield', '1vN', '2vN',
+                                'pyPauli', 'pyLindblad', 'py1vN', 'py2vN'}:
+                print("WARNING: Allowed kerntype values are: "+
+                      "\'Pauli\', \'Lindblad\', \'Redfield\', \'1vN\', \'2vN\', "+
+                      "\'pyPauli\', \'pyLindblad\', \'py1vN\', \'py2vN\'. "+
+                      "Using default kerntype=\'Pauli\'.")
+                kerntype = 'Pauli'
+            self.Approach = globals()['Approach_'+kerntype]
+        else:
+            if issubclass(kerntype, Approach):
+                self.Approach = kerntype
+                kerntype = self.Approach.kerntype
 
         if not indexing in {'Lin', 'charge'} and kerntype in {'py2vN', '2vN'}:
             print("WARNING: For 2vN approach indexing needs to be \'Lin\' or \'charge\'. "+
                   "Using indexing=\'charge\' as a default.")
             indexing = 'charge'
-
-        if kpnt is None and kerntype in {'py2vN', '2vN'}:
-            raise ValueError('For 2vN approach kpnt needs to be specified.')
-            print("WARNING: For 2vN approach kpnt needs to be specified.")
 
         # Make copies of initialized parameters.
         hsingle = copy.deepcopy(hsingle)
@@ -209,24 +213,24 @@ class Builder(object):
         dband = copy.deepcopy(dband)
         phi0_init = copy.deepcopy(phi0_init)
 
-        funcp = FunctionProperties(kerntype=kerntype, symq=symq, norm_row=norm_row,
-                                   solmethod=solmethod, itype=itype, dqawc_limit=dqawc_limit,
-                                   mfreeq=mfreeq, phi0_init=phi0_init, mtype_qd=mtype_qd,
-                                   mtype_leads=mtype_leads, kpnt=kpnt, dband=dband)
+        self.funcp = FunctionProperties(symq=symq, norm_row=norm_row, solmethod=solmethod,
+                                        itype=itype, dqawc_limit=dqawc_limit,
+                                        mfreeq=mfreeq, phi0_init=phi0_init,
+                                        mtype_qd=mtype_qd, mtype_leads=mtype_leads,
+                                        kpnt=kpnt, dband=dband)
 
-        icn = globals()['Approach_'+kerntype].indexing_class_name
-        si = globals()[icn](nsingle, indexing, symmetry)
-        qd = QuantumDot(hsingle, coulomb, si, herm_hs, herm_c, m_less_n, mtype_qd)
-        leads = LeadsTunneling(nleads, tleads, si, mulst, tlst, dband, mtype_leads)
+        icn = self.Approach.indexing_class_name
+        self.si = globals()[icn](nsingle, indexing, symmetry)
+        self.qd = QuantumDot(hsingle, coulomb, self.si, herm_hs, herm_c, m_less_n, mtype_qd)
+        self.leads = LeadsTunneling(nleads, tleads, self.si, mulst, tlst, dband, mtype_leads)
 
-        self.funcp, self.si, self.qd, self.leads = funcp, si, qd, leads
-        self.tt = globals()['Approach_'+kerntype](self)
+        self.appr = self.Approach(self)
 
     def __getattr__(self, item):
         if item in {'solve', 'current', 'energy_current', 'heat_current', 'phi0', 'phi1',
-                    'niter', 'iters', 'kpnt', 'kern'}:
-            return getattr(self.tt, item)
-        elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit',
+                    'niter', 'iters', 'kern'}:
+            return getattr(self.appr, item)
+        elif item in {'kpnt', 'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit',
                       'mfreeq', 'phi0_init'}:
             return getattr(self.funcp, item)
         elif item in {'tleads', 'mulst', 'tlst', 'dlst', 'Tba'}:
@@ -241,9 +245,9 @@ class Builder(object):
 
     def __setattr__(self, item, value):
         if item in {'solve', 'current', 'energy_current', 'heat_current', 'phi0', 'phi1',
-                    'niter', 'iters', 'kpnt', 'kern'}:
-            setattr(self.tt, item, value)
-        elif item in {'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit',
+                    'niter', 'iters', 'kern'}:
+            setattr(self.appr, item, value)
+        elif item in {'kpnt', 'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit',
                       'mfreeq', 'phi0_init'}:
             setattr(self.funcp, item, value)
         elif item in {'tleads', 'mulst', 'tlst', 'dlst', 'Tba'}:
@@ -255,19 +259,28 @@ class Builder(object):
         else:
             super(Builder, self).__setattr__(item, value)
 
+    def change_si(self):
+        si = self.si
+        icn = self.Approach.indexing_class_name
+        if not isinstance(si, globals()[icn]):
+            self.si = globals()[icn](si.nsingle, si.indexing, si.symmetry, si.nleads)
+            self.qd.si = self.si
+            self.leads.si = self.si
+
     # kerntype
     def get_kerntype(self):
-        return self.tt.kerntype
+        return self.appr.kerntype
     def set_kerntype(self, value):
-        k1 = 1 if value in {'2vN', 'py2vN'} else 0
-        k2 = 1 if self.tt.kerntype in {'2vN', 'py2vN'} else 0
-        if k1 == k2:
-            if self.tt.kerntype != value:
-                self.tt = globals()['Approach_'+value](self)
-                self.funcp.kerntype = value
+        if isinstance(value, str):
+            if self.appr.kerntype != value:
+                self.Approach = globals()['Approach_'+value]
+                self.change_si()
+                self.appr = self.Approach(self)
         else:
-            print('WARNING: Cannot change kernel type from \''+self.tt.kerntype+'\' to \''+value
-                 +'\' Consider contructing a new system using kerntype=\''+value+'\'')
+            if issubclass(value, Approach):
+                self.Approach = value
+                self.change_si()
+                self.appr = self.Approach(self)
     kerntype = property(get_kerntype, set_kerntype)
 
     # indexing
@@ -377,11 +390,6 @@ class FunctionProperties(object):
 
     Attributes
     ----------
-    kerntype : string
-        String describing what master equation approach to use.
-        For Approach class the possible values are 'Pauli', '1vN', 'Redfield', 'pyPauli', 'py1vN'.
-        For Approach2vN class the possible values are '2vN' and 'py2vN'.
-        The approaches with 'py' in front are not compiled using cython.
     symq : bool
         For symq=False keep all equations in the kernel, and the matrix is of size N by N+1.
         For symq=True replace one equation by the normalisation condition,

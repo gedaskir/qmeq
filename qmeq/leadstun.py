@@ -274,7 +274,7 @@ def make_tleads_dict(tleads, si):
     else:
         return tleads_dict
 
-def make_array(lst_old, lst, si):
+def make_array(lst_old, lst, si, npar=None):
     """
     Converts dictionary or list of mulst, tlst or dlst to an array.
 
@@ -291,34 +291,38 @@ def make_array(lst_old, lst, si):
         Numpy array containing lead parameters.
     """
     #
+    if npar is None:
+        npar = si.nleads_sym
     if isinstance(lst, dict):
         if lst_old is None:
-            lst_arr = np.zeros(si.nleads_sym, dtype=doublenp)
+            lst_arr = np.zeros(npar, dtype=doublenp)
         else:
-            lst_arr = lst_old[0:si.nleads_sym]
+            lst_arr = lst_old[0:npar]
         for j1 in lst:
             lst_arr[j1] = lst[j1]
     elif isinstance(lst, (list, np.ndarray)):
         lst_arr = np.array(lst, dtype=doublenp)
     elif isinstance(lst, numbers.Number):
-        lst_arr = lst*np.ones(si.nleads_sym, dtype=doublenp)
+        lst_arr = lst*np.ones(npar, dtype=doublenp)
     else:
-        lst_arr = np.zeros(si.nleads_sym, dtype=doublenp)
+        lst_arr = np.zeros(npar, dtype=doublenp)
     #
     if si.symmetry is 'spin':
         return np.concatenate((lst_arr, lst_arr))
     else:
         return lst_arr
 
-def make_array_dlst(dlst_old, dlst, si):
+def make_array_dlst(dlst_old, dlst, si, npar=None):
+    if npar is None:
+        npar = si.nleads_sym
     if dlst_old is None:
-        lst_arr = np.zeros((si.nleads_sym,2), dtype=doublenp)
+        lst_arr = np.zeros((npar,2), dtype=doublenp)
     else:
-        lst_arr = dlst_old[0:si.nleads_sym]
+        lst_arr = dlst_old[0:npar]
     #
     if isinstance(dlst, numbers.Number):
-        lst_arr[:,0] = -dlst*np.ones(si.nleads_sym, dtype=doublenp)
-        lst_arr[:,1] = +dlst*np.ones(si.nleads_sym, dtype=doublenp)
+        lst_arr[:,0] = -dlst*np.ones(npar, dtype=doublenp)
+        lst_arr[:,1] = +dlst*np.ones(npar, dtype=doublenp)
     elif isinstance(dlst, dict):
         for j1 in dlst:
             if isinstance(dlst[j1], numbers.Number):

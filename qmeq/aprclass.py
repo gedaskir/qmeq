@@ -190,7 +190,7 @@ class Approach2vN(Approach):
     ----------
     kern : array
         Kernel for zeroth order density matrix elements Phi[0].
-    kpnt : int
+    funcp.kpnt : int
         Number of energy grid points on which 2vN approach equations are solved.
     Ek_grid : array
         Energy grid on which 2vN approach equations are solved.
@@ -248,12 +248,14 @@ class Approach2vN(Approach):
         self.restart()
         self.Ek_grid = np.zeros(1, dtype=doublenp)
         self.Ek_grid_ext = np.zeros(0, dtype=doublenp)
-        self.kpnt = self.funcp.kpnt
         # Some exceptions
         if type(self.si).__name__ != self.indexing_class_name:
             raise TypeError('The state indexing class for 2vN approach has to be StateIndexingDMc')
 
     def make_Ek_grid(self):
+        """Make an energy grid on which 2vN equations are solved. """
+        if self.funcp.kpnt is None:
+            raise ValueError('kpnt needs to be specified.')
         if self.si.nleads > 0:
             dmin = np.min(self.leads.dlst)
             dmax = np.max(self.leads.dlst)
@@ -271,14 +273,6 @@ class Approach2vN(Approach):
                     (dmax*np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[1].tolist()):
                     print("WARNING: The bandwidth and Ek_grid for all leads will be the same: from "+
                           "dmin="+str(dmin)+" to dmax="+str(dmax)+".")
-
-    # kpnt
-    def get_kpnt(self):
-        return self.funcp.kpnt
-    def set_kpnt(self, value):
-        self.funcp.kpnt = value
-        self.make_Ek_grid()
-    kpnt = property(get_kpnt, set_kpnt)
 
     def restart(self):
         """Restart values of some variables for new calculations."""

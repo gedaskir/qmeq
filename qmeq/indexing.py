@@ -447,7 +447,7 @@ class StateIndexing(object):
         print_state() and print_all_states()
     """
 
-    def __init__(self, nsingle, indexing='Lin', symmetry='n'):
+    def __init__(self, nsingle, indexing='Lin', symmetry='n', nleads=0):
         """
         Initialization of the StateIndexing class
 
@@ -468,8 +468,8 @@ class StateIndexing(object):
         self.symmetry = symmetry
         self.ncharge = nsingle+1
         self.nmany = 2**nsingle
-        self.nleads = 0
-        self.nleads_sym = 0
+        self.nleads = nleads
+        self.nleads_sym = nleads//2 if symmetry is 'spin' else nleads
         #
         self.szlst_lin = None
         self.szlst = None
@@ -609,7 +609,7 @@ class StateIndexingPauli(StateIndexing):
         From example for mapdm0 we have booldm0[1]=True, booldm0[2]=False.
     """
 
-    def __init__(self, nsingle, indexing='Lin', symmetry='n'):
+    def __init__(self, nsingle, indexing='Lin', symmetry='n', nleads=0):
         """
         Initialization of the StateIndexingDM class
 
@@ -622,7 +622,7 @@ class StateIndexingPauli(StateIndexing):
         symmetry : str
             String determining that the states will be augmented by the symmetry.
         """
-        StateIndexing.__init__(self, nsingle, indexing, symmetry)
+        StateIndexing.__init__(self, nsingle, indexing, symmetry, nleads)
         self.shiftlst0 = np.zeros(self.ncharge+1, dtype=longnp)
         self.dictdm = np.zeros(self.nmany, dtype=longnp)
         self.statesdm = None
@@ -770,7 +770,7 @@ class StateIndexingDM(StateIndexing):
         List showing, which density matrix elements are complex conjugate and are not unique.
     """
 
-    def __init__(self, nsingle, indexing='Lin', symmetry='n'):
+    def __init__(self, nsingle, indexing='Lin', symmetry='n', nleads=0):
         """
         Initialization of the StateIndexingDM class
 
@@ -783,7 +783,7 @@ class StateIndexingDM(StateIndexing):
         symmetry : str
             String determining that the states will be augmented by the symmetry.
         """
-        StateIndexing.__init__(self, nsingle, indexing, symmetry)
+        StateIndexing.__init__(self, nsingle, indexing, symmetry, nleads)
         self.ndm0_tot = int(factorial(2*self.nsingle)/factorial(self.nsingle)**2)
         self.ndm1_tot = int(self.nsingle/(self.nsingle+1)*self.ndm0_tot)
         #
@@ -962,7 +962,7 @@ class StateIndexingDMc(StateIndexing):
     Same as in StateIndexingDM.
     """
 
-    def __init__(self, nsingle, indexing='Lin', symmetry='n'):
+    def __init__(self, nsingle, indexing='Lin', symmetry='n', nleads=0):
         """
         Initialization of the StateIndexingDMc class
 
@@ -975,7 +975,7 @@ class StateIndexingDMc(StateIndexing):
         symmetry : str
             String determining that the states will be augmented by the symmetry.
         """
-        StateIndexing.__init__(self, nsingle, indexing, symmetry)
+        StateIndexing.__init__(self, nsingle, indexing, symmetry, nleads)
         self.ndm0_tot = int(factorial(2*self.nsingle)/factorial(self.nsingle)**2)
         self.ndm1_tot = int(self.nsingle/(self.nsingle+1)*self.ndm0_tot)
         #
