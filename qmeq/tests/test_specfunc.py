@@ -3,8 +3,15 @@ from numpy.linalg import norm
 from scipy import exp
 from scipy.integrate import quad
 from qmeq.specfunc import *
-from qmeq.specfuncc import *
 import qmeq
+
+try:
+    from qmeq.specfuncc import *
+except:
+    print("Cannot import Cython compiled module qmeq.specfuncc.")
+    c_fermi_func = fermi_func
+    c_func_pauli = func_pauli
+    c_func_1vN = func_1vN
 
 EPS = 1e-14
 EPS2 = 1e-11

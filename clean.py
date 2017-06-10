@@ -21,6 +21,7 @@ for dr in dirs:
 
 files = ( glob('./qmeq/*.pyd') + glob('./qmeq/approach/*.pyd')
          +glob('./qmeq/*.pyc') + glob('./qmeq/approach/*.pyc')
+         +glob('./qmeq/tests/*.pyc')
          +glob('./qmeq/*.c') + glob('./qmeq/approach/*.c')
          +glob('./qmeq/*.html') + glob('./qmeq/approach/*.html') )
 

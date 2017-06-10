@@ -235,9 +235,9 @@ def c_generate_current_lindblad(sys):
                         current[l] = current[l] + fctc
                         energy_current[l] = energy_current[l] + (E[c]-0.5*(E[b]+E[bp]))*fctc
     #
-    sys.current = current
-    sys.energy_current = energy_current
-    sys.heat_current = energy_current - current*sys.leads.mulst
+    sys.current = np.array(current.real, dtype=doublenp)
+    sys.energy_current = np.array(energy_current.real, dtype=doublenp)
+    sys.heat_current = sys.energy_current - sys.current*sys.leads.mulst
     return 0
 
 @cython.boundscheck(False)

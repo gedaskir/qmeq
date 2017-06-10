@@ -108,8 +108,8 @@ def generate_current_pauli(sys):
         Values of the heat current having nleads entries.
     """
     (phi0, E, paulifct, si) = (sys.phi0, sys.qd.Ea, sys.paulifct, sys.si)
-    current = np.zeros(si.nleads, dtype=complexnp)
-    energy_current = np.zeros(si.nleads, dtype=complexnp)
+    current = np.zeros(si.nleads, dtype=doublenp)
+    energy_current = np.zeros(si.nleads, dtype=doublenp)
     for charge in range(si.ncharge-1):
         ccharge = charge+1
         bcharge = charge

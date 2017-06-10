@@ -3,9 +3,11 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import numpy as np
+
 import itertools
 import numbers
+
+import numpy as np
 
 from .indexing import szrange
 from .indexing import ssqrange

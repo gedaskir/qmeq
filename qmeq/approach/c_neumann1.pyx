@@ -264,13 +264,10 @@ def c_generate_current_1vN(sys):
                         phi1[l, cb] = phi1[l, cb] + Tba[l, cp, b]*phi0ccp*fct2
                         current[l] = current[l] + Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2
                         energy_current[l] = energy_current[l] + Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2h
-    for l in range(nleads):
-        current[l] = -2*current[l].imag
-        energy_current[l] = -2*energy_current[l].imag
     sys.phi1 = phi1
-    sys.current = current
-    sys.energy_current = energy_current
-    sys.heat_current = energy_current - current*sys.leads.mulst
+    sys.current = np.array(-2*current.imag, dtype=doublenp)
+    sys.energy_current = np.array(-2*energy_current.imag, dtype=doublenp)
+    sys.heat_current = sys.energy_current - sys.current*sys.leads.mulst
     return 0
 
 @cython.boundscheck(False)

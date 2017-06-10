@@ -3,8 +3,10 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import numpy as np
+
 import itertools
+
+import numpy as np
 from scipy.misc import factorial
 
 from .mytypes import boolnp

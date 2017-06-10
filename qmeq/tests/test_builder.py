@@ -81,7 +81,7 @@ class Calcs(object):
 def save_Builder_double_dot_spinful(fname='data_builder.py'):
     p = Parameters_double_dot_spinful()
     #data = {}
-    kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad', 'pyPauli', 'py1vN', 'pyLindblad']
+    kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad', 'pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad']
     #kerns = ['Pauli']
     itypes = [0, 1, 2]
     data = 'data = {\n'
@@ -100,13 +100,13 @@ def save_Builder_double_dot_spinful(fname='data_builder.py'):
         f.write(data)
 
 def test_Builder_double_dot_spinful():
-    from data_builder import data
+    from qmeq.tests.data_builder import data
     p = Parameters_double_dot_spinful()
     calcs = Calcs()
 
     # Check if the results agree with previously calculated data
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
-    kerns += ['pyPauli', 'py1vN', 'pyLindblad'] if CHECK_PY else []
+    kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     itypes = [0, 1, 2]
     for kerntype, itype in itertools.product(kerns, itypes):
         if not ( kerntype in {'Pauli', 'pyPauli', 'Lindblad', 'pyLindblad'} and itype in [0, 1] ):
@@ -139,7 +139,7 @@ def test_Builder_double_dot_spinful():
 
     # Check matrix-free methods
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
-    kerns += ['pyPauli', 'py1vN', 'pyLindblad'] if CHECK_PY else []
+    kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     for kerntype in kerns:
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
                          kerntype=kerntype, itype=2, mfreeq=True)
@@ -150,7 +150,7 @@ def test_Builder_double_dot_spinful():
 
     # Check results with different indexing
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
-    kerns += ['pyPauli', 'py1vN', 'pyLindblad'] if CHECK_PY else []
+    kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     indexings = ['Lin', 'charge', 'sz', 'ssq']
     for kerntype, indexing in itertools.product(kerns, indexings):
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
@@ -182,7 +182,7 @@ def test_Builder_single_orbital_spinful():
                            '2vN':   [0.8745228418442359, -0.8753178905524672, 0.8745228418440387, -0.8753178905524854]}
     #
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
-    kerns += ['pyPauli', 'py1vN', 'pyLindblad'] if CHECK_PY else []
+    kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     indexings = ['Lin', 'charge', 'sz', 'ssq']
     itypes = [0, 1, 2]
     p = Parameters_single_orbital_spinful()

@@ -26,16 +26,25 @@ from .various import use_all_states
 
 from .approach.pauli import Approach_pyPauli
 from .approach.lindblad import Approach_pyLindblad
+from .approach.redfield import Approach_pyRedfield
 from .approach.neumann1 import Approach_py1vN
 from .approach.neumann2 import Approach_py2vN
 
 # Cython compiled modules
 
-from .approach.c_pauli import Approach_Pauli
-from .approach.c_lindblad import Approach_Lindblad
-from .approach.c_redfield import Approach_Redfield
-from .approach.c_neumann1 import Approach_1vN
-from .approach.c_neumann2 import Approach_2vN
+try:
+    from .approach.c_pauli import Approach_Pauli
+    from .approach.c_lindblad import Approach_Lindblad
+    from .approach.c_redfield import Approach_Redfield
+    from .approach.c_neumann1 import Approach_1vN
+    from .approach.c_neumann2 import Approach_2vN
+except:
+    print("Cannot import Cython compiled modules for the approaches.")
+    Approach_Pauli = Approach_pyPauli
+    Approach_Lindblad = Approach_pyLindblad
+    Approach_Redfield = Approach_pyRedfield
+    Approach_1vN = Approach_py1vN
+    Approach_2vN = Approach_py2vN
 #-----------------------------------------------------------
 
 class Builder(object):
@@ -79,7 +88,7 @@ class Builder(object):
     kerntype : string, Approach class
         String describing what master equation approach to use.
         For Approach class the possible values are 'Pauli', '1vN', 'Redfield', 'Lindblad',
-                                                   'pyPauli', 'py1vN', 'pyLindblad'.
+                                                   'pyPauli', 'py1vN', 'pyRedfield', 'pyLindblad'.
         For Approach2vN class the possible values are '2vN' and 'py2vN'.
         The approaches with 'py' in front are not compiled using cython.
         kerntype can also be an Approach class defining a custom approach.
@@ -187,10 +196,10 @@ class Builder(object):
 
         if isinstance(kerntype, str):
             if not kerntype in {'Pauli', 'Lindblad', 'Redfield', '1vN', '2vN',
-                                'pyPauli', 'pyLindblad', 'py1vN', 'py2vN'}:
+                                'pyPauli', 'pyLindblad', 'pyRedfield', 'py1vN', 'py2vN'}:
                 print("WARNING: Allowed kerntype values are: "+
                       "\'Pauli\', \'Lindblad\', \'Redfield\', \'1vN\', \'2vN\', "+
-                      "\'pyPauli\', \'pyLindblad\', \'py1vN\', \'py2vN\'. "+
+                      "\'pyPauli\', \'pyLindblad\', \'pyRedfield\', \'py1vN\', \'py2vN\'. "+
                       "Using default kerntype=\'Pauli\'.")
                 kerntype = 'Pauli'
             self.Approach = globals()['Approach_'+kerntype]
