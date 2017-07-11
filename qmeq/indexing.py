@@ -606,7 +606,7 @@ class StateIndexingPauli(StateIndexing):
         For example mapdm0[1]=1, mapdm0[2]=1, shows that 1 and 2 are equivalent.
         Also mapdm0[ind]=-1 shows that the state is excluded.
     booldm0 : list
-        List giving states which will used. Other states will be mapped to states,
+        List giving states which will be used. Other states will be mapped to states,
         which have booldm0[ind]=True.
         From example for mapdm0 we have booldm0[1]=True, booldm0[2]=False.
     """

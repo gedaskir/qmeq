@@ -252,7 +252,7 @@ def make_tleads_dict(tleads, si):
     """
     if isinstance(tleads, dict):
         tleads_dict = tleads
-    if isinstance(tleads, list):
+    elif isinstance(tleads, list):
         tleads_dict = {}
         for j0 in tleads:
             j1, j2, tamp = j0
@@ -483,7 +483,9 @@ class LeadsTunneling(object):
         tleads : array
             The new single-particle tunneling amplitudes. See attribute tleads.
         """
-        self.si.nleads = nleads
-        self.tleads = make_tleads_dict(tleads)
+        si = self.si
+        si.nleads = nleads
+        si.nleads_sym = nleads//2 if si.symmetry is 'spin' else nleads
+        self.tleads = make_tleads_dict(tleads, si)
         self.mtype = mtype
         self.Tba0 = construct_Tba(self, tleads)
