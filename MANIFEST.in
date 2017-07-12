@@ -1,0 +1,5 @@
+# Include *.md files
+include *.md
+
+# Include docs
+recursive-include docs *

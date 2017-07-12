@@ -19,11 +19,14 @@ for dr in dirs:
     try: shutil.rmtree(dr)
     except: pass
 
-files = ( glob('./qmeq/*.pyd') + glob('./qmeq/approach/*.pyd')
-         +glob('./qmeq/*.pyc') + glob('./qmeq/approach/*.pyc')
-         +glob('./qmeq/tests/*.pyc')
-         +glob('./qmeq/*.c') + glob('./qmeq/approach/*.c')
-         +glob('./qmeq/*.html') + glob('./qmeq/approach/*.html') )
+files = (glob('./qmeq/*.o')    + glob('./qmeq/approach/*.o')
+        +glob('./qmeq/*.so')   + glob('./qmeq/approach/*.so')
+        +glob('./qmeq/*.pyd')  + glob('./qmeq/approach/*.pyd')
+        +glob('./qmeq/*.dll')  + glob('./qmeq/approach/*.dll')
+        +glob('./qmeq/*.pyc')  + glob('./qmeq/approach/*.pyc')
+        +glob('./qmeq/*.c')    + glob('./qmeq/approach/*.c')
+        +glob('./qmeq/*.html') + glob('./qmeq/approach/*.html')
+        +glob('./qmeq/tests/*.pyc') )
 
 for f in files:
     os.remove(f)

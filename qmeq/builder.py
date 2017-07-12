@@ -87,7 +87,7 @@ class Builder(object):
         Number of energy grid points on which 2vN approach equations are solved.
     kerntype : string, Approach class
         String describing what master equation approach to use.
-        For Approach class the possible values are 'Pauli', '1vN', 'Redfield', 'Lindblad',
+        For Approach class the possible values are 'Pauli', '1vN', 'Redfield', 'Lindblad', \
                                                    'pyPauli', 'py1vN', 'pyRedfield', 'pyLindblad'.
         For Approach2vN class the possible values are '2vN' and 'py2vN'.
         The approaches with 'py' in front are not compiled using cython.
@@ -106,9 +106,9 @@ class Builder(object):
         'krylov', 'broyden', etc.
     itype : int
         Type of integral for first order approach calculations.
-        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK
+        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK \
                  routine dqawc through SciPy.
-        itype=1: the principal parts are kept, but approximated by digamma function valid for
+        itype=1: the principal parts are kept, but approximated by digamma function valid for \
                  large bandwidht D.
         itype=2: the principal parts are neglected.
         itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
@@ -413,9 +413,9 @@ class FunctionProperties(object):
         'krylov', 'broyden', etc.
     itype : int
         Type of integral for first order approach calculations.
-        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK
+        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK \
                  routine dqawc through SciPy.
-        itype=1: the principal parts are kept, but approximated by digamma function valid for
+        itype=1: the principal parts are kept, but approximated by digamma function valid for \
                  large bandwidht D.
         itype=2: the principal parts are neglected.
         itype=3: the principal parts are neglected and infinite bandwidth D is assumed.

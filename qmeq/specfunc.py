@@ -72,9 +72,9 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
         Bandwidth.
     itype : int
         Type of integral for first order approach calculations.
-        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK
+        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK \
                  routine dqawc through SciPy.
-        itype=1: the principal parts are kept, but approximated by digamma function valid for
+        itype=1: the principal parts are kept, but approximated by digamma function valid for \
                  large bandwidht D.
         itype=2: the principal parts are neglected.
         itype=3: the principal parts are neglected and infinite bandwidth D is assumed.

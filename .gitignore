@@ -1,16 +1,13 @@
 ### Files
 
-# Library files .o
+# Compiled library files
 *.o
-
-# Library files .so
 *.so
+*.pyd
+*.dll
 
 # Python byte files *.pyc
 *.pyc
-
-# Cython compiled libraries on Windows *.pyd
-*.pyd
 
 # Text files *.txt
 *.txt
