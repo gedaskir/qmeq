@@ -35,16 +35,16 @@ def func_pauli(Ecb, mu, T, Dm, Dp, itype):
         Chemical potential.
     T : float
         Temperature.
-    Dm, Dp : float
+    Dm,Dp : float
         Bandwidth.
 
     Returns
     -------
     array
-        Array of two float numbers [cur0, cur1] containing
-        momentum-integrated current amplitudes.
-        cur0 - particle current amplitude.
-        cur1 - hole current amplitude.
+        | Array of two float numbers [cur0, cur1] containing
+          momentum-integrated current amplitudes.
+        | cur0 - particle current amplitude.
+        | cur1 - hole current amplitude.
     """
     alpha = (Ecb-mu)/T
     Rm, Rp = (Dm-mu)/T, (Dp-mu)/T
@@ -68,16 +68,16 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
         Chemical potential.
     T : float
         Temperature.
-    Dm, Dp : float
+    Dm,Dp : float
         Bandwidth.
     itype : int
-        Type of integral for first order approach calculations.
-        itype=0: the principal parts are evaluated using Fortran integration package QUADPACK \
-                 routine dqawc through SciPy.
-        itype=1: the principal parts are kept, but approximated by digamma function valid for \
-                 large bandwidht D.
-        itype=2: the principal parts are neglected.
-        itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
+        | Type of integral for first order approach calculations.
+        | itype=0: the principal parts are evaluated using Fortran integration package QUADPACK \
+                   routine dqawc through SciPy.
+        | itype=1: the principal parts are kept, but approximated by digamma function valid for \
+                   large bandwidht D.
+        | itype=2: the principal parts are neglected.
+        | itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
     limit : int
         For itype=0 dqawc_limit determines the maximum number of subintervals
         in the partition of the given integration interval.
@@ -85,12 +85,12 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
     Returns
     -------
     array
-        Array of four complex numbers [cur0, cur1, en0, en1] containing
-        momentum-integrated current amplitudes.
-        cur0 - particle current amplitude.
-        cur1 - hole current amplitude.
-        en0 - particle energy current amplitude.
-        en1 - hol energy current amplitude.
+        | Array of four complex numbers [cur0, cur1, en0, en1] containing
+          momentum-integrated current amplitudes.
+        | cur0 - particle current amplitude.
+        | cur1 - hole current amplitude.
+        | en0 - particle energy current amplitude.
+        | en1 - hol energy current amplitude.
     """
     if itype == 0:
         alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T

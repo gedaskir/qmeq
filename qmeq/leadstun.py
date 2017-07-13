@@ -282,7 +282,7 @@ def make_array(lst_old, lst, si, npar=None):
 
     Parameters
     ----------
-    lst_old, lst : list, dict, or array
+    lst_old,lst : list, dict, or array
         Contains lead parameters.
     si : StateIndexing
         StateIndexing or StateIndexingDM object.
@@ -394,7 +394,7 @@ class LeadsTunneling(object):
 
         Parameters
         ----------
-        tleads, mulst, tlst, dlst : dict
+        tleads,mulst,tlst,dlst : dict
             Dictionaries describing what values to add.
             For example, tleads[(lead, state)] = value to add.
         updateq : bool
@@ -425,7 +425,7 @@ class LeadsTunneling(object):
 
         Parameters
         ----------
-        tleads, mulst, tlst, dlst : dict
+        tleads,mulst,tlst,dlst : dict
             Dictionaries describing what values to change.
             For example, tleads[(lead, state)] = the new value.
         """

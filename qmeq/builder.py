@@ -55,8 +55,8 @@ class Builder(object):
     ----------
     nsingle : int
         Number of single-particle states.
-    hsingle : dict, list or array
-        Dictionary, list or array corresponding to single-particle hopping (tunneling) Hamiltonian.
+    hsingle : dict, list, or array
+        Dictionary, list, or array corresponding to single-particle hopping (tunneling) Hamiltonian.
         On input list or array gets converted to dictionary.
     coulomb : list, dict, or array
         Dictionary, list or array containing coulomb matrix elements.
@@ -67,15 +67,15 @@ class Builder(object):
         On input list or array gets converted to dictionary.
     nleads : int
         Number of the leads.
-    tleads : dict, list or array
-        Dictionary, list or numpy array defining single particle tunneling amplitudes.
+    tleads : dict, list, or array
+        Dictionary, list, or numpy array defining single particle tunneling amplitudes.
         numpy array has to be nleads by nsingle.
-    mulst : dict, list or array
-        Dictionary, list or array containing chemical potentials of the leads.
-    tlst : dict, list or array
-        Dictionary, list or array containing temperatures of the leads.
-    dband : float, dict, list or array
-        Float, dictionary, list or array determining bandwidths of the leads.
+    mulst : dict, list, or array
+        Dictionary, list, or array containing chemical potentials of the leads.
+    tlst : dict, list, or array
+        Dictionary, list, or array containing temperatures of the leads.
+    dband : float, dict, list, or array
+        Float, dictionary, list, or array determining bandwidths of the leads.
     indexing : str
         String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
         Note that 'sz' indexing for Fock states is used for 'ssq' indexing, with
@@ -316,7 +316,7 @@ class Builder(object):
 
         Parameters
         ----------
-        hsingle, coulomb, tleads, mulst, tlst, dlst : dict
+        hsingle,coulomb,tleads,mulst,tlst,dlst : dict
             Dictionaries describing what values to add.
             For example, tleads[(lead, state)] = value to add.
         """
@@ -332,7 +332,7 @@ class Builder(object):
 
         Parameters
         ----------
-        hsingle, coulomb, tleads, mulst, tlst, dlst : dict
+        hsingle,coulomb,tleads,mulst,tlst,dlst : dict
             Dictionaries describing what values to change.
             For example, tleads[(lead, state)] = value to change.
         """

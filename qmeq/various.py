@@ -55,8 +55,8 @@ def sort_eigenstates(sys, srt='n'):
 
     Parameters
     ----------
-    sys : Approach, Approach2vN or Builder
-        The system given as Approach, Approach2vN or Builder object.
+    sys : Approach, Approach2vN, or Builder
+        The system given as Approach, Approach2vN, or Builder object.
     srt : list
         List specifying in which order of properties to sort.
         For example, in the case of 'ssq' indexing we have  such convention:
@@ -90,9 +90,9 @@ def get_phi0(sys, b_, bp_):
 
     Parameters
     ----------
-    sys : Approach, Approach2vN or Builder
-        The system given as Approach, Approach2vN or Builder object.
-    b_, bp_ : int
+    sys : Approach, Approach2vN, or Builder
+        The system given as Approach, Approach2vN, or Builder object.
+    b\_,bp\_ : int
         Labels of the many-body states.
 
     Returns
@@ -129,11 +129,11 @@ def get_phi1(sys, l, c_, b_):
 
     Parameters
     ----------
-    sys : Approach, Approach2vN or Builder
-        The system given as Approach, Approach2vN or Builder object.
+    sys : Approach, Approach2vN, or Builder
+        The system given as Approach, Approach2vN, or Builder object.
     l : int
         Label of the lead channel.
-    c_, b_ : int
+    c\_,b\_ : int
         Labels of the many-body states.
 
     Returns
@@ -165,27 +165,27 @@ def construct_Ea_extended(sys):
 
     Parameters
     ----------
-    sys : Approach, Approach2vN or Builder
-        The system given as Approach, Approach2vN or Builder object.
+    sys : Approach, Approach2vN, or Builder
+        The system given as Approach, Approach2vN, or Builder object.
 
     Returns
     --------
     Ea_ext : array
-        A two-dimensional numpy array containing in the zeroth row energies,
-        first row charge, and etc. We have such convention:
-        Ea_ext[property number, state number]
-
-        For example, for 'charge' indexing we have such properties:
-        0 - energy
-        1 - charge
-        2 - state number
-
-        and for 'ssq' indexing we have:
-        0 - energy
-        1 - charge
-        2 - spin projection :math:`S_{z}`
-        3 - total spin :math:`S^{2}`
-        4 - state number
+        | A two-dimensional numpy array containing in the zeroth row energies,
+          first row charge, and etc. We have such convention:
+          Ea_ext[property number, state number]
+        |
+        | For example, for 'charge' indexing we have such properties:
+        | 0 - energy
+        | 1 - charge
+        | 2 - state number
+        |
+        | and for 'ssq' indexing we have:
+        | 0 - energy
+        | 1 - charge
+        | 2 - spin projection :math:`S_{z}`
+        | 3 - total spin :math:`S^{2}`
+        | 4 - state number
     '''
     (si, Ea) = (sys.si, sys.qd.Ea)
     if si.indexing == 'sz':
@@ -241,8 +241,8 @@ def remove_coherences(sys, dE):
 
     Parameters
     ----------
-    sys : Approach, Approach2vN or Builder
-        The system given as Approach, Approach2vN or Builder object.
+    sys : Approach, Approach2vN, or Builder
+        The system given as Approach, Approach2vN, or Builder object.
     dE : float
         Energy difference.
 
@@ -287,8 +287,8 @@ def remove_states(sys, dE):
 
     Parameters
     ----------
-    sys : Approach, Approach2vN or Builder
-        The system given as Approach, Approach2vN or Builder object.
+    sys : Approach, Approach2vN, or Builder
+        The system given as Approach, Approach2vN, or Builder object.
     dE : float
         Energy above the ground state.
 
@@ -310,8 +310,8 @@ def use_all_states(sys):
 
     Parameters
     ----------
-    sys : Approach, Approach2vN or Builder
-        The system given as Approach, Approach2vN or Builder object.
+    sys : Approach, Approach2vN, or Builder
+        The system given as Approach, Approach2vN, or Builder object.
 
     Modifies:
     sys.si.statesdm : list
@@ -325,8 +325,8 @@ def print_state(sys, b_, eps=0.0, prntq=True, filename=None, separator=''):
 
     Parameters
     ----------
-    sys : Approach, Approach2vN or Builder
-        The system given as Approach, Approach2vN or Builder object.
+    sys : Approach, Approach2vN, or Builder
+        The system given as Approach, Approach2vN, or Builder object.
     b_ : int
         Index of the many-body eigenstate.
     eps : float
@@ -407,8 +407,8 @@ def print_all_states(sys, filename, eps=0.0, separator='', mode='w'):
 
     Parameters
     ----------
-    sys : Approach, Approach2vN or Builder
-        The system given as Approach, Approach2vN or Builder object.
+    sys : Approach, Approach2vN, or Builder
+        The system given as Approach, Approach2vN, or Builder object.
     filename : string
         File to which to print eigenstate properties. The output is appended to this file.
     eps : float

@@ -113,7 +113,7 @@ def phi1k_local_2vN(ind, Ek_grid, fk, hfkp, hfkm, E, Tba, si):
         Energy grid.
     fk : array
         nleads by len(Ek_grid) numpy array containing Fermi function.
-    hfkp, hfkm : array
+    hfkp,hfkm : array
         Hilbert transforms of fk and 1-fk.
     E : array
         nmany by 1 array containing Hamiltonian eigenvalues.
@@ -458,8 +458,10 @@ def get_emin_emax(sys):
         Approach2vN object.
 
     Modifies:
-    sys.funcp.emin, sys.funcp.emax : float
-        Minimal and maximal energy in the updated Ek_grid.
+    sys.funcp.emin : float
+        Minimal energy in the updated Ek_grid.
+    sys.funcp.emax : float
+        Maximal energy in the updated Ek_grid.
     """
     #(E, si, dband) = (sys.qd.Ea, sys.si, sys.leads.dlst[0,1])
     (E, si, dmin, dmax) = (sys.qd.Ea, sys.si, sys.funcp.dmin, sys.funcp.dmax)
@@ -488,8 +490,10 @@ def get_grid_ext(sys):
     Modifies:
     sys.Ek_grid_ext : array
         Extended Ek_grid from emin to emax.
-    sys.funcp.kpnt_left, sys.funcp.kpnt_right : int
-        Number of points Ek_grid is extended to the left and the right.
+    sys.funcp.kpnt_left : int
+        Number of points Ek_grid is extended to the left.
+    sys.funcp.kpnt_right : int
+        Number of points Ek_grid is extended to the right.
     """
     (emin_, emax_, dmin, dmax, ext_fct) = (sys.funcp.emin, sys.funcp.emax,
                                            sys.funcp.dmin, sys.funcp.dmax,
@@ -601,21 +605,33 @@ def iterate_2vN(sys):
         Approach2vN object.
 
     Modifies:
-    sys.funcp.emin, sys.funcp.emax
-    sys.Ek_grid_ext, sys.funcp.kpnt_left, sys.funcp.kpnt_right
-    sys.fkp, sys.fkm, sys.hfkp, sys.hfkm
-
-    Returns
-    -------
-    phi1k_delta : array
+    sys.phi1k_delta : array
         Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm0).
         Correction to Phi[1](k) after an iteration.
-    hphi1k_delta : array
+    sys.hphi1k_delta : array
         Numpy array with dimensions (len(Ek_grid_ext), nleads, ndm1, ndm0).
         Hilbert transform of phi1k_delta on extended grid Ek_grid_ext.
-    kern1k : array
+    sys.kern1k : array
         Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm1)
         corresponding to energy resolved local kernel for Phi[1](k).
+    sys.funcp.emin : float
+        Minimal energy in the updated Ek_grid.
+    sys.funcp.emax : float
+        Maximal energy in the updated Ek_grid.
+    sys.Ek_grid_ext : array
+        Extended Ek_grid from emin to emax.
+    sys.funcp.kpnt_left : int
+        Number of points Ek_grid is extended to the left.
+    sys.funcp.kpnt_right : int
+        Number of points Ek_grid is extended to the right.
+    sys.fkp : array
+        nleads by len(Ek_grid_ext) numpy array containing Fermi function.
+    sys.fkm : array
+        nleads by len(Ek_grid_ext) numpy array containing 1-Fermi function.
+    sys.hfkp : array
+        Hilbert transform of fkp.
+    sys.hfkm : array
+        Hilbert transform of fkm.
     """
     (Ek_grid, Ek_grid_ext) = (sys.Ek_grid, sys.Ek_grid_ext)
     (E, Tba, si, funcp) = (sys.qd.Ea, sys.leads.Tba, sys.si, sys.funcp)

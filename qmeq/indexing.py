@@ -362,7 +362,7 @@ def make_quantum_numbers(si):
 
     Parameters
     ----------
-    si : StateIndexing.
+    si : StateIndexing
         StateIndexing or StateIndexingDM object.
 
     Returns
@@ -696,7 +696,7 @@ class StateIndexingPauli(StateIndexing):
 
         Parameters
         ----------
-        b, bp : int
+        b,bp : int
             Indices of many-body states within the same charge state.
             Note that bp is just a dummy variable for Pauli master equation.
         charge : int
@@ -897,7 +897,7 @@ class StateIndexingDM(StateIndexing):
 
         Parameters
         ----------
-        b, bp : int
+        b,bp : int
             Indices of many-body states within the same charge state.
         charge : int
             Charge of b and bp.
@@ -931,7 +931,7 @@ class StateIndexingDM(StateIndexing):
 
         Parameters
         ----------
-        c, b : int
+        c,b : int
             Indices of many-body states differing by single charge, charge(c)>charge(b).
         bcharge : int
             Charge of many-body state b.
@@ -1084,7 +1084,7 @@ class StateIndexingDMc(StateIndexing):
 
         Parameters
         ----------
-        b, bp : int
+        b,bp : int
             Indices of many-body states within the same charge state.
         charge : int
             Charge of b and bp.
@@ -1114,7 +1114,7 @@ class StateIndexingDMc(StateIndexing):
 
         Parameters
         ----------
-        c, b : int
+        c,b : int
             Indices of many-body states differing by single charge, charge(c)>charge(b).
         bcharge : int
             Charge of many-body state b.
