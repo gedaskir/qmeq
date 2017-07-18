@@ -121,7 +121,7 @@ def test_construct_Ea_extended():
         system = qmeq.Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
                               indexing=indexing)
         system.solve(masterq=False)
-        assert norm(construct_Ea_extended(system)- data[indexing]) < EPS
+        assert norm(construct_Ea_extended(system)- data[indexing]) < EPS*10
 
 def test_remove_states():
     p = Parameters_double_dot_spinful()

@@ -1,0 +1,53 @@
+# A little bit modified file from:
+# https://packaging.python.org/guides/supporting-windows-using-appveyor/
+
+notifications:
+  email: false
+
+branches:
+  only:
+    #- master
+    - 1.0
+
+environment:
+  matrix:
+    - PYTHON: "C:\\Python27"
+    - PYTHON: "C:\\Python34"
+    - PYTHON: "C:\\Python35"
+    - PYTHON: "C:\\Python36"
+    - PYTHON: "C:\\Python27-x64"
+    - PYTHON: "C:\\Python34-x64"
+      DISTUTILS_USE_SDK: "1"
+    - PYTHON: "C:\\Python35-x64"
+    - PYTHON: "C:\\Python36-x64"
+
+install:
+  # We need wheel installed to build wheels
+  - "%PYTHON%\\python.exe -m pip install wheel"
+  # We need numpy and cython installed to build qmeq
+  - "%PYTHON%\\python.exe -m pip install cython==0.25.2"
+  - "%PYTHON%\\python.exe -m pip install numpy==1.13.1"
+  - "scripts\\build.cmd %PYTHON%\\python.exe setup.py bdist_wheel"
+
+build: off
+
+artifacts:
+  # bdist_wheel puts your built wheel in the dist directory
+  - path: dist\*
+    name: mywheels
+
+deploy:
+  release: 1.0
+  description: 'QmeQ 1.0'
+  provider: GitHub
+  auth_token:
+    secure: qH8xSyfc5b1pBf1bWprxtfcaI1wfD3d6PRznR5LDb7ZQN8nnZeCgjx9fopFSL+zf
+  artifact: mywheels
+  draft: false
+  prerelease: false
+  force_update: true
+  on:
+    # release from tag 1.0 only
+    branch: 1.0
+    # deploy on tag push only
+    appveyor_repo_tag: true

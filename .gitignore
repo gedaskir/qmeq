@@ -9,9 +9,6 @@
 # Python byte files *.pyc
 *.pyc
 
-# Text files *.txt
-*.txt
-
 # Specific files
 docs/index.html.lnk
 docs/run.bat
@@ -37,5 +34,6 @@ qmeq/build
 qmeq/tests/__pycache__
 
 # Specific directories
+instructions/
 project/
 qmeq/tests_
