@@ -41,7 +41,7 @@ Tutorial & Examples
 -------------------
 
 For an introduction to QmeQ see this [tutorial][tutorial]
-and various [examples][examples]
+and various [examples][examples].
 
 License
 -------
@@ -49,6 +49,21 @@ License
 QmeQ has [The BSD 2-Clause License][license] and it can be found
 in [LICENSE.md](LICENSE.md).
 
+Citing QmeQ
+-----------
+
+Please consider citing QmeQ if the use of this project gives results which lead
+to scientific publication:
+
+G. Kiršanskas, J. N. Pedersen, O. Karlström, M. Leijnse, and A. Wacker,
+*QmeQ 1.0: An open-source Python package for calculations of transport through
+quantum dot devices*, [Comput. Phys. Commun. 221, 317 (2017)][qmeqdoi].
+
+The preprint version of the paper can be found on the
+[arXiv.org][qmeqarxiv] server.
+
 [tutorial]: https://github.com/gedaskir/qmeq-examples/tree/master/tutorial/tutorial.ipynb
 [examples]: https://github.com/gedaskir/qmeq-examples
 [license]: https://opensource.org/licenses/BSD-2-Clause
+[qmeqdoi]: https://dx.doi.org/10.1016/j.cpc.2017.07.024
+[qmeqarxiv]: https://arxiv.org/abs/1706.10104
