@@ -233,7 +233,7 @@ def make_tleads_mtr(tleads, nleads, nsingle, mtype=complex):
         tleads_mtr[j1, j2] += tamp
     return tleads_mtr
 
-def make_tleads_dict(tleads, si):
+def make_tleads_dict(tleads, si, add_zeros=False):
     """
     Makes single particle tunneling amplitude dictionary.
 
@@ -262,7 +262,7 @@ def make_tleads_dict(tleads, si):
         tleads_dict = {}
         for j1 in range(nleads):
             for j2 in range(nsingle):
-                if tleads[j1, j2] != 0:
+                if tleads[j1, j2] != 0 or add_zeros:
                     tleads_dict.update({(j1, j2):tleads[j1, j2]})
     #
     if si.symmetry is 'spin':
@@ -437,7 +437,7 @@ class LeadsTunneling(object):
             self.dlst = make_array_dlst(self.dlst, dlst, self.si)
         #
         if tleads is not None:
-            tleads = make_tleads_dict(tleads, self.si)
+            tleads = make_tleads_dict(tleads, self.si, True)
             # Find the differences from the previous tunneling amplitudes
             tleads_add = {}
             for j0 in tleads:

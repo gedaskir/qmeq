@@ -549,7 +549,7 @@ def make_hsingle_mtr(hsingle, nsingle, mtype=float):
             hsingle_mtr[j2, j1] += hop.conjugate()
     return hsingle_mtr
 
-def make_hsingle_dict(qd, hsingle):
+def make_hsingle_dict(qd, hsingle, add_zeros=False):
     """
     Makes single particle Hamiltonian dictionary.
 
@@ -581,7 +581,7 @@ def make_hsingle_dict(qd, hsingle):
         herm_hs = qd.herm_hs
         for j1 in range(nsingle):
             for j2 in range(j1 if herm_hs else 0, nsingle):
-                if hsingle[j1, j2] != 0:
+                if hsingle[j1, j2] != 0 or add_zeros:
                     hsingle_dict.update({(j1, j2):hsingle[j1, j2]})
     #
     if si.symmetry is 'spin':
@@ -796,7 +796,7 @@ class QuantumDot(object):
             and the Coulomb matrix elements will be updated.
             The many-body Hamiltonian will be updates in either case.
         """
-        hsingle = {} if hsingle is None else make_hsingle_dict(self, hsingle)
+        hsingle = {} if hsingle is None else make_hsingle_dict(self, hsingle, True)
         coulomb = {} if coulomb is None else make_coulomb_dict(self, coulomb)
         #
         hsingle_add = {}
