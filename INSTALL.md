@@ -1,8 +1,8 @@
 Installation of QmeQ
 ====================
 
-For now QmeQ can be installed by building it from source. To be able to use and
-build QmeQ you need to have:
+QmeQ can be installed through [pip][pip] or by building it from source.
+To be able to use and build QmeQ you need to have:
 
 * [Python][Python] 2.7 or 3.3 with [setuptools][setuptools] installed,
 * [Cython][Cython] 0.22 and a C compiler compatible with it,
@@ -23,7 +23,7 @@ by using the following command
 $ pip install cython, numpy, scipy, matplotlib, jupyter
 ```
 
-QmeQ can be installed through pip
+To install QmeQ through pip run
 
 ```bash
 $ pip install qmeq
@@ -104,8 +104,8 @@ $ pytest tests
 Documentation
 -------------
 
-For now QmeQ contains just the [documentation][qmeqdocs] generated from
-docstrings in the source code. The QmeQ documentation can be generated in
+QmeQ contains the [documentation][qmeqdocs] generated from docstrings in the
+source code. This documentation can be generated in
 **html**, **latex**, and other formats using
 
 * [Sphinx][Sphinx] 1.3 package,
