@@ -23,8 +23,13 @@ by using the following command
 $ pip install cython, numpy, scipy, matplotlib, jupyter
 ```
 
-QmeQ is installed by going into the [downloaded source][qmeqsrc] directory and
-running
+QmeQ can be installed through pip
+
+```bash
+$ pip install qmeq
+```
+
+or by going into the [downloaded source][qmeqsrc] directory and running
 
 ```bash
 $ python setup.py install

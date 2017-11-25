@@ -19,11 +19,11 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 project = u'qmeq'
-copyright = u'2016, Gediminas Kirsanskas'
+copyright = u'2017, Gediminas Kirsanskas'
 author = u'Gediminas Kirsanskas'
 
-version = u'1.0'
-release = u'1.0'
+version = u'1.0.1'
+release = u'1.0.1'
 
 language = None
 #today = ''

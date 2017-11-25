@@ -49,4 +49,4 @@ from .indexing import StateIndexingDMc
 from .leadstun import LeadsTunneling
 from .qdot import QuantumDot
 
-__version__ = '1.0'
+__version__ = '1.0.1'
