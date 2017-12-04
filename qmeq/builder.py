@@ -5,6 +5,9 @@ from __future__ import division
 from __future__ import print_function
 
 import copy
+import numpy as np
+
+from .mytypes import longnp
 
 from .aprclass import Approach
 from .indexing import StateIndexingDM
@@ -391,6 +394,62 @@ class Builder(object):
         Use all states for the transport calculations.
         '''
         use_all_states(self)
+
+
+class Builder_many_body(Builder):
+    """
+    Class for building the system for stationary transport calculations,
+    using many-body states as an input.
+
+    For other parameter descriptions see help(Builder).
+
+    Attributes
+    ----------
+    Ea : array
+        nmany by 1 array containing many-body Hamiltonian eigenvalues.
+    Na : array
+        nmany by 1 array containing particle numbers of many-body states.
+    Tba : array
+        nleads by nmany by nmany array, which contains many-body tunneling amplitude matrix,
+        which is used in calculations.
+    """
+
+    def __init__(self, Ea=None, Na=[0], Tba=None,
+                       mulst={}, tlst={}, dband={}, kpnt=None,
+                       kerntype='Pauli', symq=True, norm_row=0, solmethod='n',
+                       itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                       mtype_qd=complex, mtype_leads=complex,
+                       symmetry='n', herm_hs=True, herm_c=False, m_less_n=True):
+
+        nleads = Tba.shape[0] if Tba is not None else 0
+
+        super().__init__(nleads=nleads, mulst=mulst, tlst=tlst, dband=dband, kpnt=kpnt,
+                         kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,
+                         itype=itype, dqawc_limit=dqawc_limit, mfreeq=mfreeq, phi0_init=phi0_init,
+                         mtype_qd=mtype_qd, mtype_leads=mtype_leads,
+                         symmetry=symmetry, herm_hs=herm_hs, herm_c=herm_c, m_less_n=m_less_n,
+                         indexing='charge')
+
+        Na = np.array(Na, dtype=int)
+        nmin, nmax = Na.min(), Na.max()
+        ncharge = nmax-nmin+1
+        nmany = len(Ea) if Ea is not None else 0
+
+        statesdm = [[] for i in range(ncharge)]
+        for i in range(nmany):
+            statesdm[Na[i]].append(i)
+
+        self.Na = Na
+        self.si.nmany = nmany
+        self.si.ncharge = ncharge
+        self.si.shiftlst0 = np.zeros(ncharge+1, dtype=longnp)
+        self.si.shiftlst1 = np.zeros(ncharge, dtype=longnp)
+        self.si.lenlst = np.zeros(ncharge, dtype=longnp)
+        self.si.dictdm = np.zeros(nmany, dtype=longnp)
+        self.si.set_statesdm(statesdm)
+
+        self.qd.Ea = Ea
+        self.leads.Tba = Tba
 
 
 class FunctionProperties(object):

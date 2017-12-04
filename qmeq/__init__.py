@@ -41,6 +41,7 @@ from __future__ import print_function
 from .aprclass import Approach
 from .aprclass import Approach2vN
 from .builder import Builder
+from .builder import Builder_many_body
 from .builder import FunctionProperties
 from .indexing import StateIndexing
 from .indexing import StateIndexingPauli
