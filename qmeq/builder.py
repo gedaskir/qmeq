@@ -423,12 +423,13 @@ class Builder_many_body(Builder):
 
         nleads = Tba.shape[0] if Tba is not None else 0
 
-        super().__init__(nleads=nleads, mulst=mulst, tlst=tlst, dband=dband, kpnt=kpnt,
-                         kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,
-                         itype=itype, dqawc_limit=dqawc_limit, mfreeq=mfreeq, phi0_init=phi0_init,
-                         mtype_qd=mtype_qd, mtype_leads=mtype_leads,
-                         symmetry=symmetry, herm_hs=herm_hs, herm_c=herm_c, m_less_n=m_less_n,
-                         indexing='charge')
+        super(Builder_many_body, self).__init__(
+            nleads=nleads, mulst=mulst, tlst=tlst, dband=dband, kpnt=kpnt,
+            kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,
+            itype=itype, dqawc_limit=dqawc_limit, mfreeq=mfreeq, phi0_init=phi0_init,
+            mtype_qd=mtype_qd, mtype_leads=mtype_leads,
+            symmetry=symmetry, herm_hs=herm_hs, herm_c=herm_c, m_less_n=m_less_n,
+            indexing='charge')
 
         Na = np.array(Na, dtype=int)
         nmin, nmax = Na.min(), Na.max()
