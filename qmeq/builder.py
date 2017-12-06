@@ -50,6 +50,24 @@ except:
     Approach_2vN = Approach_py2vN
 #-----------------------------------------------------------
 
+attribute_map = {
+    # Approch
+    'solve':'appr', 'current':'appr', 'energy_current':'appr',
+    'heat_current':'appr', 'phi0':'appr', 'phi1':'appr', 'niter':'appr',
+    'iters':'appr', 'kern':'appr',
+    # FunctionProperties
+    'kpnt':'funcp', 'symq':'funcp', 'norm_row':'funcp', 'solmethod':'funcp',
+    'itype':'funcp', 'itype_ph':'funcp', 'dqawc_limit':'funcp',
+    'mfreeq':'funcp', 'phi0_init':'funcp',
+    # LeadsTunneling
+    'tleads':'leads', 'mulst':'leads', 'tlst':'leads', 'dlst':'leads',
+    'Tba':'leads',
+    # StateIndexing
+    'nsingle':'si', 'nleads':'si',
+    # QuantumDot
+    'hsingle':'qd', 'coulomb':'qd', 'Ea':'qd'
+    }
+
 class Builder(object):
     """
     Class for building the system for stationary transport calculations.
@@ -239,37 +257,20 @@ class Builder(object):
         self.appr = self.Approach(self)
 
     def __getattr__(self, item):
-        if item in {'solve', 'current', 'energy_current', 'heat_current', 'phi0', 'phi1',
-                    'niter', 'iters', 'kern'}:
-            return getattr(self.appr, item)
-        elif item in {'kpnt', 'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit',
-                      'mfreeq', 'phi0_init'}:
-            return getattr(self.funcp, item)
-        elif item in {'tleads', 'mulst', 'tlst', 'dlst', 'Tba'}:
-            return getattr(self.leads, item)
-        elif item in {'nsingle', 'nleads'}:
-            return getattr(self.si, item)
-        elif item in {'hsingle', 'coulomb', 'Ea'}:
-            return getattr(self.qd, item)
-        else:
-            #return self.__getattribute__(item)
+        sub_class_str = attribute_map.get(item)
+        if sub_class_str is None:
             return super(Builder, self).__getattribute__(item)
+        else:
+            sub_class = getattr(self, attribute_map[item])
+            return getattr(sub_class, item)
 
     def __setattr__(self, item, value):
-        if item in {'solve', 'current', 'energy_current', 'heat_current', 'phi0', 'phi1',
-                    'niter', 'iters', 'kern'}:
-            setattr(self.appr, item, value)
-        elif item in {'kpnt', 'symq', 'norm_row', 'solmethod', 'itype', 'dqawc_limit',
-                      'mfreeq', 'phi0_init'}:
-            setattr(self.funcp, item, value)
-        elif item in {'tleads', 'mulst', 'tlst', 'dlst', 'Tba'}:
-            setattr(self.leads, item, value)
-        elif item in {'nsingle', 'nleads'}:
-            setattr(self.si, item, value)
-        elif item in {'hsingle', 'coulomb', 'Ea'}:
-            setattr(self.qd, item, value)
-        else:
+        sub_class_str = attribute_map.get(item)
+        if sub_class_str is None:
             super(Builder, self).__setattr__(item, value)
+        else:
+            sub_class = getattr(self, attribute_map[item])
+            setattr(sub_class, item, value)
 
     def change_si(self):
         si = self.si
