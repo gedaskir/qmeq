@@ -68,6 +68,38 @@ attribute_map = {
     'hsingle':'qd', 'coulomb':'qd', 'Ea':'qd'
     }
 
+def check_parameters(indexing, symmetry, itype, kerntype):
+    if indexing is 'n':
+        if symmetry is 'spin' and kerntype not in {'py2vN', '2vN'}:
+            indexing = 'ssq'
+        else:
+            indexing = 'charge'
+
+    if not indexing in {'Lin', 'charge', 'sz', 'ssq'}:
+        print("WARNING: Allowed indexing values are: \'Lin\', \'charge\', \'sz\', \'ssq\'. "+
+              "Using default indexing=\'charge\'.")
+        indexing = 'charge'
+
+    if not itype in {0,1,2,3}:
+        print("WARNING: itype needs to be 0, 1, 2, or 3. Using default itype=0.")
+        itype = 0
+
+    if isinstance(kerntype, str):
+        if not kerntype in {'Pauli', 'Lindblad', 'Redfield', '1vN', '2vN',
+                            'pyPauli', 'pyLindblad', 'pyRedfield', 'py1vN', 'py2vN'}:
+            print("WARNING: Allowed kerntype values are: "+
+                  "\'Pauli\', \'Lindblad\', \'Redfield\', \'1vN\', \'2vN\', "+
+                  "\'pyPauli\', \'pyLindblad\', \'pyRedfield\', \'py1vN\', \'py2vN\'. "+
+                  "Using default kerntype=\'Pauli\'.")
+            kerntype = 'Pauli'
+
+    if not indexing in {'Lin', 'charge'} and kerntype in {'py2vN', '2vN'}:
+        print("WARNING: For 2vN approach indexing needs to be \'Lin\' or \'charge\'. "+
+              "Using indexing=\'charge\' as a default.")
+        indexing = 'charge'
+
+    return indexing, itype, kerntype
+
 class Builder(object):
     """
     Class for building the system for stationary transport calculations.
@@ -200,39 +232,14 @@ class Builder(object):
                        mtype_qd=complex, mtype_leads=complex,
                        symmetry='n', herm_hs=True, herm_c=False, m_less_n=True):
 
-        if indexing is 'n':
-            if symmetry is 'spin' and kerntype not in {'py2vN', '2vN'}:
-                indexing = 'ssq'
-            else:
-                indexing = 'charge'
-
-        if not indexing in {'Lin', 'charge', 'sz', 'ssq'}:
-            print("WARNING: Allowed indexing values are: \'Lin\', \'charge\', \'sz\', \'ssq\'. "+
-                  "Using default indexing=\'charge\'.")
-            indexing = 'charge'
-
-        if not itype in {0,1,2,3}:
-            print("WARNING: itype needs to be 0, 1, 2, or 3. Using default itype=0.")
-            itype = 0
+        indexing, itype, kerntype = check_parameters(indexing, symmetry,
+                                                     itype, kerntype)
 
         if isinstance(kerntype, str):
-            if not kerntype in {'Pauli', 'Lindblad', 'Redfield', '1vN', '2vN',
-                                'pyPauli', 'pyLindblad', 'pyRedfield', 'py1vN', 'py2vN'}:
-                print("WARNING: Allowed kerntype values are: "+
-                      "\'Pauli\', \'Lindblad\', \'Redfield\', \'1vN\', \'2vN\', "+
-                      "\'pyPauli\', \'pyLindblad\', \'pyRedfield\', \'py1vN\', \'py2vN\'. "+
-                      "Using default kerntype=\'Pauli\'.")
-                kerntype = 'Pauli'
             self.Approach = globals()['Approach_'+kerntype]
-        else:
-            if issubclass(kerntype, Approach):
-                self.Approach = kerntype
-                kerntype = self.Approach.kerntype
-
-        if not indexing in {'Lin', 'charge'} and kerntype in {'py2vN', '2vN'}:
-            print("WARNING: For 2vN approach indexing needs to be \'Lin\' or \'charge\'. "+
-                  "Using indexing=\'charge\' as a default.")
-            indexing = 'charge'
+        elif issubclass(kerntype, Approach):
+            self.Approach = kerntype
+            kerntype = self.Approach.kerntype
 
         # Make copies of initialized parameters.
         hsingle = copy.deepcopy(hsingle)
