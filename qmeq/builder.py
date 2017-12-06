@@ -54,7 +54,7 @@ attribute_map = {
     # Approch
     'solve':'appr', 'current':'appr', 'energy_current':'appr',
     'heat_current':'appr', 'phi0':'appr', 'phi1':'appr', 'niter':'appr',
-    'iters':'appr', 'kern':'appr',
+    'iters':'appr', 'kern':'appr', 'success':'appr',
     # FunctionProperties
     'kpnt':'funcp', 'symq':'funcp', 'norm_row':'funcp', 'solmethod':'funcp',
     'itype':'funcp', 'itype_ph':'funcp', 'dqawc_limit':'funcp',

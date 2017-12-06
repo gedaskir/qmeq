@@ -109,9 +109,11 @@ class Approach(object):
             if   solmethod == 'solve': self.sol0 = [np.linalg.solve(self.kern, self.bvec)]
             elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(self.kern, self.bvec)
             self.phi0 = self.sol0[0]
+            self.success = True
         except Exception as exept:
             self.funcp.print_error(exept)
             self.phi0 = np.zeros(self.si.ndm0r)
+            self.success = False
         self.funcp.solmethod = solmethod
 
     def solve_matrix_free(self):
@@ -129,9 +131,11 @@ class Approach(object):
         try:
             self.sol0 = optimize.root(self.generate_vec, phi0_init, args=(self), method=solmethod)
             self.phi0 = self.sol0.x
+            self.success = self.sol0.success
         except Exception as exept:
             self.funcp.print_error(exept)
             self.phi0 = 0*phi0_init
+            self.success = False
         self.funcp.solmethod = solmethod
 
     def solve(self, qdq=True, rotateq=True, masterq=True, currentq=True, *args, **kwargs):
