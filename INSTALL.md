@@ -20,7 +20,7 @@ An easy way to obtain the above packages is by using Python package manager
 by using the following command
 
 ```bash
-$ pip install cython, numpy, scipy, matplotlib, jupyter
+$ pip install cython numpy scipy matplotlib jupyter
 ```
 
 To install QmeQ through pip run
