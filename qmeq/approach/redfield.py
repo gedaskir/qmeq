@@ -12,19 +12,20 @@ from ..mytypes import complexnp
 
 from ..aprclass import Approach
 from .neumann1 import generate_phi1fct
+from .pauli import generate_norm_vec
 
 #---------------------------------------------------------------------------------------------------
 # Redfield approach
 #---------------------------------------------------------------------------------------------------
 def generate_kern_redfield(sys):
-    (E, Tba, phi1fct, si, symq, norm_rowp) = (sys.qd.Ea, sys.leads.Tba, sys.phi1fct, sys.si,
-                                              sys.funcp.symq, sys.funcp.norm_row)
-    norm_row = norm_rowp if symq else si.ndm0r
-    last_row = si.ndm0r-1 if symq else si.ndm0r
-    kern = np.zeros((last_row+1, si.ndm0r), dtype=doublenp)
-    bvec = np.zeros(last_row+1, dtype=doublenp)
-    bvec[norm_row] = 1
+    (E, Tba, phi1fct, si) = (sys.qd.Ea, sys.leads.Tba, sys.phi1fct, sys.si)
     npauli, ndm0, nleads = si.npauli, si.ndm0, si.nleads
+
+    sys.kern_ext = np.zeros((si.ndm0r+1, si.ndm0r), dtype=doublenp)
+    sys.kern = sys.kern_ext[0:-1, :]
+
+    generate_norm_vec(sys, si.ndm0r)
+    kern = sys.kern
     for charge in range(si.ncharge):
         acharge = charge-1
         bcharge = charge
@@ -120,14 +121,6 @@ def generate_kern_redfield(sys):
                         if bbpi_bool:
                             kern[bbpi, ccp] -= fct_ccp.real
                 #--------------------------------------------------
-    # Normalisation condition
-    kern[norm_row] = np.zeros(si.ndm0r, dtype=doublenp)
-    for charge in range(si.ncharge):
-        for b in si.statesdm[charge]:
-            bb = si.get_ind_dm0(b, b, charge)
-            kern[norm_row, bb] += 1
-    sys.kern = kern
-    sys.bvec = bvec
     return 0
 
 def generate_current_redfield(sys):

@@ -12,6 +12,7 @@ from ..mytypes import complexnp
 
 from ..specfuncc cimport func_1vN
 from ..aprclass import Approach
+from .c_pauli import c_generate_norm_vec
 
 cimport numpy as np
 cimport cython
@@ -72,8 +73,6 @@ def c_generate_kern_1vN(sys):
     cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] phi1fct = sys.phi1fct
     si = sys.si
-    cdef bint symq = sys.funcp.symq
-    cdef long_t norm_rowp = sys.funcp.norm_row
     #
     cdef bool_t bbp_bool, bbpi_bool
     cdef int_t charge, acharge, bcharge, ccharge, l, nleads, \
@@ -83,7 +82,7 @@ def c_generate_kern_1vN(sys):
                 bpp, bppbp, bppbpi, bbpp, bbppi, \
                 c, cp, ccp, ccpi, \
                 bpa, bap, cbp, ba, cb, cpb
-    cdef long_t norm_row, last_row, ndm0, npauli,
+    cdef long_t ndm0, ndm0r, npauli,
     cdef complex_t fct_aap, fct_bppbp, fct_bbpp, fct_ccp
     #
     cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
@@ -94,13 +93,13 @@ def c_generate_kern_1vN(sys):
     cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
     cdef np.ndarray[bool_t, ndim=1] conjdm0 = si.conjdm0
     #
-    norm_row = norm_rowp if symq else si.ndm0r
-    last_row = si.ndm0r-1 if symq else si.ndm0r
-    ndm0, npauli, nleads = si.ndm0, si.npauli, si.nleads
-    #
-    cdef np.ndarray[double_t, ndim=2] kern = np.zeros((last_row+1, si.ndm0r), dtype=doublenp)
-    cdef np.ndarray[double_t, ndim=1] bvec = np.zeros(last_row+1, dtype=doublenp)
-    bvec[norm_row] = 1
+    ndm0r, ndm0, npauli, nleads = si.ndm0r, si.ndm0, si.npauli, si.nleads
+
+    sys.kern_ext = np.zeros((ndm0r+1, ndm0r), dtype=doublenp)
+    sys.kern = sys.kern_ext[0:-1, :]
+
+    c_generate_norm_vec(sys, ndm0r)
+    cdef np.ndarray[double_t, ndim=2] kern = sys.kern
     for charge in range(si.ncharge):
         acharge = charge-1
         bcharge = charge
@@ -196,14 +195,6 @@ def c_generate_kern_1vN(sys):
                         if bbpi_bool:
                             kern[bbpi, ccp] = kern[bbpi, ccp] - fct_ccp.real                        # kern[bbpi, ccp] -= fct_ccp.real
                 #--------------------------------------------------
-    # Normalisation condition
-    kern[norm_row] = np.zeros(si.ndm0r, dtype=doublenp)
-    for charge in range(si.ncharge):
-        for b in si.statesdm[charge]:
-            bb = mapdm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
-            kern[norm_row, bb] += 1
-    sys.kern = kern
-    sys.bvec = bvec
     return 0
 
 @cython.boundscheck(False)

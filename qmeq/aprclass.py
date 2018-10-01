@@ -82,7 +82,7 @@ class Approach(object):
 
     def restart(self):
         """Restart values of some variables."""
-        self.kern, self.bvec = None, None
+        self.kern, self.bvec, self.norm_vec = None, None, None
         self.sol0, self.phi0, self.phi1 = None, None, None
         self.current = None
         self.energy_current = None
@@ -101,20 +101,40 @@ class Approach(object):
         """Finds the stationary state using least squares or by inverting the matrix."""
         solmethod = self.funcp.solmethod
         symq = self.funcp.symq
-        if solmethod == 'n': solmethod = 'solve' if symq else 'lsqr'
+        norm_row = self.funcp.norm_row
+
+        # Determine the proper solution method
+        if solmethod == 'n':
+            solmethod = 'solve' if symq else 'lsqr'
         if not symq and solmethod != 'lsqr' and solmethod != 'lsmr':
             print("WARNING: Using solmethod=lsqr, because the kernel is not symmetric, symq=False.")
             solmethod = 'lsqr'
+        self.funcp.solmethod = solmethod
+
+        # Replace one equation by the normalisation condition
+        if symq:
+            kern, bvec = self.kern, self.bvec
+            replaced_eq = kern[norm_row]
+            kern[norm_row] = self.norm_vec
+        else:
+            kern, bvec = self.kern_ext, self.bvec_ext
+            kern[-1] = self.norm_vec
+
+        # Try to solve the master equation
         try:
-            if   solmethod == 'solve': self.sol0 = [np.linalg.solve(self.kern, self.bvec)]
-            elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(self.kern, self.bvec)
+            if   solmethod == 'solve': self.sol0 = [np.linalg.solve(kern, bvec)]
+            elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(kern, bvec, rcond=None)
+
             self.phi0 = self.sol0[0]
             self.success = True
         except Exception as exept:
             self.funcp.print_error(exept)
             self.phi0 = np.zeros(self.si.ndm0r)
             self.success = False
-        self.funcp.solmethod = solmethod
+
+        # Return back the replaced equation
+        if symq:
+            kern[norm_row] = replaced_eq
 
     def solve_matrix_free(self):
         """Finds the stationary state using matrix free methods like broyden, krylov, etc."""

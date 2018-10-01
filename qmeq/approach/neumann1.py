@@ -11,6 +11,7 @@ from ..mytypes import doublenp
 
 from ..specfunc import func_1vN
 from ..aprclass import Approach
+from .pauli import generate_norm_vec
 
 def generate_phi1fct(sys):
     """
@@ -63,17 +64,14 @@ def generate_kern_1vN(sys):
     Modifies:
     sys.kern : array
         Kernel matrix for 1vN approach.
-    sys.bvec : array
-        Right hand side column vector for master equation.
-        The entry funcp.norm_row is 1 representing normalization condition.
     """
-    (E, Tba, phi1fct, si, symq, norm_rowp) = (sys.qd.Ea, sys.leads.Tba, sys.phi1fct, sys.si,
-                                              sys.funcp.symq, sys.funcp.norm_row)
-    norm_row = norm_rowp if symq else si.ndm0r
-    last_row = si.ndm0r-1 if symq else si.ndm0r
-    kern = np.zeros((last_row+1, si.ndm0r), dtype=doublenp)
-    bvec = np.zeros(last_row+1, dtype=doublenp)
-    bvec[norm_row] = 1
+    (E, Tba, phi1fct, si) = (sys.qd.Ea, sys.leads.Tba, sys.phi1fct, sys.si)
+
+    sys.kern_ext = np.zeros((si.ndm0r+1, si.ndm0r), dtype=doublenp)
+    sys.kern = sys.kern_ext[0:-1, :]
+
+    generate_norm_vec(sys, si.ndm0r)
+    kern = sys.kern
     for charge in range(si.ncharge):
         for b, bp in itertools.combinations_with_replacement(si.statesdm[charge], 2):
             bbp = si.get_ind_dm0(b, bp, charge)
@@ -168,14 +166,6 @@ def generate_kern_1vN(sys):
                         if bbpi_bool:
                             kern[bbpi, ccp] -= fct_ccp.real                     # kern[bbpi, ccp] -= fct_ccp.real
                 #--------------------------------------------------
-    # Normalisation condition
-    kern[norm_row] = np.zeros(si.ndm0r, dtype=doublenp)
-    for charge in range(si.ncharge):
-        for b in si.statesdm[charge]:
-            bb = si.get_ind_dm0(b, b, charge)
-            kern[norm_row, bb] += 1
-    sys.kern = kern
-    sys.bvec = bvec
     return 0
 
 def generate_current_1vN(sys):

@@ -12,6 +12,42 @@ from ..mytypes import doublenp
 from ..specfunc import func_pauli
 from ..aprclass import Approach
 
+def generate_norm_vec(sys, length):
+    """
+    Generates normalisation condition for 1vN approach.
+
+    Parameters
+    ----------
+    sys : Approach
+        Approach object.
+    length: int
+        Length of the normalisation row.
+
+    Modifies:
+    sys.norm_vec : array
+        Left hand side of the normalisation condition.
+    sys.bvec : array
+        Right hand side column vector for master equation.
+        The entry funcp.norm_row is 1 representing normalization condition.
+    """
+    si, symq, norm_row = (sys.si, sys.funcp.symq, sys.funcp.norm_row)
+
+    sys.bvec_ext = np.zeros(length+1, dtype=doublenp)
+    sys.bvec_ext[-1] = 1
+
+    sys.bvec = sys.bvec_ext[0:-1]
+    sys.bvec[norm_row] = 1 if symq else 0
+
+    sys.norm_vec = np.zeros(length, dtype=doublenp)
+    norm_vec = sys.norm_vec
+
+    for charge in range(si.ncharge):
+        for b in si.statesdm[charge]:
+            bb = si.get_ind_dm0(b, b, charge)
+            norm_vec[bb] += 1
+
+    return 0
+
 def generate_paulifct(sys):
     """
     Make factors used for generating Pauli master equation kernel.
@@ -62,18 +98,18 @@ def generate_kern_pauli(sys):
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
     """
-    (paulifct, si, symq, norm_rowp) = (sys.paulifct, sys.si, sys.funcp.symq, sys.funcp.norm_row)
-    norm_row = norm_rowp if symq else si.npauli
-    last_row = si.npauli-1 if symq else si.npauli
-    kern = np.zeros((last_row+1, si.npauli), dtype=doublenp)
-    bvec = np.zeros(last_row+1, dtype=doublenp)
-    bvec[norm_row] = 1
+    (paulifct, si) = (sys.paulifct, sys.si)
+
+    sys.kern_ext = np.zeros((si.npauli+1, si.npauli), dtype=doublenp)
+    sys.kern = sys.kern_ext[0:-1, :]
+
+    generate_norm_vec(sys, si.npauli)
+    kern = sys.kern
     for charge in range(si.ncharge):
         for b in si.statesdm[charge]:
             bb = si.get_ind_dm0(b, b, charge)
             bb_bool = si.get_ind_dm0(b, b, charge, 2)
-            kern[norm_row, bb] += 1
-            if not (symq and bb == norm_row) and bb_bool:
+            if bb_bool:
                 for a in si.statesdm[charge-1]:
                     aa = si.get_ind_dm0(a, a, charge-1)
                     ba = si.get_ind_dm1(b, a, charge-1)
@@ -86,8 +122,6 @@ def generate_kern_pauli(sys):
                     for l in range(si.nleads):
                         kern[bb, bb] -= paulifct[l, cb, 0]
                         kern[bb, cc] += paulifct[l, cb, 1]
-    sys.kern = kern
-    sys.bvec = bvec
     return 0
 
 def generate_current_pauli(sys):

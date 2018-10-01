@@ -23,6 +23,32 @@ ctypedef np.float64_t double_t
 ctypedef np.complex128_t complex_t
 
 @cython.boundscheck(False)
+def c_generate_norm_vec(sys, length):
+    si, symq, norm_row = (sys.si, sys.funcp.symq, sys.funcp.norm_row)
+
+    sys.bvec_ext = np.zeros(length+1, dtype=doublenp)
+    sys.bvec_ext[-1] = 1
+
+    sys.bvec = sys.bvec_ext[0:-1]
+    sys.bvec[norm_row] = 1 if symq else 0
+
+    sys.norm_vec = np.zeros(length, dtype=doublenp)
+    cdef np.ndarray[double_t, ndim=1] norm_vec = sys.norm_vec
+
+    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
+    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
+    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
+    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
+
+    cdef int_t charge, b, bb
+    for charge in range(si.ncharge):
+        for b in si.statesdm[charge]:
+            bb = mapdm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
+            norm_vec[bb] += 1
+
+    return 0
+
+@cython.boundscheck(False)
 def c_generate_paulifct(sys):
     cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
     cdef np.ndarray[complex_t, ndim=3] Tba = sys.leads.Tba
@@ -65,14 +91,12 @@ def c_generate_paulifct(sys):
 def c_generate_kern_pauli(sys):
     cdef np.ndarray[double_t, ndim=3] paulifct = sys.paulifct
     si = sys.si
-    cdef bint symq = sys.funcp.symq
-    cdef long_t norm_rowp = sys.funcp.norm_row
     #
     cdef bool_t bb_bool
     cdef long_t b, bb, a, aa, c, cc, ba, cb
     cdef int_t acharge, bcharge, ccharge, charge, l
-    cdef int_t norm_row, last_row
     cdef int_t nleads = si.nleads
+    cdef int_t npauli = si.npauli
     #
     cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
     cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
@@ -81,12 +105,11 @@ def c_generate_kern_pauli(sys):
     cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
     cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
     #
-    norm_row = norm_rowp if symq else si.npauli
-    last_row = si.npauli-1 if symq else si.npauli
-    #
-    cdef np.ndarray[double_t, ndim=2] kern = np.zeros((last_row+1, si.npauli), dtype=doublenp)
-    cdef np.ndarray[double_t, ndim=1] bvec = np.zeros(last_row+1, dtype=doublenp)
-    bvec[norm_row] = 1
+    sys.kern_ext = np.zeros((npauli+1, npauli), dtype=doublenp)
+    sys.kern = sys.kern_ext[0:-1, :]
+
+    c_generate_norm_vec(sys, npauli)
+    cdef np.ndarray[double_t, ndim=2] kern = sys.kern
     for charge in range(si.ncharge):
         acharge = charge-1
         bcharge = charge
@@ -94,8 +117,7 @@ def c_generate_kern_pauli(sys):
         for b in si.statesdm[charge]:
             bb = mapdm0[lenlst[bcharge]*dictdm[b] + dictdm[b] + shiftlst0[bcharge]]
             bb_bool = booldm0[lenlst[bcharge]*dictdm[b] + dictdm[b] + shiftlst0[bcharge]]
-            kern[norm_row, bb] = kern[norm_row, bb] + 1
-            if not (symq and bb == norm_row) and bb_bool:
+            if bb_bool:
                 for a in si.statesdm[charge-1]:
                     aa = mapdm0[lenlst[acharge]*dictdm[a] + dictdm[a] + shiftlst0[acharge]]
                     ba = lenlst[acharge]*dictdm[b] + dictdm[a] + shiftlst1[acharge]
@@ -108,8 +130,6 @@ def c_generate_kern_pauli(sys):
                     for l in range(nleads):
                         kern[bb, bb] = kern[bb, bb] - paulifct[l, cb, 0]
                         kern[bb, cc] = kern[bb, cc] + paulifct[l, cb, 1]
-    sys.kern = kern
-    sys.bvec = bvec
     return 0
 
 @cython.boundscheck(False)

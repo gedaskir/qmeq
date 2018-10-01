@@ -114,7 +114,7 @@ source code. This documentation can be generated in
 To install the above packages run
 
 ```bash
-$ pip install sphinx, sphinx-rtd-theme
+$ pip install sphinx sphinx-rtd-theme
 ```
 
 For example, to generate the documentation in **html** format run

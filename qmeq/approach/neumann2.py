@@ -14,6 +14,7 @@ from ..mytypes import intnp
 from ..specfunc import kernel_fredriksen
 from ..specfunc import hilbert_fredriksen
 from ..aprclass import Approach2vN
+from .pauli import generate_norm_vec
 
 def func_2vN(Ek, Ek_grid, l, eta, hfk):
     """
@@ -352,8 +353,6 @@ def kern_phi0_2vN(sys):
     """
     #(phi1_phi0, E, Tba, si, funcp, mulst, tlst, dlst)
     (phi1_phi0, E, Tba, si) = (sys.phi1_phi0, sys.qd.Ea, sys.leads.Tba, sys.si)
-    symq = sys.funcp.symq
-    norm_rowp = sys.funcp.norm_row
     # Integrated Phi[1]_{bc} in terms of phi1_phi0
     shuffle = np.zeros((si.ndm0, si.ndm0), dtype=intnp)
     for charge in range(si.ncharge):
@@ -364,13 +363,11 @@ def kern_phi0_2vN(sys):
             shuffle[bpb, bbp] = 1
     phi1_phi0_conj = np.dot(np.conjugate(phi1_phi0), shuffle)
     # Set-up normalisation row
-    norm_row = norm_rowp if symq else si.ndm0
-    last_row = si.ndm0-1 if symq else si.ndm0
-    bvec = np.zeros(last_row+1, dtype=complexnp)
-    bvec[norm_row] = 1
+    generate_norm_vec(sys, si.ndm0)
     # Make equations for Phi[0]
-    kern = np.zeros((last_row+1, si.ndm0), dtype=complexnp)
-    norm_vec = np.zeros(si.ndm0, dtype=complexnp)
+    sys.kern_ext = np.zeros((si.ndm0+1, si.ndm0), dtype=complexnp)
+    sys.kern = sys.kern_ext[0:-1, :]
+    kern = sys.kern
     for charge in range(si.ncharge):
         acharge = charge-1
         bcharge = charge
@@ -378,8 +375,6 @@ def kern_phi0_2vN(sys):
         for b, bp in itertools.product(si.statesdm[bcharge], si.statesdm[bcharge]):
             bbp = si.get_ind_dm0(b, bp, bcharge)
             kern[bbp, bbp] = E[b]-E[bp]
-            if b == bp:
-                norm_vec[bbp] = 1
             #
             for a1 in si.statesdm[acharge]:
                 bpa1 = si.get_ind_dm1(bp, a1, acharge)
@@ -394,10 +389,6 @@ def kern_phi0_2vN(sys):
                 for l in range(si.nleads):
                     kern[bbp] += +Tba[l, b, c1]*phi1_phi0[l, c1bp]
                     kern[bbp] += -phi1_phi0_conj[l, c1b]*Tba[l, c1, bp]
-    kern[norm_row] = norm_vec
-    #
-    sys.kern = kern
-    sys.bvec = bvec
     return 0
 
 def generate_current_2vN(sys):

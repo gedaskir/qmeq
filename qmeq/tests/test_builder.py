@@ -118,9 +118,9 @@ def test_Builder_double_dot_spinful():
             #
             if PRNTQ:
                 print(kerntype, itype)
-                print(system.tt.current)
+                print(system.current)
                 print( data[attr+'current'] )
-                print(system.tt.energy_current)
+                print(system.energy_current)
                 print( data[attr+'energy_current'] )
                 print( norm(system.current - data[attr+'current']) )
                 print( norm(system.energy_current - data[attr+'energy_current']) )
