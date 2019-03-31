@@ -114,7 +114,7 @@ class Approach(object):
         # Replace one equation by the normalisation condition
         if symq:
             kern, bvec = self.kern, self.bvec
-            replaced_eq = kern[norm_row]
+            replaced_eq = np.array(kern[norm_row])
             kern[norm_row] = self.norm_vec
         else:
             kern, bvec = self.kern_ext, self.bvec_ext
@@ -189,6 +189,36 @@ class Approach(object):
             if currentq:
                 self.generate_current(self)
 
+class Approach_elph(Approach):
+
+    @staticmethod
+    def generate_fct_elph(sys): pass
+    @staticmethod
+    def generate_kern_elph(sys): pass
+
+    def __init__(self, sys):
+        Approach.__init__(self, sys)
+        self.baths = sys.baths
+        self.si_elph = sys.si_elph
+
+    def solve(self, qdq=True, rotateq=True, masterq=True, currentq=True, *args, **kwargs):
+        if qdq:
+            self.qd.diagonalise()
+            if rotateq:
+                self.leads.rotate(self.qd.vecslst)
+                self.baths.rotate(self.qd.vecslst)
+        #
+        if masterq:
+            self.generate_fct(self)
+            self.generate_fct_elph(self)
+            if self.funcp.mfreeq:
+                self.solve_matrix_free()
+            else:
+                self.generate_kern(self)
+                self.generate_kern_elph(self)
+                self.solve_kern()
+            if currentq:
+                self.generate_current(self)
 
 class Iterations2vN(object):
     """
@@ -202,7 +232,6 @@ class Iterations2vN(object):
         self.current = sys.current
         self.energy_current = sys.energy_current
         self.heat_current = sys.heat_current
-
 
 class Approach2vN(Approach):
     """

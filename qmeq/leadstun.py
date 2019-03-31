@@ -276,7 +276,7 @@ def make_tleads_dict(tleads, si, add_zeros=False):
     else:
         return tleads_dict
 
-def make_array(lst_old, lst, si, npar=None):
+def make_array(lst_old, lst, si, npar=None, use_symmetry=True):
     """
     Converts dictionary or list of mulst, tlst or dlst to an array.
 
@@ -295,6 +295,7 @@ def make_array(lst_old, lst, si, npar=None):
     #
     if npar is None:
         npar = si.nleads_sym
+
     if isinstance(lst, dict):
         if lst_old is None:
             lst_arr = np.zeros(npar, dtype=doublenp)
@@ -309,12 +310,12 @@ def make_array(lst_old, lst, si, npar=None):
     else:
         lst_arr = np.zeros(npar, dtype=doublenp)
     #
-    if si.symmetry is 'spin':
+    if si.symmetry is 'spin' and use_symmetry:
         return np.concatenate((lst_arr, lst_arr))
     else:
         return lst_arr
 
-def make_array_dlst(dlst_old, dlst, si, npar=None):
+def make_array_dlst(dlst_old, dlst, si, npar=None, use_symmetry=True):
     if npar is None:
         npar = si.nleads_sym
     if dlst_old is None:
@@ -338,7 +339,7 @@ def make_array_dlst(dlst_old, dlst, si, npar=None):
         else:
             lst_arr = np.array(dlst, dtype=doublenp)
     #
-    if si.symmetry is 'spin':
+    if si.symmetry is 'spin' and use_symmetry:
         return np.concatenate((lst_arr, lst_arr))
     else:
         return lst_arr

@@ -4,29 +4,40 @@ import subprocess
 import shutil
 from glob import glob
 
-dirs = ['./.cache',
-        './build',
-        './dist',
-        './docs/build',
-        './qmeq.egg-info',
-        './qmeq/__pycache__',
-        './qmeq/build',
-        './qmeq/approach/__pycache__',
-        './qmeq/tests/__pycache__',
-        './qmeq/tests_/__pycache__']
+dirs = [
+    './.cache',
+    './.pytest_cache',
+    './build',
+    './dist',
+    './docs/build',
+    './qmeq.egg-info',
+    './qmeq/build',
+    ]
+
+for directory, _, _ in os.walk('./'):
+    if ('__pycache__' in directory):
+        dirs.append(directory)
 
 for dr in dirs:
     try: shutil.rmtree(dr)
     except: pass
 
-files = (glob('./qmeq/*.o')    + glob('./qmeq/approach/*.o')
-        +glob('./qmeq/*.so')   + glob('./qmeq/approach/*.so')
-        +glob('./qmeq/*.pyd')  + glob('./qmeq/approach/*.pyd')
-        +glob('./qmeq/*.dll')  + glob('./qmeq/approach/*.dll')
-        +glob('./qmeq/*.pyc')  + glob('./qmeq/approach/*.pyc')
-        +glob('./qmeq/*.c')    + glob('./qmeq/approach/*.c')
-        +glob('./qmeq/*.html') + glob('./qmeq/approach/*.html')
-        +glob('./qmeq/tests/*.pyc') )
+dirs = [
+    './qmeq/',
+    './qmeq/approach/',
+    './qmeq/approach/base/',
+    './qmeq/approach/elph/',
+    './qmeq/builder/',
+    './qmeq/specfunc/',
+    './qmeq/tests/'
+    ]
+
+exts = ['*.o', '*.so', '*.pyd', '*.dll', '*.pyc', '*.c', '*.html']
+
+files = []
+for dr in dirs:
+    for ext in exts:
+        files += glob(dr+ext)
 
 for f in files:
     os.remove(f)

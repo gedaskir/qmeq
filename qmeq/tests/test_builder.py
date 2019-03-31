@@ -85,16 +85,17 @@ def save_Builder_double_dot_spinful(fname='data_builder.py'):
     #kerns = ['Pauli']
     itypes = [0, 1, 2]
     data = 'data = {\n'
-    dataR = ''
     for kerntype, itype in itertools.product(kerns, itypes):
-        if not ( kerntype in {'Pauli', 'pyPauli', 'Lindblad', 'pyLindblad'} and itype in [0, 1] ):
-            system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
-                             kerntype=kerntype, itype=itype)
-            system.solve()
-            attr = kerntype+str(itype)
-            data = data+' '*4+'\''+attr+'current\': '+str(system.current.tolist())+',\n'
-            data = data+' '*4+'\''+attr+'energy_current\': '+str(system.energy_current.tolist())
-            data = data + ('\n    }' if kerntype is 'pyLindblad' and itype is 2 else ',\n' )
+        if kerntype in {'Pauli', 'pyPauli', 'Lindblad', 'pyLindblad'} and itype in [0, 1]:
+            continue
+
+        system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
+                         kerntype=kerntype, itype=itype)
+        system.solve()
+        attr = kerntype+str(itype)
+        data = data+' '*4+'\''+attr+'current\': '+str(system.current.tolist())+',\n'
+        data = data+' '*4+'\''+attr+'energy_current\': '+str(system.energy_current.tolist())
+        data = data + ('\n    }' if kerntype is 'pyLindblad' and itype is 2 else ',\n' )
     #
     with open(fname, 'w') as f:
         f.write(data)
@@ -109,24 +110,26 @@ def test_Builder_double_dot_spinful():
     kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     itypes = [0, 1, 2]
     for kerntype, itype in itertools.product(kerns, itypes):
-        if not ( kerntype in {'Pauli', 'pyPauli', 'Lindblad', 'pyLindblad'} and itype in [0, 1] ):
-            system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
-                             kerntype=kerntype, itype=itype)
-            system.solve()
-            attr = kerntype+str(itype)
-            setattr(calcs, attr, system)
-            #
-            if PRNTQ:
-                print(kerntype, itype)
-                print(system.current)
-                print( data[attr+'current'] )
-                print(system.energy_current)
-                print( data[attr+'energy_current'] )
-                print( norm(system.current - data[attr+'current']) )
-                print( norm(system.energy_current - data[attr+'energy_current']) )
-            #
-            assert norm(system.current - data[attr+'current']) < EPS
-            assert norm(system.energy_current - data[attr+'energy_current']) < EPS
+        if kerntype in {'Pauli', 'pyPauli', 'Lindblad', 'pyLindblad'} and itype in [0, 1]:
+            continue
+
+        system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
+                         kerntype=kerntype, itype=itype)
+        system.solve()
+        attr = kerntype+str(itype)
+        setattr(calcs, attr, system)
+        #
+        if PRNTQ:
+            print(kerntype, itype)
+            print(system.current)
+            print( data[attr+'current'] )
+            print(system.energy_current)
+            print( data[attr+'energy_current'] )
+            print( norm(system.current - data[attr+'current']) )
+            print( norm(system.energy_current - data[attr+'energy_current']) )
+        #
+        assert norm(system.current - data[attr+'current']) < EPS
+        assert norm(system.energy_current - data[attr+'energy_current']) < EPS
 
     # Check least-squares solution with non-square matrix, i.e., symq=False
     for kerntype in kerns:

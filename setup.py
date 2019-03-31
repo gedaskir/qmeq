@@ -22,12 +22,18 @@ def get_ext_modules():
     '''
 
     # Check if *.c files are already there
-    file_list = ['qmeq/approach/c_pauli.c',
-                 'qmeq/approach/c_lindblad.c',
-                 'qmeq/approach/c_redfield.c',
-                 'qmeq/approach/c_neumann1.c',
-                 'qmeq/approach/c_neumann2.c',
-                 'qmeq/specfuncc.c']
+    file_list = ['qmeq/approach/base/c_pauli.c',
+                 'qmeq/approach/base/c_lindblad.c',
+                 'qmeq/approach/base/c_redfield.c',
+                 'qmeq/approach/base/c_neumann1.c',
+                 'qmeq/approach/base/c_neumann2.c',
+                 'qmeq/specfunc/specfuncc.c',
+                 # elph
+                 'qmeq/approach/elph/c_pauli.c',
+                 'qmeq/approach/elph/c_lindblad.c',
+                 'qmeq/approach/elph/c_redfield.c',
+                 'qmeq/approach/elph/c_neumann1.c',
+                 'qmeq/specfunc/specfuncc_elph.c']
     c_files_exist = all([os.path.isfile(f) for f in file_list])
 
     # Check if --cython option is specified
@@ -46,24 +52,12 @@ def get_ext_modules():
         file_ext = '.pyx'
         #print('using cythonize to generate C files')
 
-    ext = [# Pauli
-           Extension('qmeq.approach.c_pauli',
-                     ['qmeq/approach/c_pauli'+file_ext]),
-           # Lindblad
-           Extension('qmeq.approach.c_lindblad',
-                     ['qmeq/approach/c_lindblad'+file_ext]),
-           # Redfield
-           Extension('qmeq.approach.c_redfield',
-                     ['qmeq/approach/c_redfield'+file_ext]),
-           # 1vN
-           Extension('qmeq.approach.c_neumann1',
-                     ['qmeq/approach/c_neumann1'+file_ext]),
-           # 2vN
-           Extension('qmeq.approach.c_neumann2',
-                     ['qmeq/approach/c_neumann2'+file_ext]),
-           # Special functions
-           Extension('qmeq.specfuncc',
-                     ['qmeq/specfuncc'+file_ext])]
+    ext = []
+    for file in file_list:
+        file_base = file[:-2]
+        file_name = file_base + file_ext
+        module_name = file_base.replace('/', '.')
+        ext.append(Extension(module_name, [file_name]))
 
     cext = ext if cythonize is None else cythonize(ext)
     return cext
@@ -83,7 +77,7 @@ classifiers = ['Development Status :: 5 - Production/Stable',
                'Topic :: Scientific/Engineering :: Physics']
 
 setup(name='qmeq',
-      version='1.0.1',
+      version='1.1',
       description=('Package for transport calculations in quantum dots '
                   +'using approximate quantum master equations'),
       long_description=long_description,
@@ -92,9 +86,16 @@ setup(name='qmeq',
       author_email='qmeq.package@gmail.com',
       license='BSD 2-Clause',
       classifiers=classifiers,
-      packages=['qmeq', 'qmeq/approach', 'qmeq/tests'],
-      package_data={'qmeq': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
-                    'qmeq/approach': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so']},
+      packages=['qmeq',
+                'qmeq/approach',
+                'qmeq/approach/base',
+                'qmeq/approach/elph',
+                'qmeq/builder',
+                'qmeq/specfunc',
+                'qmeq/tests'],
+      package_data={'qmeq/approach/base': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
+                    'qmeq/approach/elph': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
+                    'qmeq/specfunc':      ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],},
       zip_safe=False,
       install_requires=['numpy', 'scipy'],
       include_dirs=[np.get_include()],

@@ -7,7 +7,11 @@ from __future__ import print_function
 import itertools
 
 import numpy as np
-from scipy.misc import factorial
+try:
+    from scipy.special import factorial
+except:
+    # For backwards compatibility with older versions of SciPy
+    from scipy.misc import factorial
 
 from .mytypes import boolnp
 from .mytypes import longnp

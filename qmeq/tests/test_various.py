@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.linalg import norm
-from qmeq.various import *
+from qmeq.builder.various import *
 import qmeq
 import itertools
 

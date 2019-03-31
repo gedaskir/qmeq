@@ -6,21 +6,12 @@ Modules
 
 .. toctree::
 
-   qmeq.approach
+   approach/qmeq.approach
+   builder/qmeq.builder
+   specfunc/qmeq.specfunc
    qmeq.aprclass
-   qmeq.builder
+   qmeq.baths
    qmeq.indexing
    qmeq.leadstun
    qmeq.mytypes
    qmeq.qdot
-   qmeq.specfunc
-   qmeq.various
-
-Cython modules
---------------
-
-.. toctree::
-
-   qmeq.approachc
-   qmeq.specfuncc
-
