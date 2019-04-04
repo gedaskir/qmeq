@@ -123,7 +123,7 @@ class Approach(object):
         # Try to solve the master equation
         try:
             if   solmethod == 'solve': self.sol0 = [np.linalg.solve(kern, bvec)]
-            elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(kern, bvec, rcond=None)
+            elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(kern, bvec, rcond=-1)
 
             self.phi0 = self.sol0[0]
             self.success = True
