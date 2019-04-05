@@ -262,9 +262,9 @@ class Approach2vN(Approach):
     hphi1k_delta : array
         Numpy array with dimensions (len(Ek_grid_ext), nleads, ndm1, ndm0)
         Hilbert transform of phi1k_delta.
-    kern1k : array
+    kern1k_inv : array
         Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm1)
-        corresponding to energy resolved local kernel for Phi[1](k).
+        corresponding to inverse of energy resolved local kernel for Phi[1](k).
     fkp, fkm : array
         nleads by len(Ek_grid_ext) numpy array containing
         Fermi function (fkp) and 1-Fermi (fkm) values on the grid Ek_grid_ext.
@@ -339,7 +339,7 @@ class Approach2vN(Approach):
         self.phi1k = None
         self.phi1k_delta = None
         self.hphi1k_delta = None
-        self.kern1k = None
+        self.kern1k_inv = None
         #
         self.iters = []
 

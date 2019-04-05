@@ -129,6 +129,7 @@ def c_phi1k_local_2vN(long_t ind,
     #
     cdef np.ndarray[complex_t, ndim=3] kern0 = np.zeros((nleads, si.ndm1, si.ndm0), dtype=complexnp)
     cdef np.ndarray[complex_t, ndim=3] kern1 = np.zeros((nleads, si.ndm1, si.ndm1), dtype=complexnp)
+    cdef np.ndarray[complex_t, ndim=3] kern1_inv = np.zeros((nleads, si.ndm1, si.ndm1), dtype=complexnp)
     for charge in range(si.ncharge-1):
         dcharge = charge+2
         ccharge = charge+1
@@ -185,8 +186,9 @@ def c_phi1k_local_2vN(long_t ind,
                                               +func_2vN(+(Ek-E[c]+E[c1]), Ek_grid, l1, +1, hfkm)
                                               -func_2vN(-(Ek-E[d1]+E[b]), Ek_grid, l1, -1, hfkm) )
     for l in range(nleads):
-        kern0[l] = np.dot(np.linalg.inv(kern1[l]), kern0[l])
-    return kern0, kern1
+        kern1_inv[l] = np.linalg.inv(kern1[l])
+        kern0[l] = np.dot(kern1_inv[l], kern0[l])
+    return kern0, kern1_inv
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
@@ -195,7 +197,7 @@ def c_phi1k_iterate_2vN(long_t ind,
                         np.ndarray[complex_t, ndim=4] phi1k,
                         np.ndarray[complex_t, ndim=4] hphi1k,
                         np.ndarray[double_t, ndim=2] fk,
-                        np.ndarray[complex_t, ndim=3] kern1,
+                        np.ndarray[complex_t, ndim=3] kern1_inv,
                         np.ndarray[double_t, ndim=1] E,
                         np.ndarray[complex_t, ndim=3] Tba,
                         si):
@@ -283,7 +285,7 @@ def c_phi1k_iterate_2vN(long_t ind,
                     kern0[l, cb, bbp] = term[bbp]
                     term[bbp] = 0
     for l in range(nleads):
-        kern0[l] = np.dot(np.linalg.inv(kern1[l]), kern0[l])
+        kern0[l] = np.dot(kern1_inv[l], kern0[l])
     return kern0
 
 @cython.boundscheck(False)
@@ -323,7 +325,7 @@ def c_iterate_2vN(sys):
     (mulst, tlst) = (sys.leads.mulst, sys.leads.tlst)
     # Assign sys.phi1k_delta to phi1k_delta_old, because the new phi1k_delta
     # will be generated in this function
-    (phi1k_delta_old, kern1k) = (sys.phi1k_delta, sys.kern1k)
+    (phi1k_delta_old, kern1k_inv) = (sys.phi1k_delta, sys.kern1k_inv)
     #
     Eklen = Ek_grid.shape[0] #len(Ek_grid)
     if phi1k_delta_old is None:
@@ -344,14 +346,14 @@ def c_iterate_2vN(sys):
         sys.fkm, sys.hfkm = get_htransf_fk(sys.fkm, funcp)
         # Calculate the zeroth iteration of Phi[1](k)
         phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
-        kern1k = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm1), dtype=complexnp)
+        kern1k_inv = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm1), dtype=complexnp)
         kpnt_left = funcp.kpnt_left
         for j1 in range(Eklen):
             ind = j1 + kpnt_left
-            phi1k_delta[j1], kern1k[j1] = c_phi1k_local_2vN(ind, Ek_grid_ext, sys.fkp,
-                                                            sys.hfkp, sys.hfkm, E, Tba, si)
+            phi1k_delta[j1], kern1k_inv[j1] = c_phi1k_local_2vN(ind, Ek_grid_ext, sys.fkp,
+                                                                sys.hfkp, sys.hfkm, E, Tba, si)
         hphi1k_delta = None
-    elif kern1k is None:
+    elif kern1k_inv is None:
         pass
     else:
         # Hilbert transform phi1k_delta_old on extended grid Ek_grid_ext
@@ -363,10 +365,10 @@ def c_iterate_2vN(sys):
         for j1 in range(Eklen):
             ind = j1 + kpnt_left
             phi1k_delta[j1] = c_phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta,
-                                                  sys.fkp, kern1k[j1], E, Tba, si)
+                                                  sys.fkp, kern1k_inv[j1], E, Tba, si)
     sys.phi1k_delta = phi1k_delta
     sys.hphi1k_delta = hphi1k_delta
-    sys.kern1k = kern1k
+    sys.kern1k_inv = kern1k_inv
     return 0
 
 class Approach_2vN(Approach2vN):
