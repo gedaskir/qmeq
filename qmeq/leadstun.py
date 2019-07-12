@@ -55,11 +55,15 @@ def construct_Tba(leads, tleads, Tba_=None):
                 statep = list(state)
                 statep[j2] = 1
                 ind = si.get_ind(statep)
+                if ind is None:
+                    continue
                 Tba[j3, ind, j1] += fsign*tamp
             else:
                 statep = list(state)
                 statep[j2] = 0
                 ind = si.get_ind(statep)
+                if ind is None:
+                    continue
                 Tba[j3, ind, j1] += fsign*np.conj(tamp)
     return Tba
 
@@ -163,6 +167,8 @@ def rotate_Tba(Tba0, vecslst, si, indexing='n', mtype=complex):
             for sz in szrng:
                 szind = sz_to_ind(sz, charge, si.nsingle)
                 szind2 = sz_to_ind(sz+s, charge+1, si.nsingle)
+                if si.szlst[charge][szind] == [] or si.szlst[charge+1][szind2] == []:
+                    continue
                 i1 = si.szlst[charge][szind][0]
                 i2 = si.szlst[charge][szind][-1] + 1
                 i3 = si.szlst[charge+1][szind2][0]
@@ -195,6 +201,8 @@ def rotate_Tba(Tba0, vecslst, si, indexing='n', mtype=complex):
                 Tba[l, i3:i4][:, i1:i2] = Tba[l, i1:i2][:, i3:i4].conj().T
     elif indexingp == 'charge':
         for l, charge in itertools.product(range(si.nleads), range(si.ncharge-1)):
+            if si.chargelst[charge] == [] or si.chargelst[charge+1] == []:
+                continue
             i1 = si.chargelst[charge][0]
             i2 = si.chargelst[charge][-1] + 1
             i3 = si.chargelst[charge+1][0]
@@ -385,6 +393,9 @@ class LeadsTunneling(object):
         self.tlst = make_array(None, tlst, si)
         self.dlst = make_array_dlst(None, dlst, si)
         self.mtype = mtype
+        self._init_coupling()
+
+    def _init_coupling(self):
         self.Tba0 = construct_Tba(self, self.tleads)
         self.Tba = self.Tba0
 

@@ -59,6 +59,8 @@ def elph_construct_Vbbp(baths, velph, Vbbp_=None):
                 statep[j2] = 0
                 statep[j3] = 1
                 ind = si.get_ind(statep)
+                if ind is None:
+                    continue
                 Vbbp[j4, ind, j1] += vamp*fsign
     return Vbbp
 
@@ -101,6 +103,8 @@ def elph_rotate_Vbbp(Vbbp0, vecslst, si, indexing='n', mtype=complex):
             szrng = szrange(charge, si.nsingle)
             for sz in szrng:
                 szind = sz_to_ind(sz, charge, si.nsingle)
+                if si.szlst[charge][szind] == []:
+                    continue
                 i1 = si.szlst[charge][szind][0]
                 i2 = si.szlst[charge][szind][-1] + 1
                 Vbbp[l, i1:i2][:, i1:i2] = np.dot(vecslst[charge][szind].conj().T, np.dot(Vbbp0[l, i1:i2][:, i1:i2], vecslst[charge][szind]))
@@ -115,6 +119,8 @@ def elph_rotate_Vbbp(Vbbp0, vecslst, si, indexing='n', mtype=complex):
                 Vbbp[l, i1:i2][:, i1:i2] = np.dot(vecslst1.conj().T, np.dot(Vbbp0[l, i1:i2][:, i1:i2], vecslst1))
     elif indexingp == 'charge':
         for l, charge in itertools.product(range(si.nbaths), range(si.ncharge)):
+            if si.chargelst[charge] == []:
+                continue
             i1 = si.chargelst[charge][0]
             i2 = si.chargelst[charge][-1] + 1
             Vbbp[l, i1:i2][:, i1:i2] = np.dot(vecslst[charge].conj().T, np.dot(Vbbp0[l, i1:i2][:, i1:i2], vecslst[charge]))
@@ -203,6 +209,11 @@ class PhononBaths(object):
         self.dlst_ph = make_array_dlst(None, dlst_ph, si, nbaths, False)
         self.bath_func = bath_func
         self.mtype = mtype
+        self.Vbbp0 = elph_construct_Vbbp(self, self.velph)
+        self.Vbbp = self.Vbbp0
+
+
+    def _init_coupling(self):
         self.Vbbp0 = elph_construct_Vbbp(self, self.velph)
         self.Vbbp = self.Vbbp0
 

@@ -144,6 +144,11 @@ class Builder_elph(Builder_base):
         Builder_base.remove_states(self, dE)
         self.si_elph.set_statesdm(si.statesdm)
 
+    def remove_fock_states(self, lin_state_indices):
+        Builder_base.remove_fock_states(self, lin_state_indices)
+        self.baths._init_coupling()
+        self.si_elph.remove_fock_states(lin_state_indices)
+
 class Builder_many_body_elph(Builder_elph, Builder_many_body):
     """
     Class for building the system for stationary transport calculations,

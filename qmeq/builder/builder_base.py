@@ -276,6 +276,12 @@ class Builder_base(object):
         '''
         remove_states(self, dE)
 
+    def remove_fock_states(self, lin_state_indices):
+        """Remove Fock states."""
+        self.si.remove_fock_states(lin_state_indices)
+        self.qd._init_hamiltonian()
+        self.leads._init_coupling()
+
     def use_all_states(self):
         '''
         Use all states for the transport calculations.

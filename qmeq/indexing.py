@@ -512,6 +512,8 @@ class StateIndexing(object):
         # are necessary only for ssq indexing
         self.qn_ind, self.ind_qn = make_quantum_numbers(self)
         self.states_order = list(range(self.nmany))
+        self.removed_fock_states = None
+        self.nmany_ = self.nmany
 
     def get_state(self, ind, linq=False, strq=False):
         """
@@ -591,6 +593,63 @@ class StateIndexing(object):
         else:
             print("WARNING: No indexing by 'sz' or 'ssq'. Returning charge list.")
             return self.chargelst[charge]
+
+    def remove_fock_states(self, lin_state_indices):
+        """
+        Remove Fock states.
+
+        lin_state_indices : list
+            Lin state indices of Fock states to remove.
+        """
+        indexing = self.indexing
+        if indexing == 'ssq':
+            print("WARNING: For 'ssq' indexing removal of Fock states is not supported.")
+            return
+
+        if self.removed_fock_states is None:
+            self.removed_fock_states = np.zeros(self.nmany, dtype=boolnp)
+
+        for ind in lin_state_indices:
+            self.removed_fock_states[ind] = True
+        self.nmany = self.nmany_ - sum(self.removed_fock_states)
+
+        chargelst_lin = self.chargelst if self.indexing == 'Lin' else self.chargelst_lin
+        ncharge = self.ncharge
+        for charge in range(ncharge):
+            charge_states = []
+            for j1 in chargelst_lin[charge]:
+                if not self.removed_fock_states[j1]:
+                    charge_states.append(j1)
+                else:
+                    self.j[j1] = None
+            chargelst_lin[charge] = charge_states
+
+        if self.indexing == 'charge' or self.indexing == 'Lin':
+            self.i = flatten(chargelst_lin)
+            self.chargelst = enum_chargelst(chargelst_lin)
+        elif self.indexing == 'sz':
+            nsingle = self.nsingle
+            for charge in range(ncharge):
+                charge_states = []
+                for sz in szrange(charge, nsingle):
+                    szind = sz_to_ind(sz, charge, nsingle)
+                    sz_states = []
+                    for j1 in self.szlst_lin[charge][szind]:
+                        if not self.removed_fock_states[j1]:
+                            sz_states.append(j1)
+                        else:
+                            self.j[j1] = None
+                    charge_states.append(sz_states)
+                self.szlst_lin[charge] = charge_states
+
+            self.chargelst = enum_chargelst(chargelst_lin)
+            self.szlst = enum_szlst(self.szlst_lin)
+            self.i = flatten(flatten(self.szlst_lin))
+
+        for j1 in range(len(self.i)):
+            self.j[self.i[j1]] = j1
+
+        self.qn_ind, self.ind_qn = make_quantum_numbers(self)
 
 class StateIndexingPauli(StateIndexing):
     """
@@ -717,6 +776,10 @@ class StateIndexingPauli(StateIndexing):
             return self.mapdm0[self.dictdm[b] + self.shiftlst0[charge]]
         elif maptype == 2:
             return self.booldm0[self.dictdm[b] + self.shiftlst0[charge]]
+
+    def remove_fock_states(self, lin_state_indices):
+        StateIndexing.remove_fock_states(self, lin_state_indices)
+        self.set_statesdm(self.chargelst)
 
 class StateIndexingDM(StateIndexing):
     """
@@ -956,6 +1019,10 @@ class StateIndexingDM(StateIndexing):
         #     -----
         return self.lenlst[bcharge]*self.dictdm[c] + self.dictdm[b] + self.shiftlst1[bcharge]
 
+    def remove_fock_states(self, lin_state_indices):
+        StateIndexing.remove_fock_states(self, lin_state_indices)
+        self.set_statesdm(self.chargelst)
+
 class StateIndexingDMc(StateIndexing):
     """
     Class for indexing density matrix elements.
@@ -1138,3 +1205,7 @@ class StateIndexingDMc(StateIndexing):
         #   c |   |
         #     -----
         return self.lenlst[bcharge]*self.dictdm[c] + self.dictdm[b] + self.shiftlst1[bcharge]
+
+    def remove_fock_states(self, lin_state_indices):
+        StateIndexing.remove_fock_states(self, lin_state_indices)
+        self.set_statesdm(self.chargelst)

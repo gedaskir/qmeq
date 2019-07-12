@@ -64,7 +64,10 @@ def construct_ham_coulomb(qd, coulomb, statelst, ham_=None):
                     fsign = fsign*np.power(-1, sum(statep[0:n])+sum(statep[0:m])) * (+1 if n > m else -1)
                     statep[m] = 1
                     statep[n] = 1
-                    ind = statelst.index(si.get_ind(statep))
+                    state_index = si.get_ind(statep)
+                    if state_index is None:
+                        continue
+                    ind = statelst.index(state_index)
                     ham_coulomb[ind, j1] += U*fsign
                     if herm_c and (m != l or n != k) and not (m_less_n and l > k):
                         ham_coulomb[j1, ind] += U.conjugate()*fsign
@@ -116,7 +119,10 @@ def construct_ham_hopping(qd, hsingle, statelst, ham_=None):
                 statep = list(state)
                 statep[j2] = 0
                 statep[j3] = 1
-                ind = statelst.index(si.get_ind(statep))
+                state_index = si.get_ind(statep)
+                if state_index is None:
+                    continue
+                ind = statelst.index(state_index)
                 ham_hopping[ind, j1] += hop*fsign
                 if herm_hs:
                     ham_hopping[j1, ind] += hop.conjugate()*fsign
@@ -706,6 +712,10 @@ class QuantumDot(object):
         self.m_less_n = m_less_n
         self.hsingle = make_hsingle_dict(self, hsingle)
         self.coulomb = make_coulomb_dict(self, coulomb)
+        self._init_hamiltonian()
+
+    def _init_hamiltonian(self):
+        si = self.si
         if si.indexing == 'sz':
             self.valslst = empty_szlst(si.nsingle, True)
             self.vecslst = empty_szlst(si.nsingle, True)
