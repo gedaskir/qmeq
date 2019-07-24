@@ -5,11 +5,10 @@ from __future__ import division
 from __future__ import print_function
 
 import numpy as np
-import scipy.sparse.linalg
 from scipy import optimize
 
 from .mytypes import doublenp
-from .mytypes import complexnp
+
 
 class Approach(object):
     """
@@ -28,6 +27,10 @@ class Approach(object):
     bvec : array
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
+    kern_ext : array
+        Same as kern, only with one additional row added.
+    bvec_ext : array
+        Same as bvec, only with one additional entry added.
     sol0 : array
         Least squares solution for the master equation.
     phi0 : array
@@ -57,37 +60,47 @@ class Approach(object):
     indexing_class_name = 'StateIndexingDM'
 
     @staticmethod
-    def generate_fct(sys): pass
-    @staticmethod
-    def generate_kern(sys): pass
-    @staticmethod
-    def generate_current(sys): pass
-    @staticmethod
-    def generate_vec(sys): pass
+    def generate_fct(self):
+        pass
 
-    def __init__(self, sys):
+    @staticmethod
+    def generate_kern(self):
+        pass
+
+    @staticmethod
+    def generate_current(self):
+        pass
+
+    @staticmethod
+    def generate_vec(self):
+        pass
+
+    def __init__(self, builder):
         """
         Initialization of the Approach class.
 
         Parameters
         ----------
-        sys : Approach, Builder, etc. object.
+        builder : Builder, Approach, etc. object.
             Any object having qd, leads, si, and funcp attributes.
         """
-        self.qd = sys.qd
-        self.leads = sys.leads
-        self.si = sys.si
-        self.funcp = sys.funcp
+        self.qd = builder.qd
+        self.leads = builder.leads
+        self.si = builder.si
+        self.funcp = builder.funcp
         self.restart()
 
     def restart(self):
         """Restart values of some variables."""
         self.kern, self.bvec, self.norm_vec = None, None, None
+        self.kern_ext, self.bvec_ext = None, None
         self.sol0, self.phi0, self.phi1 = None, None, None
         self.current = None
         self.energy_current = None
         self.heat_current = None
         self.phi1fct, self.paulifct = None, None
+        self.phi1fct_energy = None
+        self.tLba = None
 
     def set_phi0_init(self):
         if self.kerntype in {'Pauli', 'pyPauli'}:
@@ -102,9 +115,10 @@ class Approach(object):
         solmethod = self.funcp.solmethod
         symq = self.funcp.symq
         norm_row = self.funcp.norm_row
+        replaced_eq = None
 
         # Determine the proper solution method
-        if solmethod == 'n':
+        if solmethod is None:
             solmethod = 'solve' if symq else 'lsqr'
         if not symq and solmethod != 'lsqr' and solmethod != 'lsmr':
             print("WARNING: Using solmethod=lsqr, because the kernel is not symmetric, symq=False.")
@@ -122,8 +136,10 @@ class Approach(object):
 
         # Try to solve the master equation
         try:
-            if   solmethod == 'solve': self.sol0 = [np.linalg.solve(kern, bvec)]
-            elif solmethod == 'lsqr':  self.sol0 = np.linalg.lstsq(kern, bvec, rcond=-1)
+            if solmethod == 'solve':
+                self.sol0 = [np.linalg.solve(kern, bvec)]
+            elif solmethod == 'lsqr':
+                self.sol0 = np.linalg.lstsq(kern, bvec, rcond=-1)
 
             self.phi0 = self.sol0[0]
             self.success = True
@@ -142,19 +158,19 @@ class Approach(object):
         #
         phi0_init = self.funcp.phi0_init
         if phi0_init is None:
-            self.funcp.print_warning(0, "WARNING: For mfreeq=True no phi0_init is specified. "+
-                                        "Using phi0_init[0]=1.0 as a default. "+
-                                        "This warning will not be shown again.")
+            self.funcp.print_warning(0, "WARNING: For mfreeq=True no phi0_init is specified. " +
+                                     "Using phi0_init[0]=1.0 as a default. " +
+                                     "This warning will not be shown again.")
             phi0_init = self.set_phi0_init()
         #
-        solmethod = solmethod if solmethod != 'n' else 'krylov'
+        solmethod = solmethod if solmethod is not None else 'krylov'
         try:
             self.sol0 = optimize.root(self.generate_vec, phi0_init, args=(self), method=solmethod)
             self.phi0 = self.sol0.x
             self.success = self.sol0.success
         except Exception as exept:
             self.funcp.print_error(exept)
-            self.phi0 = 0*phi0_init
+            self.phi0 = 0 * phi0_init
             self.success = False
         self.funcp.solmethod = solmethod
 
@@ -189,17 +205,21 @@ class Approach(object):
             if currentq:
                 self.generate_current(self)
 
-class Approach_elph(Approach):
+
+class ApproachElPh(Approach):
 
     @staticmethod
-    def generate_fct_elph(sys): pass
-    @staticmethod
-    def generate_kern_elph(sys): pass
+    def generate_fct_elph(self):
+        pass
 
-    def __init__(self, sys):
-        Approach.__init__(self, sys)
-        self.baths = sys.baths
-        self.si_elph = sys.si_elph
+    @staticmethod
+    def generate_kern_elph(self):
+        pass
+
+    def __init__(self, builder):
+        Approach.__init__(self, builder)
+        self.baths = builder.baths
+        self.si_elph = builder.si_elph
 
     def solve(self, qdq=True, rotateq=True, masterq=True, currentq=True, *args, **kwargs):
         if qdq:
@@ -220,20 +240,22 @@ class Approach_elph(Approach):
             if currentq:
                 self.generate_current(self)
 
+
 class Iterations2vN(object):
     """
     Class for storing some properties of the system after 2vN iteration.
     """
 
-    def __init__(self, sys):
-        self.niter = sys.niter
-        self.phi0 = sys.phi0
-        self.phi1 = sys.phi1
-        self.current = sys.current
-        self.energy_current = sys.energy_current
-        self.heat_current = sys.heat_current
+    def __init__(self, appr):
+        self.niter = appr.niter
+        self.phi0 = appr.phi0
+        self.phi1 = appr.phi1
+        self.current = appr.current
+        self.energy_current = appr.energy_current
+        self.heat_current = appr.heat_current
 
-class Approach2vN(Approach):
+
+class ApproachBase2vN(Approach):
     """
     Sample class for solving the 2vN approach for stationary state.
     Most of the attributes are the same as in Approach class.
@@ -248,14 +270,14 @@ class Approach2vN(Approach):
     Ek_grid : array
         Energy grid on which 2vN approach equations are solved.
     Ek_grid_ext : array
-        Extension of Ek_grid by neumann2py.get_grid_ext(sys).
+        Extension of Ek_grid by neumann2py.get_grid_ext.
     niter : int
         Number of iterations performed when solving integral equation.
     iters : Iterations2vN
         Iterations2vN object.
     phi1k : array
         Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm0)
-        cotaining energy resolved first order density matrix elements Phi[1](k).
+        containing energy resolved first order density matrix elements Phi[1](k).
     phi1k_delta : array
         Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm0)
         Difference from phi1k after performing one iteration.
@@ -274,28 +296,36 @@ class Approach2vN(Approach):
 
     kerntype = 'not defined'
     indexing_class_name = 'StateIndexingDMc'
-    @staticmethod
-    def iterate(sys): pass
-    @staticmethod
-    def get_phi1_phi0(sys): pass
-    @staticmethod
-    def kern_phi0(sys): pass
-    @staticmethod
-    def generate_current(sys): pass
 
-    def __init__(self, sys):
+    @staticmethod
+    def iterate(self):
+        pass
+
+    @staticmethod
+    def get_phi1_phi0(self):
+        pass
+
+    @staticmethod
+    def kern_phi0(self):
+        pass
+
+    @staticmethod
+    def generate_current(self):
+        pass
+
+    def __init__(self, builder):
         """
         Initialization of the Approach2vN class.
 
         Parameters
         ----------
-        sys : Approach, Builder, etc. object.
+        builder : Builder, Approach, etc. object.
             Any object having qd, leads, si, and funcp attributes.
         """
-        self.qd = sys.qd
-        self.leads = sys.leads
-        self.si = sys.si
-        self.funcp = sys.funcp
+        self.qd = builder.qd
+        self.leads = builder.leads
+        self.si = builder.si
+        self.funcp = builder.funcp
         self.fkp, self.fkm = None, None
         self.hfkp, self.hfkm = None, None
         self.restart()
@@ -322,10 +352,10 @@ class Approach2vN(Approach):
                     print("WARNING: Ek_grid has changed. Restarting the calculation.")
                     self.restart()
                 #
-                if ((dmin*np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[0].tolist() or
-                    (dmax*np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[1].tolist()):
-                    print("WARNING: The bandwidth and Ek_grid for all leads will be the same: from "+
-                          "dmin="+str(dmin)+" to dmax="+str(dmax)+".")
+                if ((dmin * np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[0].tolist() or
+                        (dmax * np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[1].tolist()):
+                    print("WARNING: The bandwidth and Ek_grid for all leads will be the same: from " +
+                          "dmin=" + str(dmin) + " to dmax=" + str(dmax) + ".")
 
     def restart(self):
         """Restart values of some variables for new calculations."""
@@ -340,6 +370,8 @@ class Approach2vN(Approach):
         self.phi1k_delta = None
         self.hphi1k_delta = None
         self.kern1k_inv = None
+        self.phi1_phi0 = None
+        self.e_phi1_phi0 = None
         #
         self.iters = []
 
@@ -355,9 +387,9 @@ class Approach2vN(Approach):
         #
         self.iters.append(Iterations2vN(self))
 
-
-    def solve(self, qdq=True, rotateq=True, masterq=True, restartq=True,
-                    niter=None, func_iter=None, *args, **kwargs):
+    def solve(self,
+              qdq=True, rotateq=True, masterq=True, restartq=True,
+              niter=None, func_iter=None, *args, **kwargs):
         """
         Solves the 2vN approach integral equations iteratively.
 
@@ -372,7 +404,7 @@ class Approach2vN(Approach):
             Solve the master equation.
         restartq : bool
             Call restart() and erase old values of variables.
-            To continue from the last iteration set restarq=False.
+            To continue from the last iteration set restartq=False.
         niter : int
             Number of iterations to perform.
         func_iter : function
@@ -394,5 +426,5 @@ class Approach2vN(Approach):
             #
             for it in range(niter):
                 self.iteration()
-                if not func_iter is None:
+                if func_iter is not None:
                     func_iter(self)

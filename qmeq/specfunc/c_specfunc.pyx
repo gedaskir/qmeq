@@ -1,7 +1,5 @@
 """Module containing various special functions, cython implementation."""
 
-# cython: profile=True
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -29,16 +27,18 @@ ctypedef np.complex128_t complex_t
 cdef double_t pi = 3.14159265358979323846
 
 from libc.math cimport exp
-#cdef extern from "math.h":
-#    double_t exp(double_t)
+# cdef extern from "math.h":
+#     double_t exp(double_t)
 
 from libc.math cimport log
-#cdef extern from "math.h":
-#    double_t log(double_t)
+# cdef extern from "math.h":
+#     double_t log(double_t)
+
 
 @cython.cdivision(True)
 cdef double_t fermi_func(double_t x):
     return 1./(exp(x)+1.)
+
 
 @cython.boundscheck(False)
 @cython.cdivision(True)
@@ -48,7 +48,7 @@ cdef int_t func_pauli(double_t Ecb, double_t mu, double_t T,
     cdef double_t alpha, Rm, Rp, cur0, cur1
     alpha = (Ecb-mu)/T
     Rm, Rp = (Dm-mu)/T, (Dp-mu)/T
-    if itype == 1 or itype == 3 or (alpha < Rp and alpha > Rm):
+    if itype == 1 or itype == 3 or (Rm < alpha < Rp):
         cur0 = fermi_func(alpha)
         cur1 = 1.0-cur0
         rez[0] = 2*pi*cur0
@@ -56,6 +56,7 @@ cdef int_t func_pauli(double_t Ecb, double_t mu, double_t T,
     else:
         rez[0], rez[1] = 0.0, 0.0
     return 0
+
 
 @cython.boundscheck(False)
 @cython.cdivision(True)
@@ -65,14 +66,15 @@ cdef int_t func_1vN(double_t Ecb, double_t mu, double_t T,
                     np.ndarray[complex_t, ndim=1] rez):
     cdef double_t alpha, Rm, Rp, err
     cdef complex_t cur0, cur1, en0, en1, const0, const1
-    #-------------------------
+    # -------------------------
     if itype == 0:
         alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
-        cur0, err = quad(fermi_func, Rm, Rp, weight='cauchy', wvar=alpha,
-                                             epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
-        cur0 = cur0 + (-1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0.0j)
+        cur0, err = quad(fermi_func, Rm, Rp,
+                         weight='cauchy', wvar=alpha,
+                         epsabs=1.0e-6, epsrel=1.0e-6, limit=limit)
+        cur0 = cur0 + (-1.0j*pi*fermi_func(alpha) if Rm < alpha < Rp else 0.0j)
         cur1 = cur0 + log(abs((Rm-alpha)/(Rp-alpha)))
-        cur1 = cur1 + (1.0j*pi if alpha < Rp and alpha > Rm else 0.0j)
+        cur1 = cur1 + (1.0j*pi if Rm < alpha < Rp else 0.0j)
         #
         const0 = T*((-Rm if Rm < -40.0 else log(1+exp(-Rm)))
                    -(-Rp if Rp < -40.0 else log(1+exp(-Rp))))
@@ -91,8 +93,8 @@ cdef int_t func_1vN(double_t Ecb, double_t mu, double_t T,
         en1 = -T*Rp + Ecb*cur1
     elif itype == 2:
         alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
-        cur0 = -1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0.0j
-        cur1 = cur0 + (1.0j*pi if alpha < Rp and alpha > Rm else 0.0j)
+        cur0 = -1.0j*pi*fermi_func(alpha) if Rm < alpha < Rp else 0.0j
+        cur1 = cur0 + (1.0j*pi if Rm < alpha < Rp else 0.0j)
         en0 = Ecb*cur0
         en1 = Ecb*cur1
     elif itype == 3:
@@ -101,18 +103,21 @@ cdef int_t func_1vN(double_t Ecb, double_t mu, double_t T,
         cur1 = cur0 + 1.0j*pi
         en0 = Ecb*cur0
         en1 = Ecb*cur1
-    #-------------------------
+    # -------------------------
     rez[0], rez[1], rez[2], rez[3] = cur0, cur1, en0, en1
     return 0
 
+
 def c_fermi_func(double_t x):
     return fermi_func(x)
+
 
 def c_func_pauli(double_t Ecb, double_t mu, double_t T,
                  double_t Dm, double_t Dp, int_t itype):
     rez = np.zeros(2, dtype=doublenp)
     func_pauli(Ecb, mu, T, Dm, Dp, itype, rez)
     return rez
+
 
 def c_func_1vN(double_t Ecb, double_t mu, double_t T,
                double_t Dm, double_t Dp,

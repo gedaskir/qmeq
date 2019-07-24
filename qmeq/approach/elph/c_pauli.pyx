@@ -1,24 +1,22 @@
 """Module containing cython functions, which generate first order Pauli kernel.
    For docstrings see documentation of module pauli."""
 
-# cython: profile=True
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...aprclass import Approach_elph
-from ...specfunc.specfuncc_elph cimport Func_pauli_elph
+from ...aprclass import ApproachElPh
+from ...specfunc.c_specfunc_elph cimport FuncPauliElPh
 
 from ...mytypes import complexnp
 from ...mytypes import doublenp
 
-from ..base.c_pauli import c_generate_paulifct
-from ..base.c_pauli import c_generate_kern_pauli
-from ..base.c_pauli import c_generate_current_pauli
-from ..base.c_pauli import c_generate_vec_pauli
+from ..base.c_pauli import generate_paulifct
+from ..base.c_pauli import generate_kern_pauli
+from ..base.c_pauli import generate_current_pauli
+from ..base.c_pauli import generate_vec_pauli
 
 cimport numpy as np
 cimport cython
@@ -29,11 +27,12 @@ ctypedef np.int64_t long_t
 ctypedef np.float64_t double_t
 ctypedef np.complex128_t complex_t
 
+
 @cython.boundscheck(False)
-def c_generate_paulifct_elph(sys):
-    cdef np.ndarray[double_t, ndim=1] E = sys.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Vbbp = sys.baths.Vbbp
-    si = sys.si_elph
+def generate_paulifct_elph(self):
+    cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
+    cdef np.ndarray[complex_t, ndim=3] Vbbp = self.baths.Vbbp
+    si = self.si_elph
     #
     cdef bool_t bbp_bool
     cdef long_t b, bp, bbp
@@ -48,8 +47,8 @@ def c_generate_paulifct_elph(sys):
     cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
     cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
     #
-    func_pauli = Func_pauli_elph(sys.baths.tlst_ph, sys.baths.dlst_ph,
-                                 sys.baths.bath_func, sys.funcp.eps_elph)
+    func_pauli = FuncPauliElPh(self.baths.tlst_ph, self.baths.dlst_ph,
+                                 self.baths.bath_func, self.funcp.eps_elph)
     #
     for charge in range(si.ncharge):
         # The diagonal elements b=bp are excluded, because they do not contribute
@@ -59,22 +58,23 @@ def c_generate_paulifct_elph(sys):
                 bbp = mapdm0[lenlst[charge]*dictdm[b] + dictdm[bp] + shiftlst0[charge]]
                 Ebbp = E[b]-E[bp]
                 for l in range(nbaths):
-                    xbbp = 0.5*(Vbbp[l, b, bp]*Vbbp[l, b, bp].conjugate()
-                               +Vbbp[l, bp, b].conjugate()*Vbbp[l, bp, b]).real
+                    xbbp = 0.5*(Vbbp[l, b, bp]*Vbbp[l, b, bp].conjugate() +
+                                Vbbp[l, bp, b].conjugate()*Vbbp[l, bp, b]).real
                     func_pauli.eval(Ebbp, l)
                     paulifct[l, bbp] = xbbp*func_pauli.val
-    sys.paulifct_elph = paulifct
+    self.paulifct_elph = paulifct
     return 0
 
-#---------------------------------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------------
 # Pauli master equation
-#---------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------
 @cython.boundscheck(False)
-def c_generate_kern_pauli_elph(sys):
-    cdef np.ndarray[double_t, ndim=2] paulifct = sys.paulifct_elph
-    si, si_elph = sys.si, sys.si_elph
-    cdef bint symq = sys.funcp.symq
-    cdef long_t norm_rowp = sys.funcp.norm_row
+def generate_kern_pauli_elph(self):
+    cdef np.ndarray[double_t, ndim=2] paulifct = self.paulifct_elph
+    si, si_elph = self.si, self.si_elph
+    cdef bint symq = self.funcp.symq
+    cdef long_t norm_rowp = self.funcp.norm_row
     #
     cdef bool_t bb_bool, ba_conj
     cdef long_t b, bb, a, aa, ab, ba
@@ -96,10 +96,10 @@ def c_generate_kern_pauli_elph(sys):
     #
     cdef np.ndarray[double_t, ndim=2] kern
     #
-    if sys.kern is None:
+    if self.kern is None:
         kern = np.zeros((last_row+1, si.npauli), dtype=doublenp)
     else:
-        kern = sys.kern
+        kern = self.kern
     #
     for charge in range(si.ncharge):
         for b in si.statesdm[charge]:
@@ -114,17 +114,18 @@ def c_generate_kern_pauli_elph(sys):
                         for l in range(nbaths):
                             kern[bb, bb] = kern[bb, bb] - paulifct[l, ab]
                             kern[bb, aa] = kern[bb, aa] + paulifct[l, ba]
-    sys.kern = kern
+    self.kern = kern
     return 0
 
-class Approach_Pauli(Approach_elph):
+
+class ApproachPauli(ApproachElPh):
 
     kerntype = 'Pauli'
-    generate_fct = c_generate_paulifct
-    generate_kern = c_generate_kern_pauli
-    generate_current = c_generate_current_pauli
-    generate_vec = c_generate_vec_pauli
+    generate_fct = generate_paulifct
+    generate_kern = generate_kern_pauli
+    generate_current = generate_current_pauli
+    generate_vec = generate_vec_pauli
     #
-    generate_kern_elph = c_generate_kern_pauli_elph
-    generate_fct_elph = c_generate_paulifct_elph
-#---------------------------------------------------------------------------------------------------------
+    generate_kern_elph = generate_kern_pauli_elph
+    generate_fct_elph = generate_paulifct_elph
+# ---------------------------------------------------------------------------------------------------------

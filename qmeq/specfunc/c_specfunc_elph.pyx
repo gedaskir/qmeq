@@ -1,7 +1,5 @@
 """Module containing various special functions, cython implementation."""
 
-# cython: profile=True
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -18,20 +16,22 @@ cdef double_t pi = 3.14159265358979323846
 from libc.math cimport exp
 from libc.math cimport log
 
-#-----------------------------------------------------------------------
+
 cdef class Func:
     cpdef double_t eval(self, double_t x):
         return 1.
 
+
 @cython.cdivision(True)
-cdef class Func_bose:
+cdef class FuncBose:
     """Bose function."""
     cdef double_t eval(self, double_t x):
         return 1./(exp(x)-1.)
 
+
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cdef class Func_pauli_elph:
+cdef class FuncPauliElPh:
 
     def __init__(self, np.ndarray[double_t, ndim=1] tlst,
                        np.ndarray[double_t, ndim=2] dlst,
@@ -42,30 +42,31 @@ cdef class Func_pauli_elph:
         self.bath_func_q = False if bath_func is None else True
         self.eps = eps
         #
-        self.bose, self.dos = Func_bose(), Func()
+        self.bose, self.dos = FuncBose(), Func()
         self.val = 0.
 
     cpdef void eval(self, double_t Ebbp, int_t l):
         cdef double_t T, omm, omp
         cdef double_t alpha, Rm, Rp
         T, omm, omp = self.tlst[l], self.dlst[l,0], self.dlst[l,1]
-        #alpha, Rm, Rp = Ebbp/T, omm/T, omp/T
+        # alpha, Rm, Rp = Ebbp/T, omm/T, omp/T
         alpha = max(abs(Ebbp/T), self.eps) * (1 if Ebbp >= 0 else -1)
         Rm, Rp = max(omm/T, 0.9*self.eps), omp/T
         if self.bath_func_q:
             self.dos = self.bath_func[l]
-        if alpha < Rp and alpha > Rm:
+        if Rm < alpha < Rp:
             # Absorption
             self.val = 2*pi*self.bose.eval(alpha)*self.dos.eval(T*alpha)
-        elif -alpha < Rp and -alpha > Rm:
+        elif Rm < -alpha < Rp:
             # Emission
             self.val = 2*pi*(1+self.bose.eval(-alpha))*self.dos.eval(-T*alpha)
         else:
             self.val = 0.
 
+
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cdef class Func_1vN_elph:
+cdef class Func1vNElPh:
 
     def __init__(self, np.ndarray[double_t, ndim=1] tlst,
                        np.ndarray[double_t, ndim=2] dlst,
@@ -79,7 +80,7 @@ cdef class Func_1vN_elph:
         self.bath_func_q = False if bath_func is None else True
         self.eps = eps
         #
-        self.bose, self.dos = Func_bose(), Func()
+        self.bose, self.dos = FuncBose(), Func()
         self.val0, self.val1 = 0., 0.
 
     cpdef double_t iplus(self, double_t x):
@@ -93,20 +94,21 @@ cdef class Func_1vN_elph:
         cdef double_t alpha, Rm, Rp, err
         cdef complex_t val0, val1
         T, omm, omp = self.tlst[l], self.dlst[l,0], self.dlst[l,1]
-        #alpha, Rm, Rp = Ebbp/T, omm/T, omp/T
+        # alpha, Rm, Rp = Ebbp/T, omm/T, omp/T
         alpha = max(abs(Ebbp/T), self.eps) * (1 if Ebbp >= 0 else -1)
         Rm, Rp = max(omm/T, 0.9*self.eps), omp/T
         self.T = T
         if self.bath_func_q:
             self.dos = self.bath_func[l]
         if self.itype is 0:
-            self.val0, err = quad(self.iplus, Rm, Rp, weight='cauchy', wvar=alpha,
+            self.val0, err = quad(self.iplus, Rm, Rp,
+                                  weight='cauchy', wvar=alpha,
                                   epsabs=1.0e-6, epsrel=1.0e-6, limit=self.limit)
-            self.val0 = self.val0 + (-1.0j*pi*self.iplus(alpha) if alpha < Rp and alpha > Rm else 0)
-            self.val1, err = quad(self.iminus, Rm, Rp, weight='cauchy', wvar=alpha,
+            self.val0 = self.val0 + (-1.0j*pi*self.iplus(alpha) if Rm < alpha < Rp else 0)
+            self.val1, err = quad(self.iminus, Rm, Rp,
+                                  weight='cauchy', wvar=alpha,
                                   epsabs=1.0e-6, epsrel=1.0e-6, limit=self.limit)
-            self.val1 = self.val1 + (-1.0j*pi*self.iminus(alpha) if alpha < Rp and alpha > Rm else 0)
+            self.val1 = self.val1 + (-1.0j*pi*self.iminus(alpha) if Rm < alpha < Rp else 0)
         elif self.itype is 2:
-            self.val0 = -1.0j*pi*self.iplus(alpha) if alpha < Rp and alpha > Rm else 0
-            self.val1 = -1.0j*pi*self.iminus(alpha) if alpha < Rp and alpha > Rm else 0
-#-----------------------------------------------------------------------
+            self.val0 = -1.0j*pi*self.iplus(alpha) if Rm < alpha < Rp else 0
+            self.val1 = -1.0j*pi*self.iminus(alpha) if Rm < alpha < Rp else 0

@@ -3,15 +3,16 @@ from numpy.linalg import norm
 from scipy import exp
 from scipy.integrate import quad
 from qmeq.specfunc import *
-import qmeq
 
 EPS = 1e-14
 EPS2 = 1e-11
+
 
 def test_fermi_func():
     for f in [fermi_func, c_fermi_func]:
         assert f(0) == 0.5
         assert norm(f(2)+f(-2) - 1.0) < EPS
+
 
 def test_func_pauli():
     for f in [func_pauli, c_func_pauli]:
@@ -28,6 +29,7 @@ def test_func_pauli():
             assert f(Ecb, mu, T, Dm, Dp, itype).tolist() == [0., 0.]
         for itype in {1, 3}:
             assert norm( f(Ecb, mu, T, Dm, Dp, itype) - [0.04163676679420959, 6.241548540385377] ) < EPS
+
 
 def test_func_1vN():
 

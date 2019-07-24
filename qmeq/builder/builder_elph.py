@@ -3,60 +3,57 @@
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
-import copy
 
-from .builder_base import Builder_base
+
+from .builder_base import BuilderBase
 from .builder_base import attribute_map
-from .builder_base import Builder_many_body
-from ..aprclass import Approach
+from .builder_base import BuilderManyBody
 from ..indexing import StateIndexingDM
 from ..indexing import StateIndexingDMc
-from ..qdot import QuantumDot
-from ..leadstun import LeadsTunneling
 from ..baths import PhononBaths
-from .funcprop import FunctionProperties
 
 from .validation import validate_itype_ph
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Python modules
 
-from ..approach.elph.pauli import Approach_pyPauli
-from ..approach.elph.lindblad import Approach_pyLindblad
-from ..approach.elph.neumann1 import Approach_py1vN
-from ..approach.elph.redfield import Approach_pyRedfield
-from ..approach.base.neumann2 import Approach_py2vN
+from ..approach.elph.pauli import ApproachPyPauli
+from ..approach.elph.lindblad import ApproachPyLindblad
+from ..approach.elph.neumann1 import ApproachPy1vN
+from ..approach.elph.redfield import ApproachPyRedfield
+from ..approach.base.neumann2 import ApproachPy2vN
 
 # Cython compiled modules
 
 try:
-    from ..approach.elph.c_pauli import Approach_Pauli
-    from ..approach.elph.c_lindblad import Approach_Lindblad
-    from ..approach.elph.c_redfield import Approach_Redfield
-    from ..approach.elph.c_neumann1 import Approach_1vN
-    from ..approach.base.c_neumann2 import Approach_2vN
-except:
+    from ..approach.elph.c_pauli import ApproachPauli
+    from ..approach.elph.c_lindblad import ApproachLindblad
+    from ..approach.elph.c_redfield import ApproachRedfield
+    from ..approach.elph.c_neumann1 import Approach1vN
+    from ..approach.base.c_neumann2 import Approach2vN
+except ImportError:
     print("WARNING: Cannot import Cython compiled modules for the approaches (builder_elph.py).")
-    Approach_Pauli = Approach_pyPauli
-    Approach_Lindblad = Approach_pyLindblad
-    Approach_Redfield = Approach_pyRedfield
-    Approach_1vN = Approach_py1vN
-    Approach_2vN = Approach_py2vN
-#-----------------------------------------------------------
+    ApproachPauli = ApproachPyPauli
+    ApproachLindblad = ApproachPyLindblad
+    ApproachRedfield = ApproachPyRedfield
+    Approach1vN = ApproachPy1vN
+    Approach2vN = ApproachPy2vN
+# -----------------------------------------------------------
 
-attribute_map_elph = {
+attribute_map_elph = dict(
     # StateIndexing
-    'nbaths':'si',
+    baths='si', velph='baths',
     # PhononBaths
-    'velph':'baths', 'tlst_ph':'baths', 'dlst_ph':'baths',
-    'Vbbp':'baths', 'bath_func':'baths',
+    tlst_ph='baths', dlst_ph='baths',
+    Vbbp='baths', bath_func='baths',
     # FunctionProperties
-    'itype_ph':'funcp', 'eps_elph':'funcp'
-    }
+    itype_ph='funcp', eps_elph='funcp'
+    )
 attribute_map.update(attribute_map_elph)
 
-class Builder_elph(Builder_base):
-    '''
+
+class BuilderElPh(BuilderBase):
+    """"
     Class for building the system for stationary transport calculations
     with Electron-Phonon (elph) coupling.
 
@@ -77,18 +74,19 @@ class Builder_elph(Builder_base):
         List of length nbaths containing density of states functions for the phonon baths.
     eps_elph : float
         Small parameter which stabilizes the integration for integrand with a Bose function.
-    '''
+    """
 
-    def __init__(self, nsingle=0, hsingle={}, coulomb={},
-                       nleads=0, tleads={}, mulst={}, tlst={}, dband={},
-                       nbaths=0, velph={}, tlst_ph={}, dband_ph={},
-                       indexing='n', kpnt=None,
-                       kerntype='Pauli', symq=True, norm_row=0, solmethod='n',
-                       itype=0, itype_ph=0, dqawc_limit=10000,
-                       mfreeq=False, phi0_init=None,
-                       mtype_qd=complex, mtype_leads=complex,
-                       symmetry='n', herm_hs=True, herm_c=False, m_less_n=True,
-                       bath_func=None, eps_elph=1.0e-6):
+    def __init__(self,
+                 nsingle=0, hsingle={}, coulomb={},
+                 nleads=0, tleads={}, mulst={}, tlst={}, dband={},
+                 nbaths=0, velph={}, tlst_ph={}, dband_ph={},
+                 indexing=None, kpnt=None,
+                 kerntype='Pauli', symq=True, norm_row=0, solmethod=None,
+                 itype=0, itype_ph=0, dqawc_limit=10000,
+                 mfreeq=False, phi0_init=None,
+                 mtype_qd=complex, mtype_leads=complex,
+                 symmetry=None, herm_hs=True, herm_c=False, m_less_n=True,
+                 bath_func=None, eps_elph=1.0e-6):
 
         self._init_copy_data(locals())
         self._init_validate_data()
@@ -98,7 +96,7 @@ class Builder_elph(Builder_base):
         self._init_create_appr()
 
     def _init_validate_data(self):
-        Builder_base._init_validate_data(self)
+        BuilderBase._init_validate_data(self)
         data = self.data
         data.itype_ph = validate_itype_ph(data.itype_ph)
 
@@ -106,7 +104,7 @@ class Builder_elph(Builder_base):
         self.globals = globals()
 
     def _init_create_setup(self):
-        Builder_base._init_create_setup(self)
+        BuilderBase._init_create_setup(self)
         data = self.data
 
         self.funcp.itype_ph = data.itype_ph
@@ -118,7 +116,7 @@ class Builder_elph(Builder_base):
         self.create_si_elph()
 
     def change_si(self):
-        Builder_base.change_si(self)
+        BuilderBase.change_si(self)
         self.create_si_elph()
 
     def create_si_elph(self):
@@ -128,23 +126,26 @@ class Builder_elph(Builder_base):
         si_elph.nbaths = si.nbaths
         self.si_elph = si_elph
 
-    def add(self, hsingle=None, coulomb=None, tleads=None, mulst=None, tlst=None, dlst=None,
-                  velph=None, tlst_ph=None, dlst_ph=None):
-        Builder_base.add(self, hsingle, coulomb, tleads, mulst, tlst, dlst)
+    def add(self,
+            hsingle=None, coulomb=None, tleads=None, mulst=None, tlst=None, dlst=None,
+            velph=None, tlst_ph=None, dlst_ph=None):
+        BuilderBase.add(self, hsingle, coulomb, tleads, mulst, tlst, dlst)
         if not (velph is None and tlst_ph is None and dlst_ph is None):
             self.baths.add(velph, tlst_ph, dlst_ph)
 
-    def change(self, hsingle=None, coulomb=None, tleads=None, mulst=None, tlst=None, dlst=None,
-                     velph=None, tlst_ph=None, dlst_ph=None):
-        Builder_base.change(self, hsingle, coulomb, tleads, mulst, tlst, dlst)
+    def change(self,
+               hsingle=None, coulomb=None, tleads=None, mulst=None, tlst=None, dlst=None,
+               velph=None, tlst_ph=None, dlst_ph=None):
+        BuilderBase.change(self, hsingle, coulomb, tleads, mulst, tlst, dlst)
         if not (velph is None and tlst_ph is None and dlst_ph is None):
             self.baths.change(velph, tlst_ph, dlst_ph)
 
     def remove_states(self, dE):
-        Builder_base.remove_states(self, dE)
-        self.si_elph.set_statesdm(si.statesdm)
+        BuilderBase.remove_states(self, dE)
+        self.si_elph.set_statesdm(self.si.statesdm)
 
-class Builder_many_body_elph(Builder_elph, Builder_many_body):
+
+class BuilderManyBodyElPh(BuilderElPh, BuilderManyBody):
     """
     Class for building the system for stationary transport calculations,
     using many-body states as an input. Also includes Electron-Phonon coupling.
@@ -158,18 +159,20 @@ class Builder_many_body_elph(Builder_elph, Builder_many_body):
         nbaths by nmany by nmany array, which contains many-body electron-phonon coupling matrix.
     """
 
-    def __init__(self, Ea=None, Na=[0], Tba=None, Vbbp=None,
-                       mulst={}, tlst={}, dband={}, tlst_ph={}, dband_ph={}, kpnt=None,
-                       kerntype='Pauli', symq=True, norm_row=0, solmethod='n',
-                       itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
-                       mtype_qd=complex, mtype_leads=complex,
-                       symmetry='n', herm_hs=True, herm_c=False, m_less_n=True,
-                       bath_func=None, eps_elph=1.0e-6):
+    def __init__(self,
+                 Ea=None, Na=[0], Tba=None, Vbbp=None,
+                 mulst={}, tlst={}, dband={}, tlst_ph={}, dband_ph={}, kpnt=None,
+                 kerntype='Pauli', symq=True, norm_row=0, solmethod=None,
+                 itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                 mtype_qd=complex, mtype_leads=complex,
+                 symmetry=None, herm_hs=True, herm_c=False, m_less_n=True,
+                 bath_func=None, eps_elph=1.0e-6):
 
         nleads = Tba.shape[0] if Tba is not None else 0
         nbaths = Vbbp.shape[0] if Vbbp is not None else 0
 
-        Builder_elph.__init__(self,
+        # noinspection PyPep8
+        BuilderElPh.__init__(self,
             nleads=nleads, mulst=mulst, tlst=tlst, dband=dband,
             nbaths=nbaths, tlst_ph=tlst_ph, dband_ph=dband_ph, kpnt=kpnt,
             kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,

@@ -9,7 +9,8 @@ CHECK_PY = False
 PRNTQ = False
 SERIAL_TRIPLE_DOT = False
 
-class Parameters_double_dot_spinful(object):
+
+class ParametersDoubleDotSpinful(object):
 
     def __init__(self):
         tL, tR = 2.0, 1.0
@@ -33,7 +34,8 @@ class Parameters_double_dot_spinful(object):
         self.dlst = [dband, dband, dband, dband]
         self.nsingle, self.nleads = 4, 4
 
-class Parameters_double_dot_spinless(object):
+
+class ParametersDoubleDotSpinless(object):
 
     def __init__(self):
         tL, tR = 2.0, 1.0
@@ -52,7 +54,8 @@ class Parameters_double_dot_spinless(object):
         self.nsingle, self.nleads = 2, 2
         self.kpnt = np.power(2, 9)
 
-class Parameters_single_orbital_spinful(object):
+
+class ParametersSingleOrbitalSpinful(object):
 
     def __init__(self):
         tL, tR = 2.0, 1.0
@@ -74,15 +77,17 @@ class Parameters_single_orbital_spinful(object):
         self.nsingle, self.nleads = 2, 4
         self.kpnt = np.power(2, 9)
 
+
 class Calcs(object):
     def __init__(self):
         pass
 
+
 def save_Builder_double_dot_spinful(fname='data_builder.py'):
-    p = Parameters_double_dot_spinful()
-    #data = {}
+    p = ParametersDoubleDotSpinful()
+    # data = {}
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad', 'pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad']
-    #kerns = ['Pauli']
+    # kerns = ['Pauli']
     itypes = [0, 1, 2]
     data = 'data = {\n'
     for kerntype, itype in itertools.product(kerns, itypes):
@@ -95,14 +100,15 @@ def save_Builder_double_dot_spinful(fname='data_builder.py'):
         attr = kerntype+str(itype)
         data = data+' '*4+'\''+attr+'current\': '+str(system.current.tolist())+',\n'
         data = data+' '*4+'\''+attr+'energy_current\': '+str(system.energy_current.tolist())
-        data = data + ('\n    }' if kerntype is 'pyLindblad' and itype is 2 else ',\n' )
+        data = data + ('\n    }' if kerntype is 'pyLindblad' and itype is 2 else ',\n')
     #
     with open(fname, 'w') as f:
         f.write(data)
 
+
 def test_Builder_double_dot_spinful():
     from qmeq.tests.data_builder import data
-    p = Parameters_double_dot_spinful()
+    p = ParametersDoubleDotSpinful()
     calcs = Calcs()
 
     # Check if the results agree with previously calculated data
@@ -163,6 +169,7 @@ def test_Builder_double_dot_spinful():
         for param in ['current', 'energy_current']:
             assert norm(getattr(system, param) - getattr(getattr(calcs, attr), param)) < EPS
 
+
 def test_Builder_double_dot_spinless_2vN():
     data_current = {'2vN': [0.18472226147540757, -0.1847222614754047]}
     data_energy_current = {'2vN': [0.2828749942707809, -0.28333373130210493]}
@@ -170,13 +177,14 @@ def test_Builder_double_dot_spinless_2vN():
     kerns = ['2vN']
     kerns += ['py2vN'] if CHECK_PY else []
     indexings = ['Lin', 'charge']
-    p = Parameters_double_dot_spinless()
+    p = ParametersDoubleDotSpinless()
     for kerntype, indexing in itertools.product(kerns, indexings):
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
                          kerntype=kerntype, indexing=indexing, kpnt=p.kpnt)
         system.solve(niter=5)
         assert norm(system.current - data_current['2vN']) < EPS
         assert norm(system.energy_current - data_energy_current['2vN']) < EPS
+
 
 def test_Builder_single_orbital_spinful():
     data_current = {'Pauli': [0.08368833245372147, -0.08368833245372037, 0.08368833245372147, -0.08368833245372037],
@@ -188,7 +196,7 @@ def test_Builder_single_orbital_spinful():
     kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     indexings = ['Lin', 'charge', 'sz', 'ssq']
     itypes = [0, 1, 2]
-    p = Parameters_single_orbital_spinful()
+    p = ParametersSingleOrbitalSpinful()
     for kerntype, indexing, itype in itertools.product(kerns, indexings, itypes):
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
                          kerntype=kerntype, indexing=indexing, itype=itype)
@@ -205,6 +213,7 @@ def test_Builder_single_orbital_spinful():
         system.solve(niter=5)
         assert norm(system.current - data_current['2vN']) < EPS
         assert norm(system.energy_current - data_energy_current['2vN']) < EPS
+
 
 def test_Builder_coulomb_symmetry_spin():
 
@@ -283,13 +292,14 @@ def test_Builder_coulomb_symmetry_spin():
     assert sum(abs(sys2_spinful.Ea-sys_ref_spinful.Ea)) < EPS
     assert sum(abs(sys3_spinful.Ea-sys_ref_spinful.Ea)) < EPS
 
+
 def serial_triple_dot_coulomb_symmetry_spin():
     # Coulomb matrix elements
     # Intradot terms: u, uex
     # Interdot terms: un, udc, usc
     u, uex, un, udc, usc = 10., 2., 3., -0.5, -0.2
 
-    #----------- Spinless -----------
+    # ----------- Spinless -----------
     nsingle = 5
     dotindex = [0, 0, 1, 1, 2]
     # m, n, k, l
@@ -361,17 +371,17 @@ def serial_triple_dot_coulomb_symmetry_spin():
                 (0,2,3,1):usc, (0,3,2,1):usc
                 }
 
-    sys0_spinless = qmeq.Builder(nsingle=5, coulomb=coulomb0, symmetry='n', m_less_n=False, herm_c=False)
+    sys0_spinless = qmeq.Builder(nsingle=5, coulomb=coulomb0, symmetry=None, m_less_n=False, herm_c=False)
     sys0_spinless.solve(masterq=False)
-    sys1_spinless = qmeq.Builder(nsingle=5, coulomb=coulomb1, symmetry='n', m_less_n=True, herm_c=False)
+    sys1_spinless = qmeq.Builder(nsingle=5, coulomb=coulomb1, symmetry=None, m_less_n=True, herm_c=False)
     sys1_spinless.solve(masterq=False)
-    sys2_spinless = qmeq.Builder(nsingle=5, coulomb=coulomb2, symmetry='n', m_less_n=True, herm_c=True)
+    sys2_spinless = qmeq.Builder(nsingle=5, coulomb=coulomb2, symmetry=None, m_less_n=True, herm_c=True)
     sys2_spinless.solve(masterq=False)
 
     assert sum(abs(sys1_spinless.Ea-sys0_spinless.Ea)) < EPS
     assert sum(abs(sys2_spinless.Ea-sys0_spinless.Ea)) < EPS
 
-    #----------- Spinful -----------
+    # ----------- Spinful -----------
     nsingle = 10
     nssl = nsingle//2
     dotindex = [0, 0, 1, 1, 2, 0, 0, 1, 1, 2]
@@ -418,6 +428,7 @@ def serial_triple_dot_coulomb_symmetry_spin():
     assert sum(abs(sys0_spinful.Ea-sys_ref_spinful.Ea)) < 10*EPS
     assert sum(abs(sys1_spinful.Ea-sys_ref_spinful.Ea)) < 10*EPS
     assert sum(abs(sys2_spinful.Ea-sys_ref_spinful.Ea)) < 10*EPS
+
 
 def test_Builder_serial_triple_dot_coulomb_symmetry_spin():
     if SERIAL_TRIPLE_DOT:

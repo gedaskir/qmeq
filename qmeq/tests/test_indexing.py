@@ -1,16 +1,16 @@
-import numpy as np
-from qmeq.mytypes import boolnp
-from qmeq.mytypes import longnp
 from qmeq.indexing import *
+
 
 def test_binarylist_to_integer():
     assert binarylist_to_integer([1, 0, 1, 1, 0, 0]) == 44
+
 
 def test_integer_to_binarylist():
     assert integer_to_binarylist(33) == [1, 0, 0, 0, 0, 1]
     assert integer_to_binarylist(33, strq=True) == '100001'
     assert integer_to_binarylist(33, binlen=8) == [0, 0, 1, 0, 0, 0, 0, 1]
     assert integer_to_binarylist(33, binlen=8, strq=True) == '00100001'
+
 
 def test_construct_chargelst():
     assert construct_chargelst(4) == [[0],
@@ -19,15 +19,18 @@ def test_construct_chargelst():
                                       [7, 11, 13, 14],
                                       [15]]
 
+
 def test_sz_to_ind():
     assert sz_to_ind(-2, 4, 6) == 0
     assert sz_to_ind( 0, 4, 6) == 1
     assert sz_to_ind(+2, 4, 6) == 2
 
+
 def test_szrange():
     assert szrange(2, 6) == [-2, 0, 2]
     assert szrange(3, 6) == [-3, -1, 1, 3]
     assert szrange(4, 6) == [-2, 0, 2]
+
 
 def test_empty_szlst():
     assert empty_szlst(4) == [[[]],
@@ -41,6 +44,7 @@ def test_empty_szlst():
                                           [None, None],
                                           [None]]
 
+
 def test_construct_szlst():
     assert construct_szlst(4) == [[[0]],
                                   [[1, 2], [4, 8]],
@@ -48,14 +52,17 @@ def test_construct_szlst():
                                   [[7, 11], [13, 14]],
                                   [[15]]]
 
+
 def test_ssq_to_ind():
     assert ssq_to_ind(2, -2) == 0
     assert ssq_to_ind(2,  0) == 1
     assert ssq_to_ind(2, +2) == 0
 
+
 def test_ssqrange():
     assert ssqrange(3, 1, 6) == [1, 3]
     assert ssqrange(4, 0, 6) == [0, 2]
+
 
 def test_empty_ssqlst():
     assert empty_ssqlst(4) == [[[[]]],
@@ -69,6 +76,7 @@ def test_empty_ssqlst():
                                            [[None], [None]],
                                            [[None]]]
 
+
 def tezt_construct_ssqlst():
     szlst = construct_szlst(4)
     assert construct_ssqlst(szlst, 4) == [[[[0]]],
@@ -76,6 +84,7 @@ def tezt_construct_ssqlst():
                                           [[[5]], [[6, 7, 8], [9]], [[10]]],
                                           [[[11, 12]], [[13, 14]]],
                                           [[[15]]]]
+
 
 def test_flatten():
     szlst = construct_szlst(4)
@@ -87,18 +96,22 @@ def test_flatten():
     assert f2 == [[0], [1, 2], [3, 4], [5], [6, 7, 8], [9], [10], [11, 12], [13, 14], [15]]
     assert f3 == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
+
 def test_enum_chargelst():
     chargelst_lin = construct_chargelst(4)
     assert enum_chargelst(chargelst_lin) == [[0], [1, 2, 3, 4], [5, 6, 7, 8, 9, 10], [11, 12, 13, 14], [15]]
+
 
 def test_enum_szlst():
     szlst_lin = construct_szlst(4)
     assert enum_szlst(szlst_lin) == [[[0]], [[1, 2], [3, 4]], [[5], [6, 7, 8, 9], [10]], [[11, 12], [13, 14]], [[15]]]
 
+
 def test_make_inverse_map():
     chargelst_lin = construct_chargelst(4)
     i = flatten(chargelst_lin)
     assert make_inverse_map(i) == [0, 1, 2, 5, 3, 6, 7, 11, 4, 8, 9, 12, 10, 13, 14, 15]
+
 
 def test_make_quantum_numbers():
     si = StateIndexing(4, indexing='Lin')
@@ -151,6 +164,7 @@ def test_make_quantum_numbers():
                       14: (3, 1, 1, 1),
                       15: (4, 0, 0, 0)}
 
+
 def test_StateIndexing():
     si = StateIndexing(4)
     assert si.nsingle == 4
@@ -159,7 +173,7 @@ def test_StateIndexing():
     assert si.nmany == 16
     assert si.nleads == 0
     #
-    for indexing in ['Lin', 'n']:
+    for indexing in ['Lin', None]:
         si = StateIndexing(4, indexing=indexing)
         assert si.chargelst == [[0],[1, 2, 4, 8],[3, 5, 6, 9, 10, 12],[7, 11, 13, 14],[15]]
         assert si.i == [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
@@ -192,6 +206,7 @@ def test_StateIndexing():
     assert si.get_lst(charge=2, sz=0) == [6, 7, 8, 9]
     assert si.get_lst(charge=2, sz=0, ssq=0) == [6, 7, 8]
 
+
 def test_StateIndexingPauli_charge():
     si = StateIndexingPauli(4, indexing='charge')
     assert si.npauli_ == 16
@@ -217,6 +232,7 @@ def test_StateIndexingPauli_charge():
     assert si.get_ind_dm0(8, 8, 2, maptype=1) == 4
     assert si.get_ind_dm0(8, 8, 2, maptype=2) == 1
 
+
 def test_StateIndexingPauli_ssq():
     si = StateIndexingPauli(4, indexing='ssq')
     assert si.npauli_ == 16
@@ -241,6 +257,7 @@ def test_StateIndexingPauli_ssq():
     assert si.get_ind_dm0(8, 8, 2, maptype=0) == 4
     assert si.get_ind_dm0(8, 8, 2, maptype=1) == 4
     assert si.get_ind_dm0(8, 8, 2, maptype=2) == 1
+
 
 def test_StateIndexingDM_charge():
     si = StateIndexingDM(4, indexing='charge')
@@ -297,6 +314,7 @@ def test_StateIndexingDM_charge():
     assert si.get_ind_dm0(5, 8, 2, maptype=1) == 13
     assert si.get_ind_dm1(5, 4, 1) == 3
 
+
 def test_StateIndexingDM_ssq():
     si = StateIndexingDM(4, indexing='ssq')
     assert si.ndm0_tot == 70
@@ -352,6 +370,7 @@ def test_StateIndexingDM_ssq():
     assert si.get_ind_dm0(5, 8, 2, maptype=1) == -1
     assert si.get_ind_dm1(5, 4, 1) == 3
 
+
 def test_StateIndexingDMc_charge():
     si = StateIndexingDMc(4, indexing='charge')
     assert si.ndm0_tot == 70
@@ -400,6 +419,7 @@ def test_StateIndexingDMc_charge():
     assert si.get_ind_dm0(8, 7, 2, maptype=2) == 1
     assert si.get_ind_dm0(5, 8, 2, maptype=1) == 13
     assert si.get_ind_dm1(5, 4, 1) == 3
+
 
 def test_StateIndexingDMc_ssq():
     si = StateIndexingDMc(4, indexing='ssq')

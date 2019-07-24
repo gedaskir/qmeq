@@ -13,14 +13,19 @@
 docs/index.html.lnk
 docs/run.bat
 qmeq/pylintrc
-qmeq/specfuncc.c
-qmeq/approach/c_pauli.c
-qmeq/approach/c_lindblad.c
-qmeq/approach/c_redfield.c
-qmeq/approach/c_neumann1.c
-qmeq/approach/c_neumann2.c
-qmeq/approach/_complex_redfield.py
-qmeq/approach/_complex_neumann1.py
+qmeq/specfunc/c_specfunc.c
+qmeq/specfunc/c_specfunc_elph.c
+qmeq/approach/base/c_pauli.c
+qmeq/approach/base/c_lindblad.c
+qmeq/approach/base/c_redfield.c
+qmeq/approach/base/c_neumann1.c
+qmeq/approach/base/c_neumann2.c
+qmeq/approach/base/_complex_redfield.py
+qmeq/approach/base/_complex_neumann1.py
+qmeq/approach/elph/c_pauli.c
+qmeq/approach/elph/c_lindblad.c
+qmeq/approach/elph/c_redfield.c
+qmeq/approach/elph/c_neumann1.c
 
 ### Directories
 
@@ -37,3 +42,4 @@ qmeq/tests/__pycache__
 instructions/
 project/
 qmeq/tests_
+.idea/

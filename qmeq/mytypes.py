@@ -2,8 +2,8 @@
 
 import numpy as np
 
-boolnp = np.uint8          #np.bool
+boolnp = np.uint8          # np.bool
 intnp = np.int
-longnp = np.int64          #np.long
-doublenp = np.float64      #np.double
+longnp = np.int64          # np.long
+doublenp = np.float64      # np.double
 complexnp = np.complex128

@@ -1,4 +1,4 @@
-"""Module containing pcython functions, which generate first order Redfield kernel.
+"""Module containing python functions, which generate first order Redfield kernel.
    For docstrings see documentation of module neumann1."""
 
 from __future__ import absolute_import
@@ -14,18 +14,19 @@ from ...aprclass import Approach
 from .neumann1 import generate_phi1fct
 from .pauli import generate_norm_vec
 
-#---------------------------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------
 # Redfield approach
-#---------------------------------------------------------------------------------------------------
-def generate_kern_redfield(sys):
-    (E, Tba, phi1fct, si) = (sys.qd.Ea, sys.leads.Tba, sys.phi1fct, sys.si)
+# ---------------------------------------------------------------------------------------------------
+def generate_kern_redfield(self):
+    (E, Tba, phi1fct, si) = (self.qd.Ea, self.leads.Tba, self.phi1fct, self.si)
     npauli, ndm0, nleads = si.npauli, si.ndm0, si.nleads
 
-    sys.kern_ext = np.zeros((si.ndm0r+1, si.ndm0r), dtype=doublenp)
-    sys.kern = sys.kern_ext[0:-1, :]
+    self.kern_ext = np.zeros((si.ndm0r+1, si.ndm0r), dtype=doublenp)
+    self.kern = self.kern_ext[0:-1, :]
 
-    generate_norm_vec(sys, si.ndm0r)
-    kern = sys.kern
+    generate_norm_vec(self, si.ndm0r)
+    kern = self.kern
     for charge in range(si.ncharge):
         acharge = charge-1
         bcharge = charge
@@ -39,7 +40,7 @@ def generate_kern_redfield(sys):
                 if bbpi_bool:
                     kern[bbp, bbpi] += E[b]-E[bp]
                     kern[bbpi, bbp] += E[bp]-E[b]
-                #--------------------------------------------------
+                # --------------------------------------------------
                 for a, ap in itertools.product(si.statesdm[acharge], si.statesdm[acharge]):
                     aap = si.get_ind_dm0(a, ap, acharge)
                     if aap != -1:
@@ -47,8 +48,8 @@ def generate_kern_redfield(sys):
                         ba = si.get_ind_dm1(b, a, acharge)
                         fct_aap = 0
                         for l in range(nleads):
-                            fct_aap += (+Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bpap, 0].conjugate()
-                                        -Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, ba, 0])
+                            fct_aap += (+ Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bpap, 0].conjugate()
+                                        - Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, ba, 0])
                         aapi = ndm0 + aap - npauli
                         aap_sgn = +1 if si.get_ind_dm0(a, ap, acharge, maptype=3) else -1
                         kern[bbp, aap] += fct_aap.imag
@@ -58,7 +59,7 @@ def generate_kern_redfield(sys):
                                 kern[bbpi, aapi] += fct_aap.imag*aap_sgn
                         if bbpi_bool:
                             kern[bbpi, aap] -= fct_aap.real
-                #--------------------------------------------------
+                # --------------------------------------------------
                 for bpp in si.statesdm[bcharge]:
                     bppbp = si.get_ind_dm0(bpp, bp, bcharge)
                     if bppbp != -1:
@@ -80,7 +81,7 @@ def generate_kern_redfield(sys):
                                 kern[bbpi, bppbpi] += fct_bppbp.imag*bppbp_sgn
                         if bbpi_bool:
                             kern[bbpi, bppbp] -= fct_bppbp.real
-                    #--------------------------------------------------
+                    # --------------------------------------------------
                     bbpp = si.get_ind_dm0(b, bpp, bcharge)
                     if bbpp != -1:
                         fct_bbpp = 0
@@ -101,7 +102,7 @@ def generate_kern_redfield(sys):
                                 kern[bbpi, bbppi] += fct_bbpp.imag*bbpp_sgn
                         if bbpi_bool:
                             kern[bbpi, bbpp] -= fct_bbpp.real
-                #--------------------------------------------------
+                # --------------------------------------------------
                 for c, cp in itertools.product(si.statesdm[ccharge], si.statesdm[ccharge]):
                     ccp = si.get_ind_dm0(c, cp, ccharge)
                     if ccp != -1:
@@ -109,8 +110,8 @@ def generate_kern_redfield(sys):
                         cb = si.get_ind_dm1(c, b, bcharge)
                         fct_ccp = 0
                         for l in range(nleads):
-                            fct_ccp += (+Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cpbp, 1]
-                                        -Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cb, 1].conjugate())
+                            fct_ccp += (+ Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cpbp, 1]
+                                        - Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cb, 1].conjugate())
                         ccpi = ndm0 + ccp - npauli
                         ccp_sgn = +1 if si.get_ind_dm0(c, cp, ccharge, maptype=3) else -1
                         kern[bbp, ccp] += fct_ccp.imag
@@ -120,12 +121,13 @@ def generate_kern_redfield(sys):
                                 kern[bbpi, ccpi] += fct_ccp.imag*ccp_sgn
                         if bbpi_bool:
                             kern[bbpi, ccp] -= fct_ccp.real
-                #--------------------------------------------------
+                # --------------------------------------------------
     return 0
 
-def generate_current_redfield(sys):
-    (phi0p, E, Tba, phi1fct, phi1fct_energy, si) = (sys.phi0, sys.qd.Ea, sys.leads.Tba,
-                                                    sys.phi1fct, sys.phi1fct_energy, sys.si)
+
+def generate_current_redfield(self):
+    (phi0p, E, Tba, phi1fct, phi1fct_energy, si) = (self.phi0, self.qd.Ea, self.leads.Tba,
+                                                    self.phi1fct, self.phi1fct_energy, self.si)
     phi1 = np.zeros((si.nleads, si.ndm1), dtype=complexnp)
     current = np.zeros(si.nleads, dtype=complexnp)
     energy_current = np.zeros(si.nleads, dtype=complexnp)
@@ -163,15 +165,16 @@ def generate_current_redfield(sys):
                         phi1[l, cb] += Tba[l, cp, b]*phi0ccp*fct2
                         current[l] += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2
                         energy_current[l] += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2h
-        sys.phi1 = phi1
-    sys.current = np.array(-2*current.imag, dtype=doublenp)
-    sys.energy_current = np.array(-2*energy_current.imag, dtype=doublenp)
-    sys.heat_current = sys.energy_current - sys.current*sys.leads.mulst
+        self.phi1 = phi1
+    self.current = np.array(-2*current.imag, dtype=doublenp)
+    self.energy_current = np.array(-2*energy_current.imag, dtype=doublenp)
+    self.heat_current = self.energy_current - self.current*self.leads.mulst
     return 0
 
-def generate_vec_redfield(phi0p, sys):
-    (E, Tba, phi1fct, si, norm_row) = (sys.qd.Ea, sys.leads.Tba, sys.phi1fct,
-                                       sys.si, sys.funcp.norm_row)
+
+def generate_vec_redfield(phi0p, self):
+    (E, Tba, phi1fct, si, norm_row) = (self.qd.Ea, self.leads.Tba, self.phi1fct,
+                                       self.si, self.funcp.norm_row)
     #
     phi0 = np.zeros(si.ndm0, dtype=complexnp)
     phi0[0:si.npauli] = phi0p[0:si.npauli]
@@ -187,11 +190,12 @@ def generate_vec_redfield(phi0p, sys):
         for b, bp in itertools.combinations_with_replacement(si.statesdm[bcharge], 2):
             bbp = si.get_ind_dm0(b, bp, bcharge)
             if bbp != -1:
-                if b == bp: norm += phi0[bbp]
+                if b == bp:
+                    norm += phi0[bbp]
                 bbp_bool = si.get_ind_dm0(b, bp, bcharge, maptype=2)
                 if bbp_bool:
                     i_dphi0_dt[bbp] += (E[b]-E[bp])*phi0[bbp]
-                    #--------------------------------------------------
+                    # --------------------------------------------------
                     for a, ap in itertools.product(si.statesdm[acharge], si.statesdm[acharge]):
                         aap = si.get_ind_dm0(a, ap, acharge)
                         if aap != -1:
@@ -199,12 +203,12 @@ def generate_vec_redfield(phi0p, sys):
                             ba = si.get_ind_dm1(b, a, acharge)
                             fct_aap = 0
                             for l in range(nleads):
-                                fct_aap += (+Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bpap, 0].conjugate()
-                                            -Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, ba, 0])
-                            phi0aap = ( phi0[aap] if si.get_ind_dm0(a, ap, acharge, maptype=3)
-                                                  else phi0[aap].conjugate() )
+                                fct_aap += (+ Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, bpap, 0].conjugate()
+                                            - Tba[l, b, a]*Tba[l, ap, bp]*phi1fct[l, ba, 0])
+                            phi0aap = (phi0[aap] if si.get_ind_dm0(a, ap, acharge, maptype=3)
+                                       else phi0[aap].conjugate())
                             i_dphi0_dt[bbp] += fct_aap*phi0aap
-                    #--------------------------------------------------
+                    # --------------------------------------------------
                     for bpp in si.statesdm[bcharge]:
                         bppbp = si.get_ind_dm0(bpp, bp, bcharge)
                         if bppbp != -1:
@@ -217,10 +221,10 @@ def generate_vec_redfield(phi0p, sys):
                                 cbpp = si.get_ind_dm1(c, bpp, bcharge)
                                 for l in range(nleads):
                                     fct_bppbp += +Tba[l, b, c]*Tba[l, c, bpp]*phi1fct[l, cbpp, 0]
-                            phi0bppbp = ( phi0[bppbp] if si.get_ind_dm0(bpp, bp, bcharge, maptype=3)
-                                                      else  phi0[bppbp].conjugate() )
+                            phi0bppbp = (phi0[bppbp] if si.get_ind_dm0(bpp, bp, bcharge, maptype=3)
+                                         else phi0[bppbp].conjugate())
                             i_dphi0_dt[bbp] += fct_bppbp*phi0bppbp
-                        #--------------------------------------------------
+                        # --------------------------------------------------
                         bbpp = si.get_ind_dm0(b, bpp, charge)
                         if bbpp != -1:
                             fct_bbpp = 0
@@ -232,10 +236,10 @@ def generate_vec_redfield(phi0p, sys):
                                 cbpp = si.get_ind_dm1(c, bpp, bcharge)
                                 for l in range(nleads):
                                     fct_bbpp += -Tba[l, bpp, c]*Tba[l, c, bp]*phi1fct[l, cbpp, 0].conjugate()
-                            phi0bbpp = ( phi0[bbpp] if si.get_ind_dm0(b, bpp, bcharge, maptype=3)
-                                                    else phi0[bbpp].conjugate() )
+                            phi0bbpp = (phi0[bbpp] if si.get_ind_dm0(b, bpp, bcharge, maptype=3)
+                                        else phi0[bbpp].conjugate())
                             i_dphi0_dt[bbp] += fct_bbpp*phi0bbpp
-                    #--------------------------------------------------
+                    # --------------------------------------------------
                     for c, cp in itertools.product(si.statesdm[ccharge], si.statesdm[ccharge]):
                         ccp = si.get_ind_dm0(c, cp, ccharge)
                         if ccp != -1:
@@ -243,20 +247,21 @@ def generate_vec_redfield(phi0p, sys):
                             cb = si.get_ind_dm1(c, b, bcharge)
                             fct_ccp = 0
                             for l in range(nleads):
-                                fct_ccp += (+Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cpbp, 1]
-                                            -Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cb, 1].conjugate())
-                            phi0ccp = ( phi0[ccp] if si.get_ind_dm0(c, cp, ccharge, maptype=3)
-                                                  else phi0[ccp].conjugate() )
+                                fct_ccp += (+ Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cpbp, 1]
+                                            - Tba[l, b, c]*Tba[l, cp, bp]*phi1fct[l, cb, 1].conjugate())
+                            phi0ccp = (phi0[ccp] if si.get_ind_dm0(c, cp, ccharge, maptype=3)
+                                       else phi0[ccp].conjugate())
                             i_dphi0_dt[bbp] += fct_ccp*phi0ccp
-                    #--------------------------------------------------
+                    # --------------------------------------------------
     i_dphi0_dt[norm_row] = 1j*(norm-1)
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[si.npauli:si.ndm0].real))
 
-class Approach_pyRedfield(Approach):
+
+class ApproachPyRedfield(Approach):
 
     kerntype = 'pyRedfield'
     generate_fct = staticmethod(generate_phi1fct)
     generate_kern = staticmethod(generate_kern_redfield)
     generate_current = staticmethod(generate_current_redfield)
     generate_vec = staticmethod(generate_vec_redfield)
-#---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
