@@ -1,6 +1,4 @@
 import os
-#import sys
-import subprocess
 import shutil
 from glob import glob
 
@@ -15,12 +13,14 @@ dirs = [
     ]
 
 for directory, _, _ in os.walk('./'):
-    if ('__pycache__' in directory):
+    if '__pycache__' in directory:
         dirs.append(directory)
 
 for dr in dirs:
-    try: shutil.rmtree(dr)
-    except: pass
+    if os.path.exists(dr):
+        shutil.rmtree(dr)
+    else:
+        pass
 
 dirs = [
     './qmeq/',

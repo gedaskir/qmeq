@@ -6,10 +6,9 @@ from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...aprclass import Approach_elph
-from ...specfunc.specfunc_elph import Func_pauli_elph
+from ...aprclass import ApproachElPh
+from ...specfunc.specfunc_elph import FuncPauliElPh
 
-from ...mytypes import complexnp
 from ...mytypes import doublenp
 
 from ..base.pauli import generate_paulifct
@@ -18,10 +17,11 @@ from ..base.pauli import generate_current_pauli
 from ..base.pauli import generate_vec_pauli
 from ..base.pauli import generate_norm_vec
 
-def generate_paulifct_elph(sys):
-    (E, Vbbp, si) = (sys.qd.Ea, sys.baths.Vbbp, sys.si_elph)
-    func_pauli = Func_pauli_elph(sys.baths.tlst_ph, sys.baths.dlst_ph,
-                                 sys.baths.bath_func, sys.funcp.eps_elph)
+
+def generate_paulifct_elph(self):
+    (E, Vbbp, si) = (self.qd.Ea, self.baths.Vbbp, self.si_elph)
+    func_pauli = FuncPauliElPh(self.baths.tlst_ph, self.baths.dlst_ph,
+                               self.baths.bath_func, self.funcp.eps_elph)
     #
     paulifct = np.zeros((si.nbaths, si.ndm0), dtype=doublenp)
     for charge in range(si.ncharge):
@@ -32,26 +32,27 @@ def generate_paulifct_elph(sys):
                 bbp = si.get_ind_dm0(b, bp, charge)
                 Ebbp = E[b]-E[bp]
                 for l in range(si.nbaths):
-                    xbbp = 0.5*(Vbbp[l, b, bp]*Vbbp[l, b, bp].conjugate()
-                               +Vbbp[l, bp, b].conjugate()*Vbbp[l, bp, b]).real
+                    xbbp = 0.5*(Vbbp[l, b, bp]*Vbbp[l, b, bp].conjugate() +
+                                Vbbp[l, bp, b].conjugate()*Vbbp[l, bp, b]).real
                     func_pauli.eval(Ebbp, l)
                     paulifct[l, bbp] = xbbp*func_pauli.val
 
-    sys.paulifct_elph = paulifct
+    self.paulifct_elph = paulifct
     return 0
 
-#---------------------------------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------------
 # Pauli master equation
-#---------------------------------------------------------------------------------------------------------
-def generate_kern_pauli_elph(sys):
-    (paulifct, si, si_elph) = (sys.paulifct_elph, sys.si, sys.si_elph)
+# ---------------------------------------------------------------------------------------------------------
+def generate_kern_pauli_elph(self):
+    (paulifct, si, si_elph) = (self.paulifct_elph, self.si, self.si_elph)
 
-    if sys.kern is None:
-        sys.kern_ext = np.zeros((si.npauli+1, si.npauli), dtype=doublenp)
-        sys.kern = sys.kern_ext[0:-1, :]
-        generate_norm_vec(sys, si.npauli)
+    if self.kern is None:
+        self.kern_ext = np.zeros((si.npauli+1, si.npauli), dtype=doublenp)
+        self.kern = self.kern_ext[0:-1, :]
+        generate_norm_vec(self, si.npauli)
 
-    kern = sys.kern
+    kern = self.kern
     for charge in range(si.ncharge):
         for b in si.statesdm[charge]:
             bb = si.get_ind_dm0(b, b, charge)
@@ -68,7 +69,8 @@ def generate_kern_pauli_elph(sys):
 
     return 0
 
-class Approach_pyPauli(Approach_elph):
+
+class ApproachPyPauli(ApproachElPh):
 
     kerntype = 'pyPauli'
     generate_fct = staticmethod(generate_paulifct)
@@ -78,4 +80,4 @@ class Approach_pyPauli(Approach_elph):
     #
     generate_kern_elph = staticmethod(generate_kern_pauli_elph)
     generate_fct_elph = staticmethod(generate_paulifct_elph)
-#---------------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------------

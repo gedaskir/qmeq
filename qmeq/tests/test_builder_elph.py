@@ -1,12 +1,11 @@
 from __future__ import division
 from __future__ import print_function
 
-import numpy as np
 from numpy import sqrt, exp, pi
 from numpy.linalg import norm
 import itertools
 
-from qmeq import Builder_elph
+from qmeq import BuilderElPh
 from qmeq import ModelParameters
 from qmeq.specfunc import Func
 from qmeq.tests.test_builder import Calcs
@@ -15,40 +14,42 @@ EPS = 1e-10
 CHECK_PY = False
 PRNTQ = False
 
+
 class JFunc(Func):
     def eval(self, E):
         return 3.8804e-4*E
 
-class SpinfulDoubleDotWithElPh(Builder_elph):
+
+class SpinfulDoubleDotWithElPh(BuilderElPh):
 
     def __init__(self,
-        # Dot parameters
-        eL=0.05,
-        eR=-0.05,
-        omega=0.05,
-        U=12,
-        Un=2.5,
-        # Tunneling and lead parameters
-        gamL=9.0e-5,
-        gamR=9.0e-5,
-        tempL=0.005,
-        tempR=0.005,
-        vbias=0.0,
-        dband=50.0,
-        # Phonon baths and electron-phonon coupling parameters
-        tempPh=0.025,
-        d=120,
-        a=5.8,
-        alpha=pi/3*1j,
-        bath_func=[JFunc()],
-        dband_ph_min=1e-8,
-        dband_ph_max=100,
-        # Master equation parameters
-        kerntype='Pauli',
-        itype=0,
-        itype_ph=0,
-        indexing='ssq',
-        symq=True):
+                 # Dot parameters
+                 eL=0.05,
+                 eR=-0.05,
+                 omega=0.05,
+                 U=12,
+                 Un=2.5,
+                 # Tunneling and lead parameters
+                 gamL=9.0e-5,
+                 gamR=9.0e-5,
+                 tempL=0.005,
+                 tempR=0.005,
+                 vbias=0.0,
+                 dband=50.0,
+                 # Phonon baths and electron-phonon coupling parameters
+                 tempPh=0.025,
+                 d=120,
+                 a=5.8,
+                 alpha=pi/3*1j,
+                 bath_func=[JFunc()],
+                 dband_ph_min=1e-8,
+                 dband_ph_max=100,
+                 # Master equation parameters
+                 kerntype='Pauli',
+                 itype=0,
+                 itype_ph=0,
+                 indexing='ssq',
+                 symq=True):
         """Initialization of the Model class."""
 
         self.p = ModelParameters(locals())
@@ -67,16 +68,16 @@ class SpinfulDoubleDotWithElPh(Builder_elph):
         tlst =  {0: tempL,   1: tempR}
 
         nbaths = 1
-        dband_ph= {0: [dband_ph_min, dband_ph_max]}
-        tlst_ph= {0: tempPh}
+        dband_ph = {0: [dband_ph_min, dband_ph_max]}
+        tlst_ph = {0: tempPh}
 
-        yelph= {(0,0,0): 1.0,
-                (0,1,1): exp(alpha),
-                (0,0,1): exp(alpha/2)*exp(-(d**2)/(4*a**2)),
-                (0,1,0): exp(alpha/2)*exp(-(d**2)/(4*a**2))}
+        yelph = {(0,0,0): 1.0,
+                 (0,1,1): exp(alpha),
+                 (0,0,1): exp(alpha/2)*exp(-(d**2)/(4*a**2)),
+                 (0,1,0): exp(alpha/2)*exp(-(d**2)/(4*a**2))}
 
         # Initialise the system
-        Builder_elph.__init__(self,
+        BuilderElPh.__init__(self,
             nsingle, hsingle, coulomb,
             nleads, tleads, mulst, tlst, dband,
             nbaths, yelph, tlst_ph, dband_ph,
@@ -88,11 +89,12 @@ class SpinfulDoubleDotWithElPh(Builder_elph):
             indexing=indexing,
             symmetry='spin')
 
-    #------------------------------------------------
+    # ------------------------------------------------
 
     # Detuning
     def get_delta(self):
         return self.p.delta
+
     def set_delta(self, value):
         self.eL, self.eR = +value/2, -value/2
         self.change(hsingle={(0,0): self.eL,
@@ -100,7 +102,8 @@ class SpinfulDoubleDotWithElPh(Builder_elph):
         self.p.delta = value
     delta = property(get_delta, set_delta)
 
-    #------------------------------------------------
+    # ------------------------------------------------
+
 
 def save_Builder_double_dot_spinful(fname='data_builder_elph.py'):
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad', 'pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad']
@@ -119,6 +122,7 @@ def save_Builder_double_dot_spinful(fname='data_builder_elph.py'):
     #
     with open(fname, 'w') as f:
         f.write(data)
+
 
 def test_Builder_elph_double_dot_spinful():
     from qmeq.tests.data_builder_elph import data

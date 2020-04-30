@@ -1,4 +1,4 @@
-"""Module containing Builder_base and Builder_many_body classes."""
+"""Module containing BuilderBase and BuilderManyBody classes."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -29,71 +29,74 @@ from .validation import validate_kerntype
 from .validation import validate_itype
 from .validation import validate_indexing
 
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Python modules
 
-from ..approach.base.pauli import Approach_pyPauli
-from ..approach.base.lindblad import Approach_pyLindblad
-from ..approach.base.redfield import Approach_pyRedfield
-from ..approach.base.neumann1 import Approach_py1vN
-from ..approach.base.neumann2 import Approach_py2vN
+from ..approach.base.pauli import ApproachPyPauli
+from ..approach.base.lindblad import ApproachPyLindblad
+from ..approach.base.redfield import ApproachPyRedfield
+from ..approach.base.neumann1 import ApproachPy1vN
+from ..approach.base.neumann2 import ApproachPy2vN
 
 # Cython compiled modules
 
 try:
-    from ..approach.base.c_pauli import Approach_Pauli
-    from ..approach.base.c_lindblad import Approach_Lindblad
-    from ..approach.base.c_redfield import Approach_Redfield
-    from ..approach.base.c_neumann1 import Approach_1vN
-    from ..approach.base.c_neumann2 import Approach_2vN
-except:
+    from ..approach.base.c_pauli import ApproachPauli
+    from ..approach.base.c_lindblad import ApproachLindblad
+    from ..approach.base.c_redfield import ApproachRedfield
+    from ..approach.base.c_neumann1 import Approach1vN
+    from ..approach.base.c_neumann2 import Approach2vN
+except ImportError:
     print("WARNING: Cannot import Cython compiled modules for the approaches (builder_base.py).")
-    Approach_Pauli = Approach_pyPauli
-    Approach_Lindblad = Approach_pyLindblad
-    Approach_Redfield = Approach_pyRedfield
-    Approach_1vN = Approach_py1vN
-    Approach_2vN = Approach_py2vN
-#-----------------------------------------------------------
+    ApproachPauli = ApproachPyPauli
+    ApproachLindblad = ApproachPyLindblad
+    ApproachRedfield = ApproachPyRedfield
+    Approach1vN = ApproachPy1vN
+    Approach2vN = ApproachPy2vN
+# -----------------------------------------------------------
 
-attribute_map = {
+attribute_map = dict(
     # StateIndexing
-    'nsingle':'si', 'nleads':'si',
+    nsingle='si', nleads='si',
     # QuantumDot
-    'hsingle':'qd', 'coulomb':'qd', 'Ea':'qd',
+    hsingle='qd', coulomb='qd', Ea='qd',
     # LeadsTunneling
-    'tleads':'leads', 'mulst':'leads', 'tlst':'leads', 'dlst':'leads',
-    'Tba':'leads',
+    tleads='leads', mulst='leads', tlst='leads', dlst='leads',
+    Tba='leads',
     # Approach
-    'solve':'appr', 'current':'appr', 'energy_current':'appr',
-    'heat_current':'appr', 'phi0':'appr', 'phi1':'appr', 'niter':'appr',
-    'iters':'appr', 'kern':'appr', 'success':'appr',
+    solve='appr', current='appr', energy_current='appr',
+    heat_current='appr', phi0='appr', phi1='appr', niter='appr',
+    iters='appr', kern='appr', success='appr',
     # FunctionProperties
-    'kpnt':'funcp', 'symq':'funcp', 'norm_row':'funcp', 'solmethod':'funcp',
-    'itype':'funcp', 'dqawc_limit':'funcp',
-    'mfreeq':'funcp', 'phi0_init':'funcp',
-    }
+    kpnt='funcp', symq='funcp', norm_row='funcp', solmethod='funcp',
+    itype='funcp', dqawc_limit='funcp',
+    mfreeq='funcp', phi0_init='funcp',
+    )
+
 
 class ModelParameters(object):
 
     def __init__(self, params):
-      for i in params:
+        for i in params:
             if i not in {'self'}:
                 setattr(self, i, copy.deepcopy(params[i]))
 
-class Builder_base(object):
+
+class BuilderBase(object):
     """
     Class for building the system for stationary transport calculations.
 
     For descriptions of all attributes use help(Builder).
     """
 
-    def __init__(self, nsingle=0, hsingle={}, coulomb={},
-                       nleads=0, tleads={}, mulst={}, tlst={}, dband={},
-                       indexing='n', kpnt=None,
-                       kerntype='Pauli', symq=True, norm_row=0, solmethod='n',
-                       itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
-                       mtype_qd=complex, mtype_leads=complex,
-                       symmetry='n', herm_hs=True, herm_c=False, m_less_n=True):
+    def __init__(self,
+                 nsingle=0, hsingle={}, coulomb={},
+                 nleads=0, tleads={}, mulst={}, tlst={}, dband={},
+                 indexing=None, kpnt=None,
+                 kerntype='Pauli', symq=True, norm_row=0, solmethod=None,
+                 itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                 mtype_qd=complex, mtype_leads=complex,
+                 symmetry=None, herm_hs=True, herm_c=False, m_less_n=True):
 
         self._init_copy_data(locals())
         self._init_validate_data()
@@ -119,10 +122,11 @@ class Builder_base(object):
     def _init_set_approach_class(self):
         kerntype = self.data.kerntype
         if isinstance(kerntype, str):
-            self.Approach = self.globals['Approach_'+kerntype]
+            approach_string = kerntype[0].capitalize() + kerntype[1:]
+            self.Approach = self.globals['Approach'+approach_string]
         elif issubclass(kerntype, Approach):
             self.Approach = kerntype
-            kerntype = self.Approach.kerntype
+            self.kerntype = self.Approach.kerntype
 
     def _init_create_setup(self):
         data = self.data
@@ -145,7 +149,7 @@ class Builder_base(object):
     def __getattr__(self, item):
         sub_class_str = attribute_map.get(item)
         if sub_class_str is None:
-            return super(Builder_base, self).__getattribute__(item)
+            return super(BuilderBase, self).__getattribute__(item)
         else:
             sub_class = getattr(self, attribute_map[item])
             return getattr(sub_class, item)
@@ -153,7 +157,7 @@ class Builder_base(object):
     def __setattr__(self, item, value):
         sub_class_str = attribute_map.get(item)
         if sub_class_str is None:
-            super(Builder_base, self).__setattr__(item, value)
+            super(BuilderBase, self).__setattr__(item, value)
         else:
             sub_class = getattr(self, attribute_map[item])
             setattr(sub_class, item, value)
@@ -161,6 +165,7 @@ class Builder_base(object):
     def change_si(self):
         si = self.si
         icn = self.Approach.indexing_class_name
+        # noinspection PyTypeHints
         if not isinstance(si, self.globals[icn]):
             self.si = self.globals[icn](si.nsingle, si.indexing, si.symmetry, si.nleads)
             self.qd.si = self.si
@@ -169,10 +174,12 @@ class Builder_base(object):
     # kerntype
     def get_kerntype(self):
         return self.appr.kerntype
+
     def set_kerntype(self, value):
         if isinstance(value, str):
             if self.appr.kerntype != value:
-                self.Approach = self.globals['Approach_'+value]
+                approach_string = value[0].capitalize() + value[1:]
+                self.Approach = self.globals['Approach'+approach_string]
                 self.change_si()
                 self.appr = self.Approach(self)
         else:
@@ -185,18 +192,20 @@ class Builder_base(object):
     # indexing
     def get_indexing(self):
         return self.si.indexing
+
     def set_indexing(self, value):
         if self.si.indexing != value:
             print('WARNING: Cannot change indexing from \''+self.si.indexing+'\' to \''+value
-                  +'\' Consider contructing a new system using \'indexing='+value+'\'')
+                  + '\' Consider constructing a new system using \'indexing='+value+'\'')
     indexing = property(get_indexing, set_indexing)
 
     # dband
     def get_dband(self):
         return self.funcp.dband
+
     def set_dband(self, value):
         self.funcp.dband = value
-        self.leads.change(dlst=dband)
+        self.leads.change(dlst=value)
     dband = property(get_dband, set_dband)
 
     def add(self, hsingle=None, coulomb=None, tleads=None, mulst=None, tlst=None, dlst=None):
@@ -232,48 +241,48 @@ class Builder_base(object):
             self.leads.change(tleads, mulst, tlst, dlst)
 
     def get_phi0(self, b, bp):
-        '''
+        """
         Get the reduced density matrix element corresponding to
         many-body states b and bp.
-        '''
+        """
         return get_phi0(self, b, bp)
 
     def get_phi1(self, l, c, b):
-        '''
+        """
         Get the energy integrated current amplitudes corresponding to
         lead l and many-body states c and b.
-        '''
+        """
         return get_phi1(self, l, c, b)
 
     def print_state(self, b, eps=0.0, prntq=True, filename=None, separator=''):
-        '''
-        Prints properties of given many-body eigenstate of the quantum dot Hamiltonain
-        '''
+        """
+        Prints properties of given many-body eigenstate of the quantum dot Hamiltonian
+        """
         print_state(self, b, eps, prntq, filename, separator)
 
     def print_all_states(self, filename, eps=0.0, separator='', mode='w'):
-        '''
+        """
         Prints properties of all many-body eigenstates to a file.
-        '''
+        """
         print_all_states(self, filename, eps, separator, mode)
 
-    def sort_eigenstates(self, srt='n'):
-        '''
+    def sort_eigenstates(self, srt=None):
+        """
         Sort many-body states of the system by given order of properties.
-        '''
+        """
         sort_eigenstates(self, srt=srt)
 
     def remove_coherences(self, dE):
-        '''
+        """
         Remove the coherences with energy difference larger than dE.
-        '''
+        """
         remove_coherences(self, dE)
 
     def remove_states(self, dE):
-        '''
+        """
         Remove the states with energy dE larger than the ground state
         for the transport calculations.
-        '''
+        """
         remove_states(self, dE)
 
     def remove_fock_states(self, lin_state_indices):
@@ -283,12 +292,13 @@ class Builder_base(object):
         self.leads._init_coupling()
 
     def use_all_states(self):
-        '''
+        """
         Use all states for the transport calculations.
-        '''
+        """
         use_all_states(self)
 
-class Builder_many_body(Builder_base):
+
+class BuilderManyBody(BuilderBase):
     """
     Class for building the system for stationary transport calculations,
     using many-body states as an input.
@@ -305,16 +315,18 @@ class Builder_many_body(Builder_base):
         nleads by nmany by nmany array, which contains many-body tunneling amplitude matrix.
     """
 
-    def __init__(self, Ea=None, Na=[0], Tba=None,
-                       mulst={}, tlst={}, dband={}, kpnt=None,
-                       kerntype='Pauli', symq=True, norm_row=0, solmethod='n',
-                       itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
-                       mtype_qd=complex, mtype_leads=complex,
-                       symmetry='n', herm_hs=True, herm_c=False, m_less_n=True):
+    def __init__(self,
+                 Ea=None, Na=[0], Tba=None,
+                 mulst={}, tlst={}, dband={}, kpnt=None,
+                 kerntype='Pauli', symq=True, norm_row=0, solmethod=None,
+                 itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                 mtype_qd=complex, mtype_leads=complex,
+                 symmetry=None, herm_hs=True, herm_c=False, m_less_n=True):
 
         nleads = Tba.shape[0] if Tba is not None else 0
 
-        Builder_base.__init__(self,
+        # noinspection PyPep8
+        BuilderBase.__init__(self,
             nleads=nleads, mulst=mulst, tlst=tlst, dband=dband, kpnt=kpnt,
             kerntype=kerntype, symq=symq, norm_row=norm_row, solmethod=solmethod,
             itype=itype, dqawc_limit=dqawc_limit, mfreeq=mfreeq, phi0_init=phi0_init,
@@ -333,7 +345,7 @@ class Builder_many_body(Builder_base):
         ncharge = nmax-nmin+1
         nmany = len(Ea) if Ea is not None else 0
 
-        statesdm = [[] for i in range(ncharge)]
+        statesdm = [[] for _ in range(ncharge)]
         for i in range(nmany):
             statesdm[Na[i]].append(i)
 

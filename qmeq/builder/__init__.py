@@ -7,8 +7,8 @@ from __future__ import division
 from __future__ import print_function
 
 from .builder import Builder
-from .builder_base import Builder_base
-from .builder_base import Builder_many_body
-from .builder_elph import Builder_elph
-from .builder_elph import Builder_many_body_elph
+from .builder_base import BuilderBase
+from .builder_base import BuilderManyBody
+from .builder_elph import BuilderElPh
+from .builder_elph import BuilderManyBodyElPh
 from .funcprop import FunctionProperties

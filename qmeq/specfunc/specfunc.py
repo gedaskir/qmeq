@@ -6,22 +6,19 @@ from __future__ import print_function
 
 import numpy as np
 from numpy.fft import fft, ifft
-from numpy import sign
 from scipy import pi
 from scipy import log
-from scipy import log2
 from scipy import exp
-from scipy import sqrt
 from scipy.special import psi as digamma
 from scipy.integrate import quad
 
-from ..mytypes import complexnp
 from ..mytypes import doublenp
-from ..mytypes import intnp
+
 
 def fermi_func(x):
     """Fermi function."""
     return 1/(exp(x)+1)
+
 
 def func_pauli(Ecb, mu, T, Dm, Dp, itype):
     """
@@ -37,10 +34,12 @@ def func_pauli(Ecb, mu, T, Dm, Dp, itype):
         Temperature.
     Dm,Dp : float
         Bandwidth.
+    itype : int
+        Type of function calculation.
 
     Returns
     -------
-    array
+    ndarray
         | Array of two float numbers [cur0, cur1] containing
           momentum-integrated current amplitudes.
         | cur0 - particle current amplitude.
@@ -48,13 +47,14 @@ def func_pauli(Ecb, mu, T, Dm, Dp, itype):
     """
     alpha = (Ecb-mu)/T
     Rm, Rp = (Dm-mu)/T, (Dp-mu)/T
-    if itype == 1 or itype == 3 or (alpha < Rp and alpha > Rm):
+    if itype == 1 or itype == 3 or (Rm < alpha < Rp):
         cur0 = fermi_func(alpha)
         cur1 = 1-cur0
         rez = 2*pi*np.array([cur0, cur1])
     else:
         rez = np.zeros(2)
     return rez
+
 
 def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
     """
@@ -75,16 +75,16 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
         | itype=0: the principal parts are evaluated using Fortran integration package QUADPACK \
                    routine dqawc through SciPy.
         | itype=1: the principal parts are kept, but approximated by digamma function valid for \
-                   large bandwidht D.
+                   large bandwidth D.
         | itype=2: the principal parts are neglected.
         | itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
     limit : int
-        For itype=0 dqawc_limit determines the maximum number of subintervals
+        For itype=0 dqawc_limit determines the maximum number of sub-intervals
         in the partition of the given integration interval.
 
     Returns
     -------
-    array
+    ndarray
         | Array of four complex numbers [cur0, cur1, en0, en1] containing
           momentum-integrated current amplitudes.
         | cur0 - particle current amplitude.
@@ -94,14 +94,15 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
     """
     if itype == 0:
         alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
-        cur0, err = quad(fermi_func, Rm, Rp, weight='cauchy', wvar=alpha, epsabs=1.0e-6,
-                                             epsrel=1.0e-6, limit=limit)
-        cur0 = cur0 + (-1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0)
+        cur0, err = quad(fermi_func, Rm, Rp,
+                         weight='cauchy', wvar=alpha, epsabs=1.0e-6,
+                         epsrel=1.0e-6, limit=limit)
+        cur0 = cur0 + (-1.0j*pi*fermi_func(alpha) if Rm < alpha < Rp else 0)
         cur1 = cur0 + log(abs((Rm-alpha)/(Rp-alpha)))
-        cur1 = cur1 + (1.0j*pi if alpha < Rp and alpha > Rm else 0)
+        cur1 = cur1 + (1.0j*pi if Rm < alpha < Rp else 0)
         #
-        const0 = T*((-Rm if Rm < -40 else log(1+exp(-Rm)))
-                   -(-Rp if Rp < -40 else log(1+exp(-Rp))))
+        const0 = T*((-Rm if Rm < -40 else log(1+exp(-Rm))) -
+                    (-Rp if Rp < -40 else log(1+exp(-Rp))))
         const1 = const0 + Dm-Dp
         #
         en0 = const0 + Ecb*cur0
@@ -117,8 +118,8 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
         en1 = -T*Rp + Ecb*cur1
     elif itype == 2:
         alpha, Rm, Rp = (Ecb-mu)/T, (Dm-mu)/T, (Dp-mu)/T
-        cur0 = -1.0j*pi*fermi_func(alpha) if alpha < Rp and alpha > Rm else 0
-        cur1 = cur0 + (1.0j*pi if alpha < Rp and alpha > Rm else 0)
+        cur0 = -1.0j*pi*fermi_func(alpha) if Rm < alpha < Rp else 0
+        cur1 = cur0 + (1.0j*pi if Rm < alpha < Rp else 0)
         en0 = Ecb*cur0
         en1 = Ecb*cur1
     elif itype == 3:
@@ -127,8 +128,11 @@ def func_1vN(Ecb, mu, T, Dm, Dp, itype, limit):
         cur1 = cur0 + 1.0j*pi
         en0 = Ecb*cur0
         en1 = Ecb*cur1
-    #-------------------------
+    else:
+        cur0, cur1, en0, en1 = 0, 0, 0, 0
+    # -------------------------
     return np.array([cur0, cur1, en0, en1])
+
 
 def kernel_fredriksen(n):
     """
@@ -141,18 +145,19 @@ def kernel_fredriksen(n):
 
     Returns
     -------
-    array
+    ndarray
         Kernel used when performing Hilbert transform using FFT.
     """
     aux = np.zeros(n+1, dtype=doublenp)
-    for i in range(1,n+1):
+    for i in range(1, n+1):
         aux[i] = i*log(i)
     m = 2*n
     ker = np.zeros(m, dtype=doublenp)
-    for i in range(1,n):
+    for i in range(1, n):
         ker[i] = aux[i+1]-2*aux[i]+aux[i-1]
         ker[m-i] = -ker[i]
     return fft(ker)/pi
+
 
 def hilbert_fredriksen(f, ker=None):
     """
@@ -160,19 +165,19 @@ def hilbert_fredriksen(f, ker=None):
 
     Parameters
     ----------
-    f : array
+    f : ndarray
         Values of function on a equidistant grid.
-    ker : array
+    ker : ndarray
         Kernel used when performing Hilbert transform using FFT.
 
     Returns
     -------
-    array
+    ndarray
         Hilbert transform of f.
     """
     if ker is None:
         ker = kernel_fredriksen(len(f))
     n = len(f)
-    fpad = fft(np.concatenate( (f,np.zeros(len(ker)-n)) ))
+    fpad = fft(np.concatenate((f, np.zeros(len(ker)-n))))
     r = ifft(fpad*ker)
     return r[0:n]

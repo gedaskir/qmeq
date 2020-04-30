@@ -39,14 +39,14 @@ from __future__ import division
 from __future__ import print_function
 
 from .aprclass import Approach
-from .aprclass import Approach_elph
-from .aprclass import Approach2vN
+from .aprclass import ApproachElPh
+from .aprclass import ApproachBase2vN
 from .builder.builder import Builder
-from .builder.builder_base import Builder_base
-from .builder.builder_base import Builder_many_body
+from .builder.builder_base import BuilderBase
+from .builder.builder_base import BuilderManyBody
 from .builder.builder_base import ModelParameters
-from .builder.builder_elph import Builder_elph
-from .builder.builder_elph import Builder_many_body_elph
+from .builder.builder_elph import BuilderElPh
+from .builder.builder_elph import BuilderManyBodyElPh
 from .builder.funcprop import FunctionProperties
 from .indexing import StateIndexing
 from .indexing import StateIndexingPauli
@@ -55,5 +55,9 @@ from .indexing import StateIndexingDMc
 from .leadstun import LeadsTunneling
 from .baths import PhononBaths
 from .qdot import QuantumDot
+
+# Legacy class names
+from .builder.builder_base import BuilderManyBody as Builder_many_body
+from .builder.builder_elph import BuilderElPh as Builder_elph
 
 __version__ = '1.1'

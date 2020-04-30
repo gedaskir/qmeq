@@ -14,11 +14,11 @@ from .specfunc import hilbert_fredriksen
 from .specfunc_elph import Func as pyFunc
 
 try:
-    from .specfuncc import c_fermi_func
-    from .specfuncc import c_func_pauli
-    from .specfuncc import c_func_1vN
-    from .specfuncc_elph import Func
-except:
+    from .c_specfunc import c_fermi_func
+    from .c_specfunc import c_func_pauli
+    from .c_specfunc import c_func_1vN
+    from .c_specfunc_elph import Func
+except ImportError:
     print("WARNING: Cannot import Cython compiled modules for the special functions (specfunc.__init__.py).")
     c_fermi_func = fermi_func
     c_func_pauli = func_pauli

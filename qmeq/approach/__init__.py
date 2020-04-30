@@ -27,5 +27,5 @@ try:
     sys.modules['qmeq.approach.c_lindblad'] = lindblad
     sys.modules['qmeq.approach.c_neumann1'] = neumann1
     sys.modules['qmeq.approach.c_neumann2'] = neumann2
-except:
+except ImportError:
     pass

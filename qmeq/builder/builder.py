@@ -4,12 +4,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .builder_base import Builder_base
-from .builder_base import Builder_many_body
-from .builder_elph import Builder_elph
-from .builder_elph import Builder_many_body_elph
+from .builder_base import BuilderBase
+from .builder_base import BuilderManyBody
+from .builder_elph import BuilderElPh
+from .builder_elph import BuilderManyBodyElPh
 
-class Builder(Builder_base):
+
+# noinspection PyUnresolvedReferences
+class Builder(BuilderBase):
     """
     Class for building the system for stationary transport calculations.
 
@@ -57,7 +59,7 @@ class Builder(Builder_base):
     indexing : str
         String determining type of the indexing. Possible values are 'Lin', 'charge', 'sz', 'ssq'.
         Note that 'sz' indexing for Fock states is used for 'ssq' indexing, with
-        additional specification of eigensates in Fock basis.
+        additional specification of eigenstates in Fock basis.
     symmetry : str
         String determining that the states will be augmented by the symmetry.
         Possible value is 'spin'.
@@ -87,11 +89,11 @@ class Builder(Builder_base):
         itype=0: the principal parts are evaluated using Fortran integration package QUADPACK \
                  routine dqawc through SciPy.
         itype=1: the principal parts are kept, but approximated by digamma function valid for \
-                 large bandwidht D.
+                 large bandwidth D.
         itype=2: the principal parts are neglected.
         itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
     dqawc_limit : int
-        For itype=0 dqawc_limit determines the maximum number of subintervals
+        For itype=0 dqawc_limit determines the maximum number of sub-intervals
         in the partition of the given integration interval.
     mfreeq : bool
         If mfreeq=True the matrix free solution method is used for first order methods.
@@ -126,7 +128,7 @@ class Builder(Builder_base):
     funcp : FunctionProperties
         FunctionProperties object.
     Ea : array
-        nmany by 1 array scontaining many-body Hamiltonian eigenvalues.
+        nmany by 1 array containing many-body Hamiltonian eigenvalues.
     Tba : array
         nleads by nmany by nmany array, which contains many-body tunneling amplitude matrix,
         which is used in calculations.
@@ -150,17 +152,17 @@ class Builder(Builder_base):
     """
 
     @classmethod
-    def base(self, *args, **kwargs):
-        return Builder_base(*args, **kwargs)
+    def base(cls, *args, **kwargs):
+        return BuilderBase(*args, **kwargs)
 
     @classmethod
-    def many_body(self, *args, **kwargs):
-        return Builder_many_body(*args, **kwargs)
+    def many_body(cls, *args, **kwargs):
+        return BuilderManyBody(*args, **kwargs)
 
     @classmethod
-    def elph(self, *args, **kwargs):
-        return Builder_elph(*args, **kwargs)
+    def elph(cls, *args, **kwargs):
+        return BuilderElPh(*args, **kwargs)
 
     @classmethod
-    def many_body_elph(self, *args, **kwargs):
-        return Builder_many_body_elph(*args, **kwargs)
+    def many_body_elph(cls, *args, **kwargs):
+        return BuilderManyBodyElPh(*args, **kwargs)

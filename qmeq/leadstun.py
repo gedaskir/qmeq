@@ -16,6 +16,7 @@ from .indexing import ssq_to_ind
 
 from .mytypes import doublenp
 
+
 def construct_Tba(leads, tleads, Tba_=None):
     """
     Constructs many-body tunneling amplitude matrix Tba from single particle
@@ -28,13 +29,13 @@ def construct_Tba(leads, tleads, Tba_=None):
     tleads : dict
         Dictionary containing single particle tunneling amplitudes.
         tleads[(lead, state)] = tunneling amplitude.
-    Tba_ : None or array
+    Tba_ : None or ndarray
         nbaths by nmany by nmany numpy array containing old values of Tba.
-        The values in tleads are added to Tba\_.
+        The values in tleads are added to Tba_.
 
     Returns
     -------
-    Tba : array
+    Tba : ndarray
         nleads by nmany by nmany numpy array containing many-body tunneling amplitudes.
         The returned Tba corresponds to Fock basis.
     """
@@ -67,6 +68,7 @@ def construct_Tba(leads, tleads, Tba_=None):
                 Tba[j3, ind, j1] += fsign*np.conj(tamp)
     return Tba
 
+
 def construct_full_pmtr(vecslst, si, mtype=complex):
     """
     From definite charge eigenvectors constructs full eigenvectors
@@ -74,7 +76,7 @@ def construct_full_pmtr(vecslst, si, mtype=complex):
 
     Parameters
     ----------
-    veclst : list of arrays
+    vecslst : list of ndarrays
         List of size ncharge containing arrays defining eigenvector matrices for given charge.
     si : StateIndexing
         StateIndexing or StateIndexingDM object.
@@ -83,7 +85,7 @@ def construct_full_pmtr(vecslst, si, mtype=complex):
 
     Returns
     -------
-    pmtr : array
+    pmtr : ndarray
         nmany by nmany numpy array containing many-body eigenvectors.
     """
     pmtr = np.zeros((si.nmany, si.nmany), dtype=mtype)
@@ -97,7 +99,7 @@ def construct_full_pmtr(vecslst, si, mtype=complex):
                 for j1, j2 in itertools.product(range(len(si.szlst[charge][szind])),
                                                 range(len(si.szlst[charge][szind]))):
                     (pmtr[si.szlst[charge][szind][j1], si.szlst[charge][szind][j2]]) = (
-                        vecslst[charge][szind][j1, j2] )
+                        vecslst[charge][szind][j1, j2])
     elif si.indexing == 'ssq':
         # Iterate over charges
         for charge in range(si.ncharge):
@@ -111,7 +113,7 @@ def construct_full_pmtr(vecslst, si, mtype=complex):
                     for j1, j2 in itertools.product(range(len(si.szlst[charge][szind])),
                                                     range(len(si.ssqlst[charge][szind][ssqind]))):
                         (pmtr[si.szlst[charge][szind][j1], si.ssqlst[charge][szind][ssqind][j2]]) = (
-                            vecslst[charge][szind][ssqind][j1, j2] )
+                            vecslst[charge][szind][ssqind][j1, j2])
     else:
         # Iterate over charges
         for charge in range(si.ncharge):
@@ -121,15 +123,18 @@ def construct_full_pmtr(vecslst, si, mtype=complex):
                 pmtr[si.chargelst[charge][j1], si.chargelst[charge][j2]] = vecslst[charge][j1, j2]
     return pmtr
 
-def rotate_Tba(Tba0, vecslst, si, indexing='n', mtype=complex):
+
+def rotate_Tba(Tba0, vecslst, si, indexing=None, mtype=complex):
     """
     Rotates tunneling amplitude matrix Tba0 in Fock basis to Tba,
     which is in eigenstate basis of the quantum dot.
 
     Parameters
     ----------
-    Tba0 : array
+    Tba0 : ndarray
         nleads by nmany by nmany numpy array, giving tunneling amplitudes in Fock basis.
+    vecslst : list of ndarrays
+        List of size ncharge containing arrays defining eigenvector matrices for given charge.
     si : StateIndexing
         StateIndexing or StateIndexingDM object.
     indexing : string
@@ -139,11 +144,11 @@ def rotate_Tba(Tba0, vecslst, si, indexing='n', mtype=complex):
 
     Returns
     -------
-    Tba : array
+    Tba : ndarray
         nleads by nmany by nmany numpy array containing many-body tunneling amplitudes.
         The returned Tba corresponds to the quantum dot eigenbasis.
     """
-    if indexing == 'n':
+    if indexing is None:
         indexingp = si.indexing
     else:
         indexingp = indexing
@@ -162,7 +167,7 @@ def rotate_Tba(Tba0, vecslst, si, indexing='n', mtype=complex):
             # and nleads//2+1 to nleads-1 correspond to spin down
             if charge >= si.ncharge//2:
                 szrng = szrng[0:-1] if l < si.nleads//2 else szrng[1:]
-            # s=+1/-1 add/remove spin up/donw
+            # s=+1/-1 add/remove spin up/down
             s = +1 if l < si.nleads//2 else -1
             for sz in szrng:
                 szind = sz_to_ind(sz, charge, si.nsingle)
@@ -184,7 +189,7 @@ def rotate_Tba(Tba0, vecslst, si, indexing='n', mtype=complex):
             # and nleads//2+1 to nleads-1 correspond to spin down
             if charge >= si.ncharge//2:
                 szrng = szrng[0:-1] if l < si.nleads//2 else szrng[1:]
-            # s=+1/-1 add/remove spin up/donw
+            # s=+1/-1 add/remove spin up/down
             s = +1 if l < si.nleads//2 else -1
             for sz in szrng:
                 szind = sz_to_ind(sz, charge, si.nsingle)
@@ -212,7 +217,8 @@ def rotate_Tba(Tba0, vecslst, si, indexing='n', mtype=complex):
                                                     vecslst[charge+1]))
             Tba[l, i3:i4][:, i1:i2] = Tba[l, i1:i2][:, i3:i4].conj().T
     return Tba
-#---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+
 
 def make_tleads_mtr(tleads, nleads, nsingle, mtype=complex):
     """
@@ -231,15 +237,20 @@ def make_tleads_mtr(tleads, nleads, nsingle, mtype=complex):
 
     Returns
     -------
-    tleads_mtr : array
+    tleads_mtr : ndarray
         nleads by nsingle numpy array containing single particle tunneling amplitudes.
     """
     tleads_mtr = np.zeros((nleads, nsingle), dtype=mtype)
     for j0 in tleads:
-        if isinstance(tleads, list):    j1, j2, tamp = j0
-        elif isinstance(tleads, dict): (j1, j2), tamp = j0, tleads[j0]
+        if isinstance(tleads, list):
+            j1, j2, tamp = j0
+        elif isinstance(tleads, dict):
+            (j1, j2), tamp = j0, tleads[j0]
+        else:
+            continue
         tleads_mtr[j1, j2] += tamp
     return tleads_mtr
+
 
 def make_tleads_dict(tleads, si, add_zeros=False):
     """
@@ -247,10 +258,12 @@ def make_tleads_dict(tleads, si, add_zeros=False):
 
     Parameters
     ----------
-    tleads : list, dict, or array
+    tleads : list, dict, or ndarray
         Contains single particle tunneling amplitudes.
     si : StateIndexing
         StateIndexing or StateIndexingDM object.
+    add_zeros : bool
+        Flag indicating whether to add zeros to dictionary.
 
     Returns
     -------
@@ -264,14 +277,16 @@ def make_tleads_dict(tleads, si, add_zeros=False):
         tleads_dict = {}
         for j0 in tleads:
             j1, j2, tamp = j0
-            tleads_dict.update({(j1, j2):tamp})
+            tleads_dict.update({(j1, j2): tamp})
     elif isinstance(tleads, np.ndarray):
         nleads, nsingle = tleads.shape
         tleads_dict = {}
         for j1 in range(nleads):
             for j2 in range(nsingle):
                 if tleads[j1, j2] != 0 or add_zeros:
-                    tleads_dict.update({(j1, j2):tleads[j1, j2]})
+                    tleads_dict.update({(j1, j2): tleads[j1, j2]})
+    else:
+        return {}
     #
     if si.symmetry is 'spin':
         tleads_dict_spin = dict(tleads_dict)
@@ -279,10 +294,11 @@ def make_tleads_dict(tleads, si, add_zeros=False):
             j1, j2 = j0
             tamp = tleads_dict[j0]
             tleads_dict_spin.update({(j1+si.nleads_sym,
-                                      j2+si.nsingle_sym):tamp})
+                                      j2+si.nsingle_sym): tamp})
         return tleads_dict_spin
     else:
         return tleads_dict
+
 
 def make_array(lst_old, lst, si, npar=None, use_symmetry=True):
     """
@@ -290,14 +306,18 @@ def make_array(lst_old, lst, si, npar=None, use_symmetry=True):
 
     Parameters
     ----------
-    lst_old,lst : list, dict, or array
+    lst_old,lst : list, dict, or ndarray
         Contains lead parameters.
     si : StateIndexing
         StateIndexing or StateIndexingDM object.
+    npar : int
+        Number of entries in the returned array. Default is si.nleads_sym.
+    use_symmetry : bool
+        Flag indicating whether symmetry specified in si.symmetry should be used.
 
     Returns
     -------
-    lst_arr : array
+    lst_arr : ndarray
         Numpy array containing lead parameters.
     """
     #
@@ -323,17 +343,18 @@ def make_array(lst_old, lst, si, npar=None, use_symmetry=True):
     else:
         return lst_arr
 
+
 def make_array_dlst(dlst_old, dlst, si, npar=None, use_symmetry=True):
     if npar is None:
         npar = si.nleads_sym
     if dlst_old is None:
-        lst_arr = np.zeros((npar,2), dtype=doublenp)
+        lst_arr = np.zeros((npar, 2), dtype=doublenp)
     else:
         lst_arr = dlst_old[0:npar]
     #
     if isinstance(dlst, numbers.Number):
-        lst_arr[:,0] = -dlst*np.ones(npar, dtype=doublenp)
-        lst_arr[:,1] = +dlst*np.ones(npar, dtype=doublenp)
+        lst_arr[:, 0] = -dlst*np.ones(npar, dtype=doublenp)
+        lst_arr[:, 1] = +dlst*np.ones(npar, dtype=doublenp)
     elif isinstance(dlst, dict):
         for j1 in dlst:
             if isinstance(dlst[j1], numbers.Number):
@@ -342,8 +363,8 @@ def make_array_dlst(dlst_old, dlst, si, npar=None, use_symmetry=True):
                 lst_arr[j1] = dlst[j1]
     elif isinstance(dlst, (list, np.ndarray)):
         if isinstance(dlst[0], numbers.Number):
-            lst_arr[:,0] = -np.array(dlst, dtype=doublenp)
-            lst_arr[:,1] = +np.array(dlst, dtype=doublenp)
+            lst_arr[:, 0] = -np.array(dlst, dtype=doublenp)
+            lst_arr[:, 1] = +np.array(dlst, dtype=doublenp)
         else:
             lst_arr = np.array(dlst, dtype=doublenp)
     #
@@ -351,7 +372,8 @@ def make_array_dlst(dlst_old, dlst, si, npar=None, use_symmetry=True):
         return np.concatenate((lst_arr, lst_arr))
     else:
         return lst_arr
-#---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+
 
 class LeadsTunneling(object):
     """
@@ -361,23 +383,23 @@ class LeadsTunneling(object):
     ----------
     nleads : int
         Number of the leads.
-    tleads : dict, list or array
+    tleads : dict, list or ndarray
         Dictionary, list or numpy array defining single particle tunneling amplitudes.
         numpy array has to be nleads by nsingle.
     si : StateIndexing
         StateIndexing or StateIndexingDM object.
-    mulst : dict, list or array
+    mulst : dict, list or ndarray
         Dictionary, list or numpy array containing chemical potentials of the leads.
-    tlst : dict, list or array
+    tlst : dict, list or ndarray
         Dictionary, list or numpy array containing temperatures of the leads.
-    dlst : dict, list or array
+    dlst : dict, list or ndarray
         Dictionary, list or numpy array containing bandwidths of the leads.
     mtype : type
         Defines type of Tba0 and Tba matrices. For example, float, complex, etc.
-    Tba0 : array
+    Tba0 : ndarray
         nleads by nmany by nmany array, which contains many-body tunneling amplitude matrix
         in Fock basis.
-    Tba : array
+    Tba : ndarray
         nleads by nmany by nmany array, which contains many-body tunneling amplitude matrix,
         which is used in calculations.
     """
@@ -406,7 +428,7 @@ class LeadsTunneling(object):
 
         Parameters
         ----------
-        tleads,mulst,tlst,dlst : dict
+        tleads,mulst,tlst,dlst : dict, list, int
             Dictionaries describing what values to add.
             For example, tleads[(lead, state)] = value to add.
         updateq : bool
@@ -426,8 +448,10 @@ class LeadsTunneling(object):
             if updateq:
                 tleads = make_tleads_dict(tleads, self.si)
                 for j0 in tleads:
-                    try:    self.tleads[j0] += tleads[j0]       # if tleads[j0] != 0:
-                    except: self.tleads.update({j0:tleads[j0]}) # if tleads[j0] != 0:
+                    if j0 in self.tleads:
+                        self.tleads[j0] += tleads[j0]
+                    else:
+                        self.tleads.update({j0: tleads[j0]})
             self.Tba0 = construct_Tba(self, tleads, self.Tba0)
 
     def change(self, tleads=None, mulst=None, tlst=None, dlst=None):
@@ -437,7 +461,7 @@ class LeadsTunneling(object):
 
         Parameters
         ----------
-        tleads,mulst,tlst,dlst : dict
+        tleads,mulst,tlst,dlst : dict, list, int
             Dictionaries describing what values to change.
             For example, tleads[(lead, state)] = the new value.
         """
@@ -453,27 +477,27 @@ class LeadsTunneling(object):
             # Find the differences from the previous tunneling amplitudes
             tleads_add = {}
             for j0 in tleads:
-                try:
+                if j0 in self.tleads:
                     tleads_diff = tleads[j0]-self.tleads[j0]
                     if tleads_diff != 0:
-                        tleads_add.update({j0:tleads_diff})
+                        tleads_add.update({j0: tleads_diff})
                         self.tleads[j0] += tleads_diff
-                except:
+                else:
                     tleads_diff = tleads[j0]
                     if tleads_diff != 0:
-                        tleads_add.update({j0:tleads_diff})
-                        self.tleads.update({j0:tleads_diff})
+                        tleads_add.update({j0: tleads_diff})
+                        self.tleads.update({j0: tleads_diff})
             # Add the differences
             self.add(tleads_add, updateq=False, lstq=False)
 
-    def rotate(self, vecslst, indexing='n'):
+    def rotate(self, vecslst, indexing=None):
         """
         Rotates tunneling amplitude matrix Tba0 in Fock basis to Tba,
         which is in eigenstate basis of the quantum dot.
 
         Parameters
         ----------
-        veclst : list of arrays
+        vecslst : list of ndarrays
             List of size ncharge containing arrays defining eigenvector matrices for given charge.
         indexing : string
             Specifies what kind of rotation procedure to use. Default is si.indexing.
@@ -492,8 +516,12 @@ class LeadsTunneling(object):
 
         Parameters
         ----------
-        tleads : array
+        nleads : int
+            Number of leads.
+        tleads : dict
             The new single-particle tunneling amplitudes. See attribute tleads.
+        mtype : type
+            Defines type of Tba0 and Tba matrices. For example, float, complex, etc.
         """
         si = self.si
         si.nleads = nleads

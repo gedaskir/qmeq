@@ -6,40 +6,39 @@ from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...mytypes import complexnp
 from ...mytypes import doublenp
 
 from ...specfunc.specfunc import func_pauli
 from ...aprclass import Approach
 
-def generate_norm_vec(sys, length):
+
+def generate_norm_vec(self, length):
     """
     Generates normalisation condition for 1vN approach.
 
     Parameters
     ----------
-    sys : Approach
+    self : Approach
         Approach object.
     length: int
         Length of the normalisation row.
 
-    Modifies:
-    sys.norm_vec : array
-        Left hand side of the normalisation condition.
-    sys.bvec : array
-        Right hand side column vector for master equation.
+    self.norm_vec : array
+        (Modifies) Left hand side of the normalisation condition.
+    self.bvec : array
+        (Modifies) Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
     """
-    si, symq, norm_row = (sys.si, sys.funcp.symq, sys.funcp.norm_row)
+    si, symq, norm_row = (self.si, self.funcp.symq, self.funcp.norm_row)
 
-    sys.bvec_ext = np.zeros(length+1, dtype=doublenp)
-    sys.bvec_ext[-1] = 1
+    self.bvec_ext = np.zeros(length+1, dtype=doublenp)
+    self.bvec_ext[-1] = 1
 
-    sys.bvec = sys.bvec_ext[0:-1]
-    sys.bvec[norm_row] = 1 if symq else 0
+    self.bvec = self.bvec_ext[0:-1]
+    self.bvec[norm_row] = 1 if symq else 0
 
-    sys.norm_vec = np.zeros(length, dtype=doublenp)
-    norm_vec = sys.norm_vec
+    self.norm_vec = np.zeros(length, dtype=doublenp)
+    norm_vec = self.norm_vec
 
     for charge in range(si.ncharge):
         for b in si.statesdm[charge]:
@@ -48,22 +47,22 @@ def generate_norm_vec(sys, length):
 
     return 0
 
-def generate_paulifct(sys):
+
+def generate_paulifct(self):
     """
     Make factors used for generating Pauli master equation kernel.
 
     Parameters
     ----------
-    sys : Approach
+    self : Approach
         Approach object.
 
-    Modifies:
-    sys.paulifct : array
-        Factors used for generating Pauli master equation kernel.
+    self.paulifct : array
+        (Modifies) Factors used for generating Pauli master equation kernel.
     """
-    (E, Tba, si, mulst, tlst, dlst) = (sys.qd.Ea, sys.leads.Tba, sys.si,
-                                       sys.leads.mulst, sys.leads.tlst, sys.leads.dlst)
-    itype = sys.funcp.itype
+    (E, Tba, si, mulst, tlst, dlst) = (self.qd.Ea, self.leads.Tba, self.si,
+                                       self.leads.mulst, self.leads.tlst, self.leads.dlst)
+    itype = self.funcp.itype
     paulifct = np.zeros((si.nleads, si.ndm1, 2), dtype=doublenp)
     for charge in range(si.ncharge-1):
         ccharge = charge+1
@@ -73,38 +72,38 @@ def generate_paulifct(sys):
             Ecb = E[c]-E[b]
             for l in range(si.nleads):
                 xcb = (Tba[l, b, c]*Tba[l, c, b]).real
-                rez = func_pauli(Ecb, mulst[l], tlst[l], dlst[l,0], dlst[l,1], itype)
+                rez = func_pauli(Ecb, mulst[l], tlst[l], dlst[l, 0], dlst[l, 1], itype)
                 paulifct[l, cb, 0] = xcb*rez[0]
                 paulifct[l, cb, 1] = xcb*rez[1]
-    sys.paulifct = paulifct
+    self.paulifct = paulifct
     return 0
 
-#---------------------------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------
 # Pauli master equation
-#---------------------------------------------------------------------------------------------------
-def generate_kern_pauli(sys):
+# ---------------------------------------------------------------------------------------------------
+def generate_kern_pauli(self):
     """
     Generate Pauli master equation kernel.
 
     Parameters
     ----------
-    sys : Approach
+    self : Approach
         Approach object.
 
-    Modifies:
-    sys.kern : array
-        Kernel matrix for Pauli master equation.
-    sys.bvec : array
-        Right hand side column vector for master equation.
+    self.kern : array
+        (Modifies) Kernel matrix for Pauli master equation.
+    self.bvec : array
+        (Modifies) Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
     """
-    (paulifct, si) = (sys.paulifct, sys.si)
+    (paulifct, si) = (self.paulifct, self.si)
 
-    sys.kern_ext = np.zeros((si.npauli+1, si.npauli), dtype=doublenp)
-    sys.kern = sys.kern_ext[0:-1, :]
+    self.kern_ext = np.zeros((si.npauli+1, si.npauli), dtype=doublenp)
+    self.kern = self.kern_ext[0:-1, :]
 
-    generate_norm_vec(sys, si.npauli)
-    kern = sys.kern
+    generate_norm_vec(self, si.npauli)
+    kern = self.kern
     for charge in range(si.ncharge):
         for b in si.statesdm[charge]:
             bb = si.get_ind_dm0(b, b, charge)
@@ -124,24 +123,24 @@ def generate_kern_pauli(sys):
                         kern[bb, cc] += paulifct[l, cb, 1]
     return 0
 
-def generate_current_pauli(sys):
+
+def generate_current_pauli(self):
     """
     Calculates currents using Pauli master equation approach.
 
     Parameters
     ----------
-    sys : Approach
+    self : Approach
         Approach object.
 
-    Modifies:
-    sys.current : array
-        Values of the current having nleads entries.
-    sys.energy_current : array
-        Values of the energy current having nleads entries.
-    sys.heat_current : array
-        Values of the heat current having nleads entries.
+    self.current : array
+        (Modifies) Values of the current having nleads entries.
+    self.energy_current : array
+        (Modifies) Values of the energy current having nleads entries.
+    self.heat_current : array
+        (Modifies) Values of the heat current having nleads entries.
     """
-    (phi0, E, paulifct, si) = (sys.phi0, sys.qd.Ea, sys.paulifct, sys.si)
+    (phi0, E, paulifct, si) = (self.phi0, self.qd.Ea, self.paulifct, self.si)
     current = np.zeros(si.nleads, dtype=doublenp)
     energy_current = np.zeros(si.nleads, dtype=doublenp)
     for charge in range(si.ncharge-1):
@@ -157,20 +156,21 @@ def generate_current_pauli(sys):
                     fct2 = -phi0[cc]*paulifct[l, cb, 1]
                     current[l] += fct1 + fct2
                     energy_current[l] += -(E[b]-E[c])*(fct1 + fct2)
-    sys.current = current
-    sys.energy_current = energy_current
-    sys.heat_current = energy_current - current*sys.leads.mulst
+    self.current = current
+    self.energy_current = energy_current
+    self.heat_current = energy_current - current*self.leads.mulst
     return 0
 
-def generate_vec_pauli(phi0, sys):
+
+def generate_vec_pauli(phi0, self):
     """
     Acts on given phi0 with Liouvillian of Pauli approach.
 
     Parameters
     ----------
-    phi0 : array
+    phi0 : ndarray
         Some values of zeroth order density matrix elements.
-    sys : Approach
+    self : Approach
         Approach object.
 
     Returns
@@ -179,7 +179,7 @@ def generate_vec_pauli(phi0, sys):
         Values of zeroth order density matrix elements
         after acting with Liouvillian, i.e., dphi0_dt=L(phi0p).
     """
-    (paulifct, si, norm_row) = (sys.paulifct, sys.si, sys.funcp.norm_row)
+    (paulifct, si, norm_row) = (self.paulifct, self.si, self.funcp.norm_row)
     dphi0_dt = np.zeros(si.npauli, dtype=doublenp)
     norm = 0
     for charge in range(si.ncharge):
@@ -203,11 +203,12 @@ def generate_vec_pauli(phi0, sys):
     dphi0_dt[norm_row] = norm-1
     return dphi0_dt
 
-class Approach_pyPauli(Approach):
+
+class ApproachPyPauli(Approach):
 
     kerntype = 'pyPauli'
     generate_fct = staticmethod(generate_paulifct)
     generate_kern = staticmethod(generate_kern_pauli)
     generate_current = staticmethod(generate_current_pauli)
     generate_vec = staticmethod(generate_vec_pauli)
-#---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------

@@ -10,12 +10,12 @@ ctypedef np.complex128_t complex_t
 cdef class Func:
     cpdef double_t eval(self, double_t x)
 
-cdef class Func_bose:
+cdef class FuncBose:
     cdef double_t eval(self, double_t x)
 
-cdef class Func_pauli_elph:
+cdef class FuncPauliElPh:
     cdef Func dos
-    cdef Func_bose bose
+    cdef FuncBose bose
     cdef double_t T, eps
     cdef double_t [:] tlst
     cdef double_t [:, :] dlst
@@ -24,9 +24,9 @@ cdef class Func_pauli_elph:
     cdef public double_t val
     cpdef void eval(self, double_t Ebbp, int_t l)
 
-cdef class Func_1vN_elph:
+cdef class Func1vNElPh:
     cdef Func dos
-    cdef Func_bose bose
+    cdef FuncBose bose
     cdef double_t T, eps
     cdef double_t [:] tlst
     cdef double_t [:, :] dlst

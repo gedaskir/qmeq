@@ -5,12 +5,11 @@ import numpy as np
 import itertools
 
 from .indexing import szrange
-from .indexing import ssqrange
 from .indexing import sz_to_ind
-from .indexing import ssq_to_ind
 from .leadstun import construct_full_pmtr
 from .leadstun import make_array
 from .leadstun import make_array_dlst
+
 
 def elph_construct_Vbbp(baths, velph, Vbbp_=None):
     """
@@ -19,20 +18,18 @@ def elph_construct_Vbbp(baths, velph, Vbbp_=None):
 
     Parameters
     ----------
+    baths : PhononBaths
+        PhononBaths object.
     velph : dict
         Dictionary containing electron-phonon coupling written in single particle basis.
         velph[(bath, i, j)] = Vij, where i, j are the state labels.
-    si : StateIndexing
-        StateIndexing or StateIndexingDM object.
-    mtype : type
-        Defines type of Vbbp matrix. For example, float, complex, etc.
-    Vbbp_ : None or array
+    Vbbp_ : None or ndarray
         nbaths by nmany by nmany numpy array containing old values of Vbbp.
         The values in velph are added to Vbbp\_.
 
     Returns
     -------
-    Vbbp : array
+    Vbbp : ndarray
         nbaths by nmany by nmany numpy array containing many-body electron-phonon coupling matrix.
         The returned Vbbp corresponds to Fock basis.
     """
@@ -64,15 +61,19 @@ def elph_construct_Vbbp(baths, velph, Vbbp_=None):
                 Vbbp[j4, ind, j1] += vamp*fsign
     return Vbbp
 
-def elph_rotate_Vbbp(Vbbp0, vecslst, si, indexing='n', mtype=complex):
+
+def elph_rotate_Vbbp(Vbbp0, vecslst, si, indexing=None, mtype=complex):
     """
     Rotates electron-phonon coupling matrix Vbbp0 in Fock basis to Vbbp,
     which is in eigenstate basis of the quantum dot.
 
     Parameters
     ----------
-    Vbbp0 : array
+    Vbbp0 : ndarray
         nbaths by nmany by nmany numpy array, giving tunneling amplitudes in Fock basis.
+    vecslst : list of arrays
+        List containing ncharge entries, where vecslst[charge] is an array corresponding to
+        Hamiltonian eigenvectors for definite charge.
     si : StateIndexing
         StateIndexing or StateIndexingDM object.
     indexing : string
@@ -82,11 +83,11 @@ def elph_rotate_Vbbp(Vbbp0, vecslst, si, indexing='n', mtype=complex):
 
     Returns
     -------
-    Vbbp : array
+    Vbbp : ndarray
         nbaths by nmany by nmany numpy array containing many-body electron-phonon coupling matrix.
         The returned Vbbp corresponds to the quantum dot eigenbasis.
     """
-    if indexing == 'n':
+    if indexing is None:
         indexingp = si.indexing
     else:
         indexingp = indexing
@@ -94,7 +95,7 @@ def elph_rotate_Vbbp(Vbbp0, vecslst, si, indexing='n', mtype=complex):
     if indexingp == 'Lin':
         pmtr = construct_full_pmtr(vecslst, si, mtype)
         for l in range(si.nbaths):
-            # Calculate many-body tunneling matrix Vbbp=P^(-1).Xbbp0.P
+            # Calculate many-body tunneling matrix Vbbp=P^(-1).Vbbp0.P
             # in eigenbasis of Hamiltonian from tunneling matrix Vbbp0 in Fock basis.
             # pmtr.conj().T denotes the conjugate transpose of pmtr.
             Vbbp[l] = np.dot(pmtr.conj().T, np.dot(Vbbp0[l], pmtr))
@@ -107,7 +108,8 @@ def elph_rotate_Vbbp(Vbbp0, vecslst, si, indexing='n', mtype=complex):
                     continue
                 i1 = si.szlst[charge][szind][0]
                 i2 = si.szlst[charge][szind][-1] + 1
-                Vbbp[l, i1:i2][:, i1:i2] = np.dot(vecslst[charge][szind].conj().T, np.dot(Vbbp0[l, i1:i2][:, i1:i2], vecslst[charge][szind]))
+                Vbbp[l, i1:i2][:, i1:i2] = np.dot(vecslst[charge][szind].conj().T,
+                                                  np.dot(Vbbp0[l, i1:i2][:, i1:i2], vecslst[charge][szind]))
     elif indexingp == 'ssq':
         for l, charge in itertools.product(range(si.nbaths), range(si.ncharge)):
             szrng = szrange(charge, si.nsingle)
@@ -123,9 +125,10 @@ def elph_rotate_Vbbp(Vbbp0, vecslst, si, indexing='n', mtype=complex):
                 continue
             i1 = si.chargelst[charge][0]
             i2 = si.chargelst[charge][-1] + 1
-            Vbbp[l, i1:i2][:, i1:i2] = np.dot(vecslst[charge].conj().T, np.dot(Vbbp0[l, i1:i2][:, i1:i2], vecslst[charge]))
+            Vbbp[l, i1:i2][:, i1:i2] = np.dot(vecslst[charge].conj().T,
+                                              np.dot(Vbbp0[l, i1:i2][:, i1:i2], vecslst[charge]))
     return Vbbp
-#---------------------------------------------------------------------------------------------------
+
 
 def make_velph_dict(velph, si, add_zeros=False):
     """
@@ -133,8 +136,12 @@ def make_velph_dict(velph, si, add_zeros=False):
 
     Parameters
     ----------
-    velph : list, dict, or array
+    velph : list, dict, or ndarray
         Contains single-particle electron-phonon couplings.
+    si : StateIndexing
+        StateIndexing or StateIndexingDM object.
+    add_zeros : bool
+        Flag indicating whether to add zeros to dictionary.
 
     Returns
     -------
@@ -148,13 +155,15 @@ def make_velph_dict(velph, si, add_zeros=False):
         velph_dict = {}
         for j0 in velph:
             j1, j2, j3, vamp = j0
-            velph_dict.update({(j1, j2, j3):vamp})
+            velph_dict.update({(j1, j2, j3): vamp})
     elif isinstance(velph, np.ndarray):
         nbaths, nsingle1, nsingle2 = velph.shape
         velph_dict = {}
         for j1, j2, j3 in itertools.product(range(nbaths), range(nsingle1), range(nsingle2)):
             if velph[j1, j2, j3] != 0 or add_zeros:
-                velph_dict.update({(j1, j2, j3):velph[j1, j2, j3]})
+                velph_dict.update({(j1, j2, j3): velph[j1, j2, j3]})
+    else:
+        velph_dict = {}
     #
     if si.symmetry is 'spin':
         velph_dict_spin = dict(velph_dict)
@@ -163,12 +172,11 @@ def make_velph_dict(velph, si, add_zeros=False):
             vamp = velph_dict[j0]
             velph_dict_spin.update({(j1,
                                      j2+si.nsingle_sym,
-                                     j3+si.nsingle_sym):vamp})
+                                     j3+si.nsingle_sym): vamp})
         return velph_dict_spin
     else:
         return velph_dict
 
-#---------------------------------------------------------------------------------------------------
 
 class PhononBaths(object):
     """
@@ -178,20 +186,20 @@ class PhononBaths(object):
     ----------
     nbaths : int
         Number of the phonon baths.
-    velph : list, dict, or array
+    velph : list, dict, or ndarray
         Dictionary, list or numpy array defining single-particle electron-phonon couplings.
         numpy array has to be nbaths by nsingle by nsingle.
     si : StateIndexing
         StateIndexing or StateIndexingDM object.
-    tlst_ph : dict, list or array
+    tlst_ph : dict, list or ndarray
         Dictionary, list or numpy array containing temperatures of the phonon baths.
-    dlst_ph : dict, list or array
+    dlst_ph : dict, list or ndarray
         Dictionary, list or numpy array containing bandwidths of the phonon baths.
     bath_func : list
         List of length nbaths containing density of states functions for the phonon baths.
     mtype : type
         Defines type of Vbbp0 and Vbbp matrices. For example, float, complex, etc.
-    Vbbp0 : array
+    Vbbp0 : ndarray
         nmany by nmany array, which contains many-body electron-phonon coupling matrix in Fock basis.
     Vbbp : list
         nmany by nmany array, which contains many-body electron-phonon coupling matrix,
@@ -227,6 +235,10 @@ class PhononBaths(object):
         velph : dict
             Dictionary describing what values to add.
             For example, velph[(bath, state1, state2)] = value to add.
+        tlst_ph : dict, list or ndarray
+            Dictionary, list or numpy array containing temperatures of the phonon baths.
+        dlst_ph : dict, list or ndarray
+            Dictionary, list or numpy array containing bandwidths of the phonon baths.
         updateq : bool
             Specifies if the values of the single particle couplings will be updated.
             The many-body couplings Vbbp will be updates in either case.
@@ -242,8 +254,10 @@ class PhononBaths(object):
             if updateq:
                 velph = make_velph_dict(velph, self.si)
                 for j0 in velph:
-                    try:    self.velph[j0] += velph[j0]       # if velph[j0] != 0:
-                    except: self.velph.update({j0:velph[j0]}) # if velph[j0] != 0:
+                    if j0 in self.velph:
+                        self.velph[j0] += velph[j0]
+                    else:
+                        self.velph.update({j0: velph[j0]})
             self.Vbbp0 = elph_construct_Vbbp(self, velph, self.Vbbp0)
 
     def change(self, velph=None, tlst_ph=None, dlst_ph=None):
@@ -256,6 +270,10 @@ class PhononBaths(object):
         velph : dict
             Dictionary describing which electron-phonon couplings to change.
             For example, velph[(bath, state1, state2)] = the new value.
+        tlst_ph : dict, list or ndarray
+            Dictionary, list or numpy array containing temperatures of the phonon baths.
+        dlst_ph : dict, list or ndarray
+            Dictionary, list or numpy array containing bandwidths of the phonon baths.
         """
         if tlst_ph is not None:
             self.tlst_ph = make_array(self.tlst_ph, tlst_ph, self.si, self.si.nbaths, False)
@@ -267,27 +285,27 @@ class PhononBaths(object):
             # Find the differences from the previous electron-phonon coupling
             velph_add = {}
             for j0 in velph:
-                try:
+                if j0 in self.velph:
                     velph_diff = velph[j0]-self.velph[j0]
                     if velph_diff != 0:
-                        velph_add.update({j0:velph_diff})
+                        velph_add.update({j0: velph_diff})
                         self.velph[j0] += velph_diff
-                except:
+                else:
                     velph_diff = velph[j0]
                     if velph_diff != 0:
-                        velph_add.update({j0:velph_diff})
-                        self.velph.update({j0:velph_diff})
+                        velph_add.update({j0: velph_diff})
+                        self.velph.update({j0: velph_diff})
             # Add the differences
             self.add(velph_add, updateq=False, lstq=False)
 
-    def rotate(self, vecslst, indexing='n'):
+    def rotate(self, vecslst, indexing=None):
         """
         Rotates electron-phonon coupling matrix Vbbp0 in Fock basis to Vbbp,
         which is in eigenstate basis of the quantum dot.
 
         Parameters
         ----------
-        veclst : list of arrays
+        vecslst : list of ndarrays
             List of size ncharge containing arrays defining eigenvector matrices for given charge.
         indexing : string
             Specifies what kind of rotation procedure to use. Default is si.indexing.
@@ -306,8 +324,12 @@ class PhononBaths(object):
 
         Parameters
         ----------
-        velph : array
+        nbaths : int
+            Number of the phonon baths.
+        velph : dict
             The new single-particle electron-phonon couplings. See attribute velph.
+        mtype : type
+            Defines type of Vbbp0 and Vbbp matrices. For example, float, complex, etc.
         """
         si = self.si
         si.nbaths = nbaths

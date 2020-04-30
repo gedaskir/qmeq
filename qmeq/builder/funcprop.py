@@ -1,5 +1,6 @@
 """Module containing FunctionProperties class."""
 
+
 class FunctionProperties(object):
     """
     Class containing miscellaneous variables for Approach and Approach2vN classes.
@@ -23,11 +24,11 @@ class FunctionProperties(object):
         itype=0: the principal parts are evaluated using Fortran integration package QUADPACK \
                  routine dqawc through SciPy.
         itype=1: the principal parts are kept, but approximated by digamma function valid for \
-                 large bandwidht D.
+                 large bandwidth D.
         itype=2: the principal parts are neglected.
         itype=3: the principal parts are neglected and infinite bandwidth D is assumed.
     dqawc_limit : int
-        For itype=0 dqawc_limit determines the maximum number of subintervals
+        For itype=0 dqawc_limit determines the maximum number of sub-intervals
         in the partition of the given integration interval.
     mfreeq : bool
         If mfreeq=True the matrix free solution method is used for first order methods.
@@ -53,9 +54,10 @@ class FunctionProperties(object):
         Determines whether to print the warning when the inversion of the kernel failed.
     """
 
-    def __init__(self, kerntype='2vN', symq=True, norm_row=0, solmethod='n',
-                       itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
-                       mtype_qd=float, mtype_leads=complex, kpnt=None, dband=None):
+    def __init__(self,
+                 kerntype='2vN', symq=True, norm_row=0, solmethod=None,
+                 itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
+                 mtype_qd=float, mtype_leads=complex, kpnt=None, dband=None):
         self.kerntype = kerntype
         self.symq = symq
         self.norm_row = norm_row
@@ -87,8 +89,8 @@ class FunctionProperties(object):
     def print_error(self, exept):
         if not self.suppress_err:
             print(str(exept))
-            print("WARNING: Could not invert the kernel. "+
-                  "All the transport channels may be outside the bandwidth. "+
+            print("WARNING: Could not invert the kernel. " +
+                  "All the transport channels may be outside the bandwidth. " +
                   "This warning will not be shown again.")
             self.suppress_err = True
 
