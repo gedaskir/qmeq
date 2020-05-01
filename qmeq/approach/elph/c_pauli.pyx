@@ -87,21 +87,12 @@ def generate_kern_pauli_elph(self):
     #
     cdef np.ndarray[long_t, ndim=1] mapdm0_ = si_elph.mapdm0
     #
-    norm_row = norm_rowp if symq else si.npauli
-    last_row = si.npauli-1 if symq else si.npauli
-    #
-    cdef np.ndarray[double_t, ndim=2] kern
-    #
-    if self.kern is None:
-        kern = np.zeros((last_row+1, si.npauli), dtype=doublenp)
-    else:
-        kern = self.kern
-    #
+    cdef np.ndarray[double_t, ndim=2] kern = self.kern
     for charge in range(si.ncharge):
         for b in si.statesdm[charge]:
             bb = mapdm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
             bb_bool = booldm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
-            if not (symq and bb == norm_row) and bb_bool:
+            if bb_bool:
                 for a in si.statesdm[charge]:
                     aa = mapdm0[lenlst[charge]*dictdm[a] + dictdm[a] + shiftlst0[charge]]
                     ab = mapdm0_[lenlst[charge]*dictdm[a] + dictdm[b] + shiftlst0[charge]]
@@ -117,6 +108,9 @@ def generate_kern_pauli_elph(self):
 cdef class ApproachPauli(ApproachElPh):
 
     kerntype = 'Pauli'
+
+    def get_kern_size(self):
+        return self.si.npauli
 
     cpdef generate_fct(self):
         Approach.generate_fct(self)

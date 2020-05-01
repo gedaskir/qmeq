@@ -8,6 +8,7 @@ import numpy as np
 from scipy import optimize
 
 from ..mytypes import doublenp
+from ..mytypes import complexnp
 
 
 class Approach(object):
@@ -57,6 +58,7 @@ class Approach(object):
     """
 
     kerntype = 'not defined'
+    dtype = doublenp
     indexing_class_name = 'StateIndexingDM'
 
     def generate_fct(self):
@@ -70,6 +72,9 @@ class Approach(object):
 
     def generate_vec(self, phi0):
         pass
+
+    def get_kern_size(self):
+        return self.si.ndm0r
 
     def __init__(self, builder):
         """
@@ -100,12 +105,16 @@ class Approach(object):
         self.kernel_handler = None
 
     def set_phi0_init(self):
-        if self.kerntype in {'Pauli', 'pyPauli'}:
-            phi0_init = np.zeros(self.si.npauli, dtype=doublenp)
-        else:
-            phi0_init = np.zeros(self.si.ndm0r, dtype=doublenp)
+        phi0_init = np.zeros(self.get_kern_size(), dtype=self.dtype)
         phi0_init[0] = 1.0
         return phi0_init
+
+    def prepare_kern(self):
+        kern_size = self.get_kern_size()
+        self.generate_norm_vec(kern_size)
+
+        self.kern_ext = np.zeros((kern_size+1, kern_size), dtype=self.dtype)
+        self.kern = self.kern_ext[0:-1, :]
 
     def solve_kern(self):
         """Finds the stationary state using least squares or by inverting the matrix."""
@@ -142,7 +151,7 @@ class Approach(object):
             self.success = True
         except Exception as exept:
             self.funcp.print_error(exept)
-            self.phi0 = np.zeros(self.si.ndm0r)
+            self.phi0 = np.zeros(self.get_kern_size())
             self.success = False
 
         # Return back the replaced equation
@@ -170,6 +179,37 @@ class Approach(object):
             self.phi0 = 0 * phi0_init
             self.success = False
         self.funcp.solmethod = solmethod
+
+    def generate_norm_vec(self, length):
+        """
+        Generates normalisation condition for 1vN approach.
+
+        Parameters
+        ----------
+        length: int
+            Length of the normalisation row.
+
+        self.norm_vec : array
+            (Modifies) Left hand side of the normalisation condition.
+        self.bvec : array
+            (Modifies) Right hand side column vector for master equation.
+            The entry funcp.norm_row is 1 representing normalization condition.
+        """
+        si, symq, norm_row = (self.si, self.funcp.symq, self.funcp.norm_row)
+
+        self.bvec_ext = np.zeros(length+1, dtype=self.dtype)
+        self.bvec_ext[-1] = 1
+
+        self.bvec = self.bvec_ext[0:-1]
+        self.bvec[norm_row] = 1 if symq else 0
+
+        self.norm_vec = np.zeros(length, dtype=self.dtype)
+        norm_vec = self.norm_vec
+
+        for charge in range(si.ncharge):
+            for b in si.statesdm[charge]:
+                bb = si.get_ind_dm0(b, b, charge)
+                norm_vec[bb] += 1
 
     def rotate(self):
         self.leads.rotate(self.qd.vecslst)
@@ -200,6 +240,7 @@ class Approach(object):
             if self.funcp.mfreeq:
                 self.solve_matrix_free()
             else:
+                self.prepare_kern()
                 self.generate_kern()
                 self.solve_kern()
             if currentq:
@@ -277,6 +318,7 @@ class ApproachBase2vN(Approach):
     """
 
     kerntype = 'not defined'
+    dtype = complexnp
     indexing_class_name = 'StateIndexingDMc'
 
     def iterate(self):
@@ -353,12 +395,16 @@ class ApproachBase2vN(Approach):
         #
         self.iters = []
 
+    def get_kern_size(self):
+        return self.si.ndm0
+
     def iteration(self):
         """Makes one iteration for solution of the 2vN integral equation."""
         self.iterate()
         self.phi1k = self.phi1k_delta if self.phi1k is None else self.phi1k + self.phi1k_delta
         self.get_phi1_phi0()
         self.niter += 1
+        self.prepare_kern()
         self.kern_phi0()
         self.solve_kern()
         self.generate_current()

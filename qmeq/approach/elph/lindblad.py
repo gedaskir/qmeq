@@ -12,7 +12,6 @@ from ...specfunc.specfunc_elph import FuncPauliElPh
 
 from ..aprclass import ApproachElPh
 from ..base.lindblad import ApproachLindblad as Approach
-from ..base.pauli import generate_norm_vec
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -46,14 +45,8 @@ def generate_tLbbp_elph(self):
 
 
 def generate_kern_lindblad_elph(self):
-    (E, tLbbp, si) = (self.qd.Ea, self.tLbbp, self.si)
+    (E, tLbbp, si, kern) = (self.qd.Ea, self.tLbbp, self.si, self.kern)
 
-    if self.kern is None:
-        self.kern_ext = np.zeros((si.ndm0r+1, si.ndm0r), dtype=doublenp)
-        self.kern = self.kern_ext[0:-1, :]
-        generate_norm_vec(self, si.ndm0r)
-
-    kern = self.kern
     for charge in range(si.ncharge):
         for b, bp in itertools.combinations_with_replacement(si.statesdm[charge], 2):
             bbp = si.get_ind_dm0(b, bp, charge)

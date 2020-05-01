@@ -12,7 +12,6 @@ from ...specfunc.specfunc_elph import FuncPauliElPh
 
 from ..aprclass import ApproachElPh
 from ..base.pauli import ApproachPauli as Approach
-from ..base.pauli import generate_norm_vec
 
 
 def generate_paulifct_elph(self):
@@ -42,14 +41,8 @@ def generate_paulifct_elph(self):
 # Pauli master equation
 # ---------------------------------------------------------------------------------------------------------
 def generate_kern_pauli_elph(self):
-    (paulifct, si, si_elph) = (self.paulifct_elph, self.si, self.si_elph)
+    (paulifct, si, si_elph, kern) = (self.paulifct_elph, self.si, self.si_elph, self.kern)
 
-    if self.kern is None:
-        self.kern_ext = np.zeros((si.npauli+1, si.npauli), dtype=doublenp)
-        self.kern = self.kern_ext[0:-1, :]
-        generate_norm_vec(self, si.npauli)
-
-    kern = self.kern
     for charge in range(si.ncharge):
         for b in si.statesdm[charge]:
             bb = si.get_ind_dm0(b, b, charge)
@@ -70,6 +63,9 @@ def generate_kern_pauli_elph(self):
 class ApproachPauli(ApproachElPh):
 
     kerntype = 'pyPauli'
+
+    def get_kern_size(self):
+        return self.si.npauli
 
     def generate_fct(self):
         Approach.generate_fct(self)

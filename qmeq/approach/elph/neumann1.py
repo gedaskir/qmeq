@@ -13,7 +13,6 @@ from ...specfunc.specfunc_elph import Func1vNElPh
 
 from ..aprclass import ApproachElPh
 from ..base.neumann1 import Approach1vN as Approach
-from ..base.pauli import generate_norm_vec
 
 
 def generate_w1fct_elph(self):
@@ -52,16 +51,11 @@ def generate_w1fct_elph(self):
 # 1 von Neumann approach
 # ---------------------------------------------------------------------------------------------------------
 def generate_kern_1vN_elph(self):
-    (E, Vbbp, w1fct) = (self.qd.Ea, self.baths.Vbbp, self.w1fct)
+    (E, Vbbp, w1fct, kern) = (self.qd.Ea, self.baths.Vbbp, self.w1fct, self.kern)
     (si, si_elph) = (self.si, self.si_elph)
 
-    if self.kern is None:
-        self.kern_ext = np.zeros((si.ndm0r+1, si.ndm0r), dtype=doublenp)
-        self.kern = self.kern_ext[0:-1, :]
-        generate_norm_vec(self, si.ndm0r)
     # Here letter convention is not used
     # For example, the label `a' has the same charge as the label `b'
-    kern = self.kern
     for charge in range(si.ncharge):
         for b, bp in itertools.combinations_with_replacement(si.statesdm[charge], 2):
             bbp = si.get_ind_dm0(b, bp, charge)
