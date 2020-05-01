@@ -12,21 +12,15 @@ from ...mytypes import complexnp
 
 from ..aprclass import Approach
 from .neumann1 import generate_phi1fct
-from .pauli import generate_norm_vec
 
 
 # ---------------------------------------------------------------------------------------------------
 # Redfield approach
 # ---------------------------------------------------------------------------------------------------
 def generate_kern_redfield(self):
-    (E, Tba, phi1fct, si) = (self.qd.Ea, self.leads.Tba, self.phi1fct, self.si)
+    (E, Tba, phi1fct, si, kern) = (self.qd.Ea, self.leads.Tba, self.phi1fct, self.si, self.kern)
     npauli, ndm0, nleads = si.npauli, si.ndm0, si.nleads
 
-    self.kern_ext = np.zeros((si.ndm0r+1, si.ndm0r), dtype=doublenp)
-    self.kern = self.kern_ext[0:-1, :]
-
-    generate_norm_vec(self, si.ndm0r)
-    kern = self.kern
     for charge in range(si.ncharge):
         acharge = charge-1
         bcharge = charge

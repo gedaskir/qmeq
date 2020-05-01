@@ -12,42 +12,6 @@ from ...specfunc.specfunc import func_pauli
 from ..aprclass import Approach
 
 
-def generate_norm_vec(self, length):
-    """
-    Generates normalisation condition for 1vN approach.
-
-    Parameters
-    ----------
-    self : Approach
-        Approach object.
-    length: int
-        Length of the normalisation row.
-
-    self.norm_vec : array
-        (Modifies) Left hand side of the normalisation condition.
-    self.bvec : array
-        (Modifies) Right hand side column vector for master equation.
-        The entry funcp.norm_row is 1 representing normalization condition.
-    """
-    si, symq, norm_row = (self.si, self.funcp.symq, self.funcp.norm_row)
-
-    self.bvec_ext = np.zeros(length+1, dtype=doublenp)
-    self.bvec_ext[-1] = 1
-
-    self.bvec = self.bvec_ext[0:-1]
-    self.bvec[norm_row] = 1 if symq else 0
-
-    self.norm_vec = np.zeros(length, dtype=doublenp)
-    norm_vec = self.norm_vec
-
-    for charge in range(si.ncharge):
-        for b in si.statesdm[charge]:
-            bb = si.get_ind_dm0(b, b, charge)
-            norm_vec[bb] += 1
-
-    return 0
-
-
 def generate_paulifct(self):
     """
     Make factors used for generating Pauli master equation kernel.
@@ -97,13 +61,8 @@ def generate_kern_pauli(self):
         (Modifies) Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
     """
-    (paulifct, si) = (self.paulifct, self.si)
+    (paulifct, si, kern) = (self.paulifct, self.si, self.kern)
 
-    self.kern_ext = np.zeros((si.npauli+1, si.npauli), dtype=doublenp)
-    self.kern = self.kern_ext[0:-1, :]
-
-    generate_norm_vec(self, si.npauli)
-    kern = self.kern
     for charge in range(si.ncharge):
         for b in si.statesdm[charge]:
             bb = si.get_ind_dm0(b, b, charge)
@@ -207,6 +166,10 @@ def generate_vec_pauli(self, phi0):
 class ApproachPauli(Approach):
 
     kerntype = 'pyPauli'
+
+    def get_kern_size(self):
+        return self.si.npauli
+
     generate_fct = generate_paulifct
     generate_kern = generate_kern_pauli
     generate_current = generate_current_pauli

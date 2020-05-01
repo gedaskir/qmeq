@@ -12,8 +12,6 @@ import itertools
 from ...mytypes import doublenp
 from ...mytypes import complexnp
 
-from ..base.c_pauli import generate_norm_vec
-
 # Cython imports
 
 cimport numpy as np
@@ -90,11 +88,6 @@ def generate_kern_lindblad_elph(self):
     #
     ndm0r, ndm0, npauli, nbaths = si.ndm0r, si.ndm0, si.npauli, si.nbaths
     #
-    if self.kern is None:
-        self.kern_ext = np.zeros((ndm0r+1, ndm0r), dtype=doublenp)
-        self.kern = self.kern_ext[0:-1, :]
-        generate_norm_vec(self, ndm0r)
-
     cdef np.ndarray[double_t, ndim=2] kern = self.kern
     for charge in range(si.ncharge):
         for b, bp in itertools.combinations_with_replacement(si.statesdm[charge], 2):

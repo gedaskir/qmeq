@@ -22,33 +22,6 @@ from ..c_aprclass cimport Approach
 
 
 @cython.boundscheck(False)
-def generate_norm_vec(self, length):
-    si, symq, norm_row = (self.si, self.funcp.symq, self.funcp.norm_row)
-
-    self.bvec_ext = np.zeros(length+1, dtype=doublenp)
-    self.bvec_ext[-1] = 1
-
-    self.bvec = self.bvec_ext[0:-1]
-    self.bvec[norm_row] = 1 if symq else 0
-
-    self.norm_vec = np.zeros(length, dtype=doublenp)
-    cdef np.ndarray[double_t, ndim=1] norm_vec = self.norm_vec
-
-    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
-
-    cdef int_t charge, b, bb
-    for charge in range(si.ncharge):
-        for b in si.statesdm[charge]:
-            bb = mapdm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
-            norm_vec[bb] += 1
-
-    return 0
-
-
-@cython.boundscheck(False)
 def generate_paulifct(self):
     cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
     cdef np.ndarray[complex_t, ndim=3] Tba = self.leads.Tba
@@ -106,10 +79,6 @@ def generate_kern_pauli(self):
     cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
     cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
     #
-    self.kern_ext = np.zeros((npauli+1, npauli), dtype=doublenp)
-    self.kern = self.kern_ext[0:-1, :]
-
-    generate_norm_vec(self, npauli)
     cdef np.ndarray[double_t, ndim=2] kern = self.kern
     for charge in range(si.ncharge):
         acharge = charge-1
@@ -222,6 +191,9 @@ def generate_vec_pauli(self, np.ndarray[double_t, ndim=1] phi0):
 cdef class ApproachPauli(Approach):
 
     kerntype = 'Pauli'
+
+    def get_kern_size(self):
+        return self.si.npauli
 
     cpdef generate_fct(self):
         generate_paulifct(self)

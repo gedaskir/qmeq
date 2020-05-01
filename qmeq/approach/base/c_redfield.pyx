@@ -13,7 +13,6 @@ from ...mytypes import doublenp
 from ...mytypes import complexnp
 
 from .c_neumann1 import generate_phi1fct
-from .c_pauli import generate_norm_vec
 
 # Cython imports
 
@@ -54,10 +53,6 @@ def generate_kern_redfield(self):
     #
     ndm0r, ndm0, npauli, nleads = si.ndm0r, si.ndm0, si.npauli, si.nleads
 
-    self.kern_ext = np.zeros((ndm0r+1, ndm0r), dtype=doublenp)
-    self.kern = self.kern_ext[0:-1, :]
-
-    generate_norm_vec(self, ndm0r)
     cdef np.ndarray[double_t, ndim=2] kern = self.kern
     for charge in range(si.ncharge):
         acharge = charge-1

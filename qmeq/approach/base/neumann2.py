@@ -14,7 +14,6 @@ from ...mytypes import intnp
 from ...specfunc.specfunc import kernel_fredriksen
 from ...specfunc.specfunc import hilbert_fredriksen
 from ..aprclass import ApproachBase2vN
-from .pauli import generate_norm_vec
 
 
 def func_2vN(Ek, Ek_grid, l, eta, hfk):
@@ -373,11 +372,7 @@ def kern_phi0_2vN(self):
             shuffle[bbp, bpb] = 1
             shuffle[bpb, bbp] = 1
     phi1_phi0_conj = np.dot(np.conjugate(phi1_phi0), shuffle)
-    # Set-up normalisation row
-    generate_norm_vec(self, si.ndm0)
-    # Make equations for Phi[0]
-    self.kern_ext = np.zeros((si.ndm0+1, si.ndm0), dtype=complexnp)
-    self.kern = self.kern_ext[0:-1, :]
+
     kern = self.kern
     for charge in range(si.ncharge):
         acharge = charge-1

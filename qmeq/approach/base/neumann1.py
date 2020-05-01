@@ -11,7 +11,6 @@ from ...mytypes import doublenp
 
 from ...specfunc.specfunc import func_1vN
 from ..aprclass import Approach
-from .pauli import generate_norm_vec
 
 
 def generate_phi1fct(self):
@@ -65,13 +64,8 @@ def generate_kern_1vN(self):
     self.kern : array
         (Modifies) Kernel matrix for 1vN approach.
     """
-    (E, Tba, phi1fct, si) = (self.qd.Ea, self.leads.Tba, self.phi1fct, self.si)
+    (E, Tba, phi1fct, si, kern) = (self.qd.Ea, self.leads.Tba, self.phi1fct, self.si, self.kern)
 
-    self.kern_ext = np.zeros((si.ndm0r+1, si.ndm0r), dtype=doublenp)
-    self.kern = self.kern_ext[0:-1, :]
-
-    generate_norm_vec(self, si.ndm0r)
-    kern = self.kern
     for charge in range(si.ncharge):
         for b, bp in itertools.combinations_with_replacement(si.statesdm[charge], 2):
             bbp = si.get_ind_dm0(b, bp, charge)
