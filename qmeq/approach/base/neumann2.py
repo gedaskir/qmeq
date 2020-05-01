@@ -13,7 +13,7 @@ from ...mytypes import intnp
 
 from ...specfunc.specfunc import kernel_fredriksen
 from ...specfunc.specfunc import hilbert_fredriksen
-from ...aprclass import ApproachBase2vN
+from ..aprclass import ApproachBase2vN
 from .pauli import generate_norm_vec
 
 
@@ -685,10 +685,10 @@ def iterate_2vN(self):
     return 0
 
 
-class ApproachPy2vN(ApproachBase2vN):
+class Approach2vN(ApproachBase2vN):
 
     kerntype = 'py2vN'
-    iterate = staticmethod(iterate_2vN)
-    get_phi1_phi0 = staticmethod(get_phi1_phi0_2vN)
-    kern_phi0 = staticmethod(kern_phi0_2vN)
-    generate_current = staticmethod(generate_current_2vN)
+    iterate = iterate_2vN
+    get_phi1_phi0 = get_phi1_phi0_2vN
+    kern_phi0 = kern_phi0_2vN
+    generate_current = generate_current_2vN

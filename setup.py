@@ -22,7 +22,9 @@ def get_ext_modules():
     """
 
     # Check if *.c files are already there
-    file_list = ['qmeq/approach/base/c_pauli.c',
+    file_list = ['qmeq/approach/c_aprclass.c',
+                 # base
+                 'qmeq/approach/base/c_pauli.c',
                  'qmeq/approach/base/c_lindblad.c',
                  'qmeq/approach/base/c_redfield.c',
                  'qmeq/approach/base/c_neumann1.c',
@@ -94,7 +96,8 @@ setup(name='qmeq',
                 'qmeq/builder',
                 'qmeq/specfunc',
                 'qmeq/tests'],
-      package_data={'qmeq/approach/base': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
+      package_data={'qmeq/approach':      ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
+                    'qmeq/approach/base': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
                     'qmeq/approach/elph': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
                     'qmeq/specfunc':      ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'], },
       zip_safe=False,

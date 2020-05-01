@@ -9,7 +9,7 @@ import itertools
 from ...mytypes import doublenp
 
 from ...specfunc.specfunc import func_pauli
-from ...aprclass import Approach
+from ..aprclass import Approach
 
 
 def generate_norm_vec(self, length):
@@ -162,7 +162,7 @@ def generate_current_pauli(self):
     return 0
 
 
-def generate_vec_pauli(phi0, self):
+def generate_vec_pauli(self, phi0):
     """
     Acts on given phi0 with Liouvillian of Pauli approach.
 
@@ -204,11 +204,11 @@ def generate_vec_pauli(phi0, self):
     return dphi0_dt
 
 
-class ApproachPyPauli(Approach):
+class ApproachPauli(Approach):
 
     kerntype = 'pyPauli'
-    generate_fct = staticmethod(generate_paulifct)
-    generate_kern = staticmethod(generate_kern_pauli)
-    generate_current = staticmethod(generate_current_pauli)
-    generate_vec = staticmethod(generate_vec_pauli)
+    generate_fct = generate_paulifct
+    generate_kern = generate_kern_pauli
+    generate_current = generate_current_pauli
+    generate_vec = generate_vec_pauli
 # ---------------------------------------------------------------------------------------------------

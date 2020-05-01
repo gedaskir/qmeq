@@ -152,13 +152,13 @@ def test_Builder_elph_double_dot_spinful():
             print( norm(system.energy_current - data[attr+'energy_current']) )
 
         for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - getattr(getattr(calcs, attr), param)) < EPS
+            assert norm(getattr(system, param) - data[attr+param]) < EPS
 
         # Check least-squares solution with non-square matrix, i.e., symq=False
         system = SpinfulDoubleDotWithElPh(kerntype=kerntype, itype=itype, itype_ph=itype_ph, symq=False)
         system.solve()
         for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - getattr(getattr(calcs, attr), param)) < EPS
+            assert norm(getattr(system, param) - data[attr+param]) < EPS
 
     # Check results with different indexing
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
@@ -169,4 +169,4 @@ def test_Builder_elph_double_dot_spinful():
         system.solve()
         attr = kerntype+str(itype)+str(itype_ph)
         for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - getattr(getattr(calcs, attr), param)) < EPS
+            assert norm(getattr(system, param) - data[attr+param]) < EPS

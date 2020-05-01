@@ -7,7 +7,7 @@ from __future__ import print_function
 import numpy as np
 from scipy import optimize
 
-from .mytypes import doublenp
+from ..mytypes import doublenp
 
 
 class Approach(object):
@@ -59,20 +59,16 @@ class Approach(object):
     kerntype = 'not defined'
     indexing_class_name = 'StateIndexingDM'
 
-    @staticmethod
     def generate_fct(self):
         pass
 
-    @staticmethod
     def generate_kern(self):
         pass
 
-    @staticmethod
     def generate_current(self):
         pass
 
-    @staticmethod
-    def generate_vec(self):
+    def generate_vec(self, phi0):
         pass
 
     def __init__(self, builder):
@@ -101,6 +97,7 @@ class Approach(object):
         self.phi1fct, self.paulifct = None, None
         self.phi1fct_energy = None
         self.tLba = None
+        self.kernel_handler = None
 
     def set_phi0_init(self):
         if self.kerntype in {'Pauli', 'pyPauli'}:
@@ -165,7 +162,7 @@ class Approach(object):
         #
         solmethod = solmethod if solmethod is not None else 'krylov'
         try:
-            self.sol0 = optimize.root(self.generate_vec, phi0_init, args=(self), method=solmethod)
+            self.sol0 = optimize.root(self.generate_vec, phi0_init, method=solmethod)
             self.phi0 = self.sol0.x
             self.success = self.sol0.success
         except Exception as exept:
@@ -173,6 +170,9 @@ class Approach(object):
             self.phi0 = 0 * phi0_init
             self.success = False
         self.funcp.solmethod = solmethod
+
+    def rotate(self):
+        self.leads.rotate(self.qd.vecslst)
 
     def solve(self, qdq=True, rotateq=True, masterq=True, currentq=True, *args, **kwargs):
         """
@@ -193,52 +193,34 @@ class Approach(object):
         if qdq:
             self.qd.diagonalise()
             if rotateq:
-                self.leads.rotate(self.qd.vecslst)
+                self.rotate()
         #
         if masterq:
-            self.generate_fct(self)
+            self.generate_fct()
             if self.funcp.mfreeq:
                 self.solve_matrix_free()
             else:
-                self.generate_kern(self)
+                self.generate_kern()
                 self.solve_kern()
             if currentq:
-                self.generate_current(self)
+                self.generate_current()
 
 
 class ApproachElPh(Approach):
-
-    @staticmethod
-    def generate_fct_elph(self):
-        pass
-
-    @staticmethod
-    def generate_kern_elph(self):
-        pass
 
     def __init__(self, builder):
         Approach.__init__(self, builder)
         self.baths = builder.baths
         self.si_elph = builder.si_elph
 
-    def solve(self, qdq=True, rotateq=True, masterq=True, currentq=True, *args, **kwargs):
-        if qdq:
-            self.qd.diagonalise()
-            if rotateq:
-                self.leads.rotate(self.qd.vecslst)
-                self.baths.rotate(self.qd.vecslst)
-        #
-        if masterq:
-            self.generate_fct(self)
-            self.generate_fct_elph(self)
-            if self.funcp.mfreeq:
-                self.solve_matrix_free()
-            else:
-                self.generate_kern(self)
-                self.generate_kern_elph(self)
-                self.solve_kern()
-            if currentq:
-                self.generate_current(self)
+    def restart(self):
+        Approach.restart(self)
+        self.w1fct, self.paulifct_elph = None, None
+        self.tLbbp = None
+
+    def rotate(self):
+        self.leads.rotate(self.qd.vecslst)
+        self.baths.rotate(self.qd.vecslst)
 
 
 class Iterations2vN(object):
@@ -297,19 +279,15 @@ class ApproachBase2vN(Approach):
     kerntype = 'not defined'
     indexing_class_name = 'StateIndexingDMc'
 
-    @staticmethod
     def iterate(self):
         pass
 
-    @staticmethod
     def get_phi1_phi0(self):
         pass
 
-    @staticmethod
     def kern_phi0(self):
         pass
 
-    @staticmethod
     def generate_current(self):
         pass
 
@@ -377,13 +355,13 @@ class ApproachBase2vN(Approach):
 
     def iteration(self):
         """Makes one iteration for solution of the 2vN integral equation."""
-        self.iterate(self)
+        self.iterate()
         self.phi1k = self.phi1k_delta if self.phi1k is None else self.phi1k + self.phi1k_delta
-        self.get_phi1_phi0(self)
+        self.get_phi1_phi0()
         self.niter += 1
-        self.kern_phi0(self)
+        self.kern_phi0()
         self.solve_kern()
-        self.generate_current(self)
+        self.generate_current()
         #
         self.iters.append(Iterations2vN(self))
 

@@ -1,6 +1,8 @@
 """Module containing cython functions, which generate first order Redfield kernel.
    For docstrings see documentation of module neumann1."""
 
+# Python imports
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -10,18 +12,15 @@ import itertools
 from ...mytypes import doublenp
 from ...mytypes import complexnp
 
-from ...aprclass import Approach
 from .c_neumann1 import generate_phi1fct
 from .c_pauli import generate_norm_vec
+
+# Cython imports
 
 cimport numpy as np
 cimport cython
 
-ctypedef np.uint8_t bool_t
-ctypedef np.int_t int_t
-ctypedef np.int64_t long_t
-ctypedef np.float64_t double_t
-ctypedef np.complex128_t complex_t
+from ..c_aprclass cimport Approach
 
 
 # ---------------------------------------------------------------------------------------------------
@@ -226,7 +225,7 @@ def generate_current_redfield(self):
 
 
 @cython.boundscheck(False)
-def generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, self):
+def generate_vec_redfield(self, np.ndarray[double_t, ndim=1] phi0p):
     cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
     cdef np.ndarray[complex_t, ndim=3] Tba = self.leads.Tba
     cdef np.ndarray[complex_t, ndim=3] phi1fct = self.phi1fct
@@ -329,11 +328,20 @@ def generate_vec_redfield(np.ndarray[double_t, ndim=1] phi0p, self):
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real))
 
 
-class ApproachRedfield(Approach):
+cdef class ApproachRedfield(Approach):
 
     kerntype = 'Redfield'
-    generate_fct = generate_phi1fct
-    generate_kern = generate_kern_redfield
-    generate_current = generate_current_redfield
-    generate_vec = generate_vec_redfield
+
+    cpdef generate_fct(self):
+        generate_phi1fct(self)
+
+    cpdef generate_kern(self):
+        generate_kern_redfield(self)
+
+    cpdef generate_current(self):
+        generate_current_redfield(self)
+
+    cpdef generate_vec(self, phi0):
+        return generate_vec_redfield(self, phi0)
+
 # ---------------------------------------------------------------------------------------------------

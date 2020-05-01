@@ -10,7 +10,7 @@ from ...mytypes import complexnp
 from ...mytypes import doublenp
 
 from ...specfunc.specfunc import func_1vN
-from ...aprclass import Approach
+from ..aprclass import Approach
 from .pauli import generate_norm_vec
 
 
@@ -231,7 +231,7 @@ def generate_current_1vN(self):
     return 0
 
 
-def generate_vec_1vN(phi0p, self):
+def generate_vec_1vN(self, phi0p):
     """
     Acts on given phi0p with Liouvillian of 1vN approach.
 
@@ -329,11 +329,11 @@ def generate_vec_1vN(phi0p, self):
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[si.npauli:si.ndm0].real))
 
 
-class ApproachPy1vN(Approach):
+class Approach1vN(Approach):
 
     kerntype = 'py1vN'
-    generate_fct = staticmethod(generate_phi1fct)
-    generate_kern = staticmethod(generate_kern_1vN)
-    generate_current = staticmethod(generate_current_1vN)
-    generate_vec = staticmethod(generate_vec_1vN)
+    generate_fct = generate_phi1fct
+    generate_kern = generate_kern_1vN
+    generate_current = generate_current_1vN
+    generate_vec = generate_vec_1vN
 # ---------------------------------------------------------------------------------------------------

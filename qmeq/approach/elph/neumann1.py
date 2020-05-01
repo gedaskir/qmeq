@@ -6,16 +6,13 @@ from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...aprclass import ApproachElPh
-from ...specfunc.specfunc_elph import Func1vNElPh
-
 from ...mytypes import complexnp
 from ...mytypes import doublenp
 
-from ..base.neumann1 import generate_phi1fct
-from ..base.neumann1 import generate_kern_1vN
-from ..base.neumann1 import generate_current_1vN
-from ..base.neumann1 import generate_vec_1vN
+from ...specfunc.specfunc_elph import Func1vNElPh
+
+from ..aprclass import ApproachElPh
+from ..base.neumann1 import Approach1vN as Approach
 from ..base.pauli import generate_norm_vec
 
 
@@ -167,14 +164,20 @@ def generate_kern_1vN_elph(self):
     return 0
 
 
-class ApproachPy1vN(ApproachElPh):
+class Approach1vN(ApproachElPh):
 
     kerntype = 'py1vN'
-    generate_fct = staticmethod(generate_phi1fct)
-    generate_kern = staticmethod(generate_kern_1vN)
-    generate_current = staticmethod(generate_current_1vN)
-    generate_vec = staticmethod(generate_vec_1vN)
-    #
-    generate_kern_elph = staticmethod(generate_kern_1vN_elph)
-    generate_fct_elph = staticmethod(generate_w1fct_elph)
-# ---------------------------------------------------------------------------------------------------------
+
+    def generate_fct(self):
+        Approach.generate_fct(self)
+        generate_w1fct_elph(self)
+
+    def generate_kern(self):
+        Approach.generate_kern(self)
+        generate_kern_1vN_elph(self)
+
+    def generate_current(self):
+        Approach.generate_current(self)
+
+    def generate_vec(self, phi0):
+        return Approach.generate_vec(self, phi0)

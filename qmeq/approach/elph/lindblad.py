@@ -6,15 +6,12 @@ from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...aprclass import ApproachElPh
-from ...specfunc.specfunc_elph import FuncPauliElPh
-
 from ...mytypes import doublenp
 
-from ..base.lindblad import generate_tLba
-from ..base.lindblad import generate_kern_lindblad
-from ..base.lindblad import generate_current_lindblad
-from ..base.lindblad import generate_vec_lindblad
+from ...specfunc.specfunc_elph import FuncPauliElPh
+
+from ..aprclass import ApproachElPh
+from ..base.lindblad import ApproachLindblad as Approach
 from ..base.pauli import generate_norm_vec
 
 
@@ -119,14 +116,20 @@ def generate_kern_lindblad_elph(self):
     return 0
 
 
-class ApproachPyLindblad(ApproachElPh):
+class ApproachLindblad(ApproachElPh):
 
     kerntype = 'pyLindblad'
-    generate_fct = staticmethod(generate_tLba)
-    generate_kern = staticmethod(generate_kern_lindblad)
-    generate_current = staticmethod(generate_current_lindblad)
-    generate_vec = staticmethod(generate_vec_lindblad)
-    #
-    generate_kern_elph = staticmethod(generate_kern_lindblad_elph)
-    generate_fct_elph = staticmethod(generate_tLbbp_elph)
-# ---------------------------------------------------------------------------------------------------------
+
+    def generate_fct(self):
+        Approach.generate_fct(self)
+        generate_tLbbp_elph(self)
+
+    def generate_kern(self):
+        Approach.generate_kern(self)
+        generate_kern_lindblad_elph(self)
+
+    def generate_current(self):
+        Approach.generate_current(self)
+
+    def generate_vec(self, phi0):
+        return Approach.generate_vec(self, phi0)

@@ -6,15 +6,12 @@ from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...aprclass import ApproachElPh
-from ...specfunc.specfunc_elph import FuncPauliElPh
-
 from ...mytypes import doublenp
 
-from ..base.pauli import generate_paulifct
-from ..base.pauli import generate_kern_pauli
-from ..base.pauli import generate_current_pauli
-from ..base.pauli import generate_vec_pauli
+from ...specfunc.specfunc_elph import FuncPauliElPh
+
+from ..aprclass import ApproachElPh
+from ..base.pauli import ApproachPauli as Approach
 from ..base.pauli import generate_norm_vec
 
 
@@ -70,14 +67,20 @@ def generate_kern_pauli_elph(self):
     return 0
 
 
-class ApproachPyPauli(ApproachElPh):
+class ApproachPauli(ApproachElPh):
 
     kerntype = 'pyPauli'
-    generate_fct = staticmethod(generate_paulifct)
-    generate_kern = staticmethod(generate_kern_pauli)
-    generate_current = staticmethod(generate_current_pauli)
-    generate_vec = staticmethod(generate_vec_pauli)
-    #
-    generate_kern_elph = staticmethod(generate_kern_pauli_elph)
-    generate_fct_elph = staticmethod(generate_paulifct_elph)
-# ---------------------------------------------------------------------------------------------------------
+
+    def generate_fct(self):
+        Approach.generate_fct(self)
+        generate_paulifct_elph(self)
+
+    def generate_kern(self):
+        Approach.generate_kern(self)
+        generate_kern_pauli_elph(self)
+
+    def generate_current(self):
+        Approach.generate_current(self)
+
+    def generate_vec(self, phi0):
+        return Approach.generate_vec(self, phi0)

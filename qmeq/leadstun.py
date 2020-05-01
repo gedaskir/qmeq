@@ -172,7 +172,7 @@ def rotate_Tba(Tba0, vecslst, si, indexing=None, mtype=complex):
             for sz in szrng:
                 szind = sz_to_ind(sz, charge, si.nsingle)
                 szind2 = sz_to_ind(sz+s, charge+1, si.nsingle)
-                if si.szlst[charge][szind] == [] or si.szlst[charge+1][szind2] == []:
+                if not si.szlst[charge][szind] or not si.szlst[charge+1][szind2]:
                     continue
                 i1 = si.szlst[charge][szind][0]
                 i2 = si.szlst[charge][szind][-1] + 1
@@ -206,7 +206,7 @@ def rotate_Tba(Tba0, vecslst, si, indexing=None, mtype=complex):
                 Tba[l, i3:i4][:, i1:i2] = Tba[l, i1:i2][:, i3:i4].conj().T
     elif indexingp == 'charge':
         for l, charge in itertools.product(range(si.nleads), range(si.ncharge-1)):
-            if si.chargelst[charge] == [] or si.chargelst[charge+1] == []:
+            if not si.chargelst[charge] or not si.chargelst[charge+1]:
                 continue
             i1 = si.chargelst[charge][0]
             i2 = si.chargelst[charge][-1] + 1

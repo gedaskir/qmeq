@@ -1,6 +1,8 @@
 """Module containing cython functions, which generate first order Pauli kernel.
    For docstrings see documentation of module pauli."""
 
+# Python imports
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -10,17 +12,13 @@ import itertools
 from ...mytypes import doublenp
 from ...mytypes import complexnp
 
-from ...specfunc.c_specfunc cimport func_pauli
-from ...aprclass import Approach
+# Cython imports
 
 cimport numpy as np
 cimport cython
 
-ctypedef np.uint8_t bool_t
-ctypedef np.int_t int_t
-ctypedef np.int64_t long_t
-ctypedef np.float64_t double_t
-ctypedef np.complex128_t complex_t
+from ...specfunc.c_specfunc cimport func_pauli
+from ..c_aprclass cimport Approach
 
 
 @cython.boundscheck(False)
@@ -177,7 +175,7 @@ def generate_current_pauli(self):
 
 
 @cython.boundscheck(False)
-def generate_vec_pauli(np.ndarray[double_t, ndim=1] phi0, self):
+def generate_vec_pauli(self, np.ndarray[double_t, ndim=1] phi0):
     cdef np.ndarray[double_t, ndim=3] paulifct = self.paulifct
     si = self.si
     cdef long_t norm_row = self.funcp.norm_row
@@ -221,11 +219,20 @@ def generate_vec_pauli(np.ndarray[double_t, ndim=1] phi0, self):
     return dphi0_dt
 
 
-class ApproachPauli(Approach):
+cdef class ApproachPauli(Approach):
 
     kerntype = 'Pauli'
-    generate_fct = generate_paulifct
-    generate_kern = generate_kern_pauli
-    generate_current = generate_current_pauli
-    generate_vec = generate_vec_pauli
+
+    cpdef generate_fct(self):
+        generate_paulifct(self)
+
+    cpdef generate_kern(self):
+        generate_kern_pauli(self)
+
+    cpdef generate_current(self):
+        generate_current_pauli(self)
+
+    cpdef generate_vec(self, phi0):
+        return generate_vec_pauli(self, phi0)
+
 # ---------------------------------------------------------------------------------------------------

@@ -9,7 +9,7 @@ import numpy as np
 
 from ..mytypes import longnp
 
-from ..aprclass import Approach
+from ..approach.aprclass import Approach
 from ..indexing import StateIndexingDM
 from ..indexing import StateIndexingDMc
 from ..qdot import QuantumDot
@@ -32,11 +32,11 @@ from .validation import validate_indexing
 # -----------------------------------------------------------
 # Python modules
 
-from ..approach.base.pauli import ApproachPyPauli
-from ..approach.base.lindblad import ApproachPyLindblad
-from ..approach.base.redfield import ApproachPyRedfield
-from ..approach.base.neumann1 import ApproachPy1vN
-from ..approach.base.neumann2 import ApproachPy2vN
+from ..approach.base.pauli import ApproachPauli as ApproachPyPauli
+from ..approach.base.lindblad import ApproachLindblad as ApproachPyLindblad
+from ..approach.base.redfield import ApproachRedfield as ApproachPyRedfield
+from ..approach.base.neumann1 import Approach1vN as ApproachPy1vN
+from ..approach.base.neumann2 import Approach2vN as ApproachPy2vN
 
 # Cython compiled modules
 

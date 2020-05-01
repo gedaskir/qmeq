@@ -10,7 +10,7 @@ import itertools
 from ...mytypes import doublenp
 from ...mytypes import complexnp
 
-from ...aprclass import Approach
+from ..aprclass import Approach
 from .neumann1 import generate_phi1fct
 from .pauli import generate_norm_vec
 
@@ -172,7 +172,7 @@ def generate_current_redfield(self):
     return 0
 
 
-def generate_vec_redfield(phi0p, self):
+def generate_vec_redfield(self, phi0p):
     (E, Tba, phi1fct, si, norm_row) = (self.qd.Ea, self.leads.Tba, self.phi1fct,
                                        self.si, self.funcp.norm_row)
     #
@@ -257,11 +257,11 @@ def generate_vec_redfield(phi0p, self):
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[si.npauli:si.ndm0].real))
 
 
-class ApproachPyRedfield(Approach):
+class ApproachRedfield(Approach):
 
     kerntype = 'pyRedfield'
-    generate_fct = staticmethod(generate_phi1fct)
-    generate_kern = staticmethod(generate_kern_redfield)
-    generate_current = staticmethod(generate_current_redfield)
-    generate_vec = staticmethod(generate_vec_redfield)
+    generate_fct = generate_phi1fct
+    generate_kern = generate_kern_redfield
+    generate_current = generate_current_redfield
+    generate_vec = generate_vec_redfield
 # ---------------------------------------------------------------------------------------------------

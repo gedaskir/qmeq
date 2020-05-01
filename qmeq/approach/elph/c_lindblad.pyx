@@ -1,34 +1,31 @@
 """Module containing cython functions, which generate first order Lindblad kernel.
    For docstrings see documentation of module lindblad."""
 
+# Python imports
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...aprclass import ApproachElPh
-from ...specfunc.c_specfunc_elph cimport FuncPauliElPh
-
 from ...mytypes import doublenp
 from ...mytypes import complexnp
 
-from ..base.c_lindblad import generate_tLba
-from ..base.c_lindblad import generate_kern_lindblad
-from ..base.c_lindblad import generate_current_lindblad
-from ..base.c_lindblad import generate_vec_lindblad
 from ..base.c_pauli import generate_norm_vec
+
+# Cython imports
 
 cimport numpy as np
 cimport cython
 
-ctypedef np.uint8_t bool_t
-ctypedef np.int_t int_t
-ctypedef np.int64_t long_t
-ctypedef np.float64_t double_t
-ctypedef np.complex128_t complex_t
-
 from libc.math cimport sqrt
+
+from ...specfunc.c_specfunc_elph cimport FuncPauliElPh
+
+from ..c_aprclass cimport ApproachElPh
+
+from ..base.c_lindblad cimport ApproachLindblad as Approach
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -162,14 +159,20 @@ def generate_kern_lindblad_elph(self):
     return 0
 
 
-class ApproachLindblad(ApproachElPh):
+cdef class ApproachLindblad(ApproachElPh):
 
     kerntype = 'Lindblad'
-    generate_fct = generate_tLba
-    generate_kern = generate_kern_lindblad
-    generate_current = generate_current_lindblad
-    generate_vec = generate_vec_lindblad
-    #
-    generate_kern_elph = generate_kern_lindblad_elph
-    generate_fct_elph = generate_tLbbp_elph
-# ---------------------------------------------------------------------------------------------------------
+
+    cpdef generate_fct(self):
+        Approach.generate_fct(self)
+        generate_tLbbp_elph(self)
+
+    cpdef generate_kern(self):
+        Approach.generate_kern(self)
+        generate_kern_lindblad_elph(self)
+
+    cpdef generate_current(self):
+        Approach.generate_current(self)
+
+    cpdef generate_vec(self, phi0):
+        return Approach.generate_vec(self, phi0)

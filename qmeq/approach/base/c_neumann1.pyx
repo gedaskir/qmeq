@@ -1,6 +1,8 @@
 """Module containing cython functions, which generate first order 1vN kernel.
    For docstrings see documentation of module neumann1."""
 
+# Python imports
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -10,18 +12,15 @@ import itertools
 from ...mytypes import doublenp
 from ...mytypes import complexnp
 
-from ...specfunc.c_specfunc cimport func_1vN
-from ...aprclass import Approach
+from ..c_aprclass cimport Approach
 from .c_pauli import generate_norm_vec
+
+# Cython imports
 
 cimport numpy as np
 cimport cython
 
-ctypedef np.uint8_t bool_t
-ctypedef np.int_t int_t
-ctypedef np.int64_t long_t
-ctypedef np.float64_t double_t
-ctypedef np.complex128_t complex_t
+from ...specfunc.c_specfunc cimport func_1vN
 
 
 @cython.boundscheck(False)
@@ -266,7 +265,7 @@ def generate_current_1vN(self):
 
 
 @cython.boundscheck(False)
-def generate_vec_1vN(np.ndarray[double_t, ndim=1] phi0p, self):
+def generate_vec_1vN(self, np.ndarray[double_t, ndim=1] phi0p):
     # cdef np.ndarray[double_t, ndim=1] phi0p = self.phi0
     cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
     cdef np.ndarray[complex_t, ndim=3] Tba = self.leads.Tba
@@ -370,11 +369,20 @@ def generate_vec_1vN(np.ndarray[double_t, ndim=1] phi0p, self):
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[npauli:ndm0].real))
 
 
-class Approach1vN(Approach):
+cdef class Approach1vN(Approach):
 
     kerntype = '1vN'
-    generate_fct = generate_phi1fct
-    generate_kern = generate_kern_1vN
-    generate_current = generate_current_1vN
-    generate_vec = generate_vec_1vN
+
+    cpdef generate_fct(self):
+        generate_phi1fct(self)
+
+    cpdef generate_kern(self):
+        generate_kern_1vN(self)
+
+    cpdef generate_current(self):
+        generate_current_1vN(self)
+
+    cpdef generate_vec(self, phi0):
+        return generate_vec_1vN(self, phi0)
+
 # ---------------------------------------------------------------------------------------------------

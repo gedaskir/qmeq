@@ -1,4 +1,4 @@
-from qmeq.aprclass import *
+from qmeq.approach.aprclass import *
 import qmeq
 
 

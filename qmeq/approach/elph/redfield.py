@@ -6,16 +6,12 @@ from __future__ import print_function
 import numpy as np
 import itertools
 
-from .neumann1 import generate_w1fct_elph
-from ...aprclass import ApproachElPh
-
 from ...mytypes import doublenp
 
-from ..base.redfield import generate_phi1fct
-from ..base.redfield import generate_kern_redfield
-from ..base.redfield import generate_current_redfield
-from ..base.redfield import generate_vec_redfield
+from ..aprclass import ApproachElPh
+from ..base.redfield import ApproachRedfield as Approach
 from ..base.pauli import generate_norm_vec
+from .neumann1 import generate_w1fct_elph
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -134,13 +130,20 @@ def generate_kern_redfield_elph(self):
     return 0
 
 
-class ApproachPyRedfield(ApproachElPh):
+class ApproachRedfield(ApproachElPh):
 
     kerntype = 'pyRedfield'
-    generate_fct = staticmethod(generate_phi1fct)
-    generate_kern = staticmethod(generate_kern_redfield)
-    generate_current = staticmethod(generate_current_redfield)
-    generate_vec = staticmethod(generate_vec_redfield)
-    #
-    generate_fct_elph = staticmethod(generate_w1fct_elph)
-    generate_kern_elph = staticmethod(generate_kern_redfield_elph)
+
+    def generate_fct(self):
+        Approach.generate_fct(self)
+        generate_w1fct_elph(self)
+
+    def generate_kern(self):
+        Approach.generate_kern(self)
+        generate_kern_redfield_elph(self)
+
+    def generate_current(self):
+        Approach.generate_current(self)
+
+    def generate_vec(self, phi0):
+        return Approach.generate_vec(self, phi0)

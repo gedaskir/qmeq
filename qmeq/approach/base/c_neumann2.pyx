@@ -1,6 +1,8 @@
 """Module containing cython functions, which solve 2vN approach integral equations.
    For docstrings see documentation of module neumann2."""
 
+# Python imports
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -19,7 +21,9 @@ from .neumann2 import generate_current_2vN
 from ...mytypes import doublenp
 from ...mytypes import complexnp
 
-from ...aprclass import ApproachBase2vN
+from ..aprclass import ApproachBase2vN
+
+# Cython imports
 
 cimport numpy as np
 cimport cython
@@ -384,7 +388,12 @@ def iterate_2vN(self):
 class Approach2vN(ApproachBase2vN):
 
     kerntype = '2vN'
-    iterate = iterate_2vN
-    get_phi1_phi0 = get_phi1_phi0_2vN
-    kern_phi0 = staticmethod(kern_phi0_2vN)
-    generate_current = staticmethod(generate_current_2vN)
+
+    def iterate(self):
+        iterate_2vN(self)
+
+    def get_phi1_phi0(self):
+        get_phi1_phi0_2vN(self)
+
+    kern_phi0 = kern_phi0_2vN
+    generate_current = generate_current_2vN

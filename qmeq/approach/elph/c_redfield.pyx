@@ -1,32 +1,30 @@
 """Module containing cython functions, which generate first order Redfield kernel.
    For docstrings see documentation of module neumann1."""
 
+# Python imports
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 import numpy as np
 import itertools
 
-from .c_neumann1 import generate_w1fct_elph
-from ...aprclass import ApproachElPh
-
 from ...mytypes import doublenp
 from ...mytypes import complexnp
 
-from ..base.c_neumann1 import generate_phi1fct
-from ..base.c_redfield import generate_kern_redfield
-from ..base.c_redfield import generate_current_redfield
-from ..base.c_redfield import generate_vec_redfield
 from ..base.c_pauli import generate_norm_vec
+from .c_neumann1 import generate_w1fct_elph
+
+# Cython imports
 
 cimport numpy as np
 cimport cython
 
-ctypedef np.uint8_t bool_t
-ctypedef np.int_t int_t
-ctypedef np.int64_t long_t
-ctypedef np.float64_t double_t
-ctypedef np.complex128_t complex_t
+from ...specfunc.c_specfunc_elph cimport Func1vNElPh
+
+from ..c_aprclass cimport ApproachElPh
+
+from ..base.c_redfield cimport ApproachRedfield as Approach
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -171,13 +169,20 @@ def generate_kern_redfield_elph(self):
     return 0
 
 
-class ApproachRedfield(ApproachElPh):
+cdef class ApproachRedfield(ApproachElPh):
 
     kerntype = 'Redfield'
-    generate_fct = generate_phi1fct
-    generate_kern = generate_kern_redfield
-    generate_current = generate_current_redfield
-    generate_vec = generate_vec_redfield
-    #
-    generate_kern_elph = generate_kern_redfield_elph
-    generate_fct_elph = generate_w1fct_elph
+
+    cpdef generate_fct(self):
+        Approach.generate_fct(self)
+        generate_w1fct_elph(self)
+
+    cpdef generate_kern(self):
+        Approach.generate_kern(self)
+        generate_kern_redfield_elph(self)
+
+    cpdef generate_current(self):
+        Approach.generate_current(self)
+
+    cpdef generate_vec(self, phi0):
+        return Approach.generate_vec(self, phi0)

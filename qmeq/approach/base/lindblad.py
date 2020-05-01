@@ -10,7 +10,7 @@ from ...mytypes import complexnp
 from ...mytypes import doublenp
 
 from ...specfunc.specfunc import func_pauli
-from ...aprclass import Approach
+from ..aprclass import Approach
 from .pauli import generate_norm_vec
 
 
@@ -202,7 +202,7 @@ def generate_current_lindblad(self):
     return 0
 
 
-def generate_vec_lindblad(phi0p, self):
+def generate_vec_lindblad(self, phi0p):
     """
     Acts on given phi0p with Liouvillian of Lindblad approach.
 
@@ -288,11 +288,11 @@ def generate_vec_lindblad(phi0p, self):
     return np.concatenate((i_dphi0_dt.imag, i_dphi0_dt[si.npauli:si.ndm0].real))
 
 
-class ApproachPyLindblad(Approach):
+class ApproachLindblad(Approach):
 
     kerntype = 'pyLindblad'
-    generate_fct = staticmethod(generate_tLba)
-    generate_kern = staticmethod(generate_kern_lindblad)
-    generate_current = staticmethod(generate_current_lindblad)
-    generate_vec = staticmethod(generate_vec_lindblad)
+    generate_fct = generate_tLba
+    generate_kern = generate_kern_lindblad
+    generate_current = generate_current_lindblad
+    generate_vec = generate_vec_lindblad
 # ---------------------------------------------------------------------------------------------------
