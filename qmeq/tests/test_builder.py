@@ -139,27 +139,25 @@ def test_Builder_double_dot_spinful():
 
     # Check least-squares solution with non-square matrix, i.e., symq=False
     for kerntype in kerns:
+        itype = 2
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
-                         kerntype=kerntype, itype=2, symq=False)
+                         kerntype=kerntype, itype=itype, symq=False)
         system.solve()
         attr = kerntype+str(itype)
         for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - getattr(getattr(calcs, attr), param)) < EPS
+            assert norm(getattr(system, param) - data[attr+param]) < EPS
 
     # Check matrix-free methods
-    kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
-    kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     for kerntype in kerns:
+        itype = 2
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
-                         kerntype=kerntype, itype=2, mfreeq=True)
+                         kerntype=kerntype, itype=itype, mfreeq=True)
         system.solve()
         attr = kerntype+str(itype)
         for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - getattr(getattr(calcs, attr), param)) < 1e-4
+            assert norm(getattr(system, param) - data[attr+param]) < 1e-4
 
     # Check results with different indexing
-    kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
-    kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     indexings = ['Lin', 'charge', 'sz', 'ssq']
     for kerntype, indexing in itertools.product(kerns, indexings):
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
@@ -167,7 +165,7 @@ def test_Builder_double_dot_spinful():
         system.solve()
         attr = kerntype+str(itype)
         for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - getattr(getattr(calcs, attr), param)) < EPS
+            assert norm(getattr(system, param) - data[attr+param]) < EPS
 
 
 def test_Builder_double_dot_spinless_2vN():

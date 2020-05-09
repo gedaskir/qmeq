@@ -49,7 +49,8 @@ class SpinfulDoubleDotWithElPh(BuilderElPh):
                  itype=0,
                  itype_ph=0,
                  indexing='ssq',
-                 symq=True):
+                 symq=True,
+                 mfreeq=False):
         """Initialization of the Model class."""
 
         self.p = ModelParameters(locals())
@@ -76,6 +77,7 @@ class SpinfulDoubleDotWithElPh(BuilderElPh):
                  (0,0,1): exp(alpha/2)*exp(-(d**2)/(4*a**2)),
                  (0,1,0): exp(alpha/2)*exp(-(d**2)/(4*a**2))}
 
+
         # Initialise the system
         BuilderElPh.__init__(self,
             nsingle, hsingle, coulomb,
@@ -86,6 +88,7 @@ class SpinfulDoubleDotWithElPh(BuilderElPh):
             itype=itype,
             itype_ph=itype_ph,
             symq=symq,
+            mfreeq=mfreeq,
             indexing=indexing,
             symmetry='spin')
 
@@ -160,11 +163,19 @@ def test_Builder_elph_double_dot_spinful():
         for param in ['current', 'energy_current']:
             assert norm(getattr(system, param) - data[attr+param]) < EPS
 
+    # Check matrix-free methods
+    for kerntype in kerns:
+        itype, itype_ph = 2, 2
+        system = SpinfulDoubleDotWithElPh(kerntype=kerntype, itype=itype, itype_ph=itype_ph, mfreeq=True)
+        system.solve()
+        attr = kerntype+str(itype)+str(itype_ph)
+        for param in ['current', 'energy_current']:
+            assert norm(getattr(system, param) - data[attr+param]) < 1e-4
+
     # Check results with different indexing
-    kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
-    kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     indexings = ['Lin', 'charge', 'sz', 'ssq']
     for kerntype, indexing in itertools.product(kerns, indexings):
+        itype, itype_ph = 2, 2
         system = SpinfulDoubleDotWithElPh(kerntype=kerntype, itype=itype, itype_ph=itype_ph, indexing=indexing)
         system.solve()
         attr = kerntype+str(itype)+str(itype_ph)

@@ -466,7 +466,7 @@ class StateIndexing(object):
         print_state() and print_all_states()
     """
 
-    def __init__(self, nsingle, indexing='Lin', symmetry=None, nleads=0):
+    def __init__(self, nsingle, indexing='Lin', symmetry=None, nleads=0, nbaths=0):
         """
         Initialization of the StateIndexing class
 
@@ -489,6 +489,7 @@ class StateIndexing(object):
         self.nmany = 2**nsingle
         self.nleads = nleads
         self.nleads_sym = nleads//2 if symmetry is 'spin' else nleads
+        self.nbaths = nbaths
         #
         self.szlst_lin = None
         self.szlst = None
@@ -1132,6 +1133,7 @@ class StateIndexingDMc(StateIndexing):
         #
         self.mapdm0 = np.ones(self.ndm0_, dtype=longnp)*(-1)
         self.booldm0 = np.zeros(self.ndm0_, dtype=boolnp)
+        self.conjdm0 = None
         self.inddm0 = {}
         counter = 0
         # Diagonal density matrix elements
