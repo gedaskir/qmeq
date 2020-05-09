@@ -1,3 +1,11 @@
+# cython: boundscheck=False
+# cython: cdivision=True
+# cython: infertypes=False
+# cython: initializedcheck=False
+# cython: nonecheck=False
+# cython: profile=False
+# cython: wraparound=False
+
 """Module containing cython functions, which generate first order Pauli kernel.
    For docstrings see documentation of module pauli."""
 
@@ -19,192 +27,133 @@ cimport cython
 
 from ...specfunc.c_specfunc cimport func_pauli
 from ..c_aprclass cimport Approach
+from ..c_aprclass cimport KernelHandler
 
+# ---------------------------------------------------------------------------------------------------
+# Pauli master equation
+# ---------------------------------------------------------------------------------------------------
+cdef class ApproachPauli(Approach):
 
-@cython.boundscheck(False)
-def generate_paulifct(self):
-    cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Tba = self.leads.Tba
-    si = self.si
-    cdef np.ndarray[double_t, ndim=1] mulst = self.leads.mulst
-    cdef np.ndarray[double_t, ndim=1] tlst = self.leads.tlst
-    cdef np.ndarray[double_t, ndim=2] dlst = self.leads.dlst
-    #
-    cdef long_t c, b, cb
-    cdef int_t bcharge, ccharge, charge, l
-    cdef double_t xcb, Ecb
-    cdef int_t nleads = si.nleads
-    cdef int_t itype = self.funcp.itype
-    #
-    cdef np.ndarray[double_t, ndim=3] paulifct = np.zeros((nleads, si.ndm1, 2), dtype=doublenp)
-    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
-    #
-    cdef np.ndarray[double_t, ndim=1] rez = np.zeros(2, dtype=doublenp)
-    #
-    for charge in range(si.ncharge-1):
-        ccharge = charge+1
-        bcharge = charge
-        for c, b in itertools.product(si.statesdm[ccharge], si.statesdm[bcharge]):
-            cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
+    kerntype = 'Pauli'
+    no_coherences = True
+
+    def get_kern_size(self):
+        return self.si.npauli
+
+    cpdef generate_fct(self):
+        cdef double_t [:] E = self.qd.Ea
+        cdef complex_t [:, :, :] Tba = self.leads.Tba
+        cdef double_t [:] mulst = self.leads.mulst
+        cdef double_t [:] tlst = self.leads.tlst
+        cdef double_t [:, :] dlst = self.leads.dlst
+
+        cdef KernelHandler kh = self._kernel_handler
+        cdef long_t nleads = kh.nleads
+
+        cdef long_t itype = self.funcp.itype
+
+        cdef long_t c, b, bcharge, cb, l
+        cdef double_t Ecb, xcb
+
+        cdef double_t [:, :, :] paulifct = np.zeros((nleads, kh.ndm1, 2), dtype=doublenp)
+        cdef np.ndarray[double_t, ndim=1] rez = np.zeros(2, dtype=doublenp)
+
+        for i in range(kh.ndm1):
+            c = kh.all_ba[i, 0]
+            b = kh.all_ba[i, 1]
+            bcharge = kh.all_ba[i, 2]
+            cb = kh.get_ind_dm1(c, b, bcharge)
             Ecb = E[c]-E[b]
             for l in range(nleads):
                 xcb = (Tba[l, b, c]*Tba[l, c, b]).real
                 func_pauli(Ecb, mulst[l], tlst[l], dlst[l, 0], dlst[l, 1], itype, rez)
                 paulifct[l, cb, 0] = xcb*rez[0]
                 paulifct[l, cb, 1] = xcb*rez[1]
-    self.paulifct = paulifct
-    return 0
 
+        self.paulifct = paulifct
 
-# ---------------------------------------------------------------------------------------------------
-# Pauli master equation
-# ---------------------------------------------------------------------------------------------------
-@cython.boundscheck(False)
-def generate_kern_pauli(self):
-    cdef np.ndarray[double_t, ndim=3] paulifct = self.paulifct
-    si = self.si
-    #
-    cdef bool_t bb_bool
-    cdef long_t b, bb, a, aa, c, cc, ba, cb
-    cdef int_t acharge, bcharge, ccharge, charge, l
-    cdef int_t nleads = si.nleads
-    cdef int_t npauli = si.npauli
-    #
-    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
-    #
-    cdef np.ndarray[double_t, ndim=2] kern = self.kern
-    for charge in range(si.ncharge):
-        acharge = charge-1
-        bcharge = charge
-        ccharge = charge+1
-        for b in si.statesdm[charge]:
-            bb = mapdm0[lenlst[bcharge]*dictdm[b] + dictdm[b] + shiftlst0[bcharge]]
-            bb_bool = booldm0[lenlst[bcharge]*dictdm[b] + dictdm[b] + shiftlst0[bcharge]]
-            if bb_bool:
-                for a in si.statesdm[charge-1]:
-                    aa = mapdm0[lenlst[acharge]*dictdm[a] + dictdm[a] + shiftlst0[acharge]]
-                    ba = lenlst[acharge]*dictdm[b] + dictdm[a] + shiftlst1[acharge]
-                    for l in range(nleads):
-                        kern[bb, bb] = kern[bb, bb] - paulifct[l, ba, 1]
-                        kern[bb, aa] = kern[bb, aa] + paulifct[l, ba, 0]
-                for c in si.statesdm[charge+1]:
-                    cc = mapdm0[lenlst[ccharge]*dictdm[c] + dictdm[c] + shiftlst0[ccharge]]
-                    cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
-                    for l in range(nleads):
-                        kern[bb, bb] = kern[bb, bb] - paulifct[l, cb, 0]
-                        kern[bb, cc] = kern[bb, cc] + paulifct[l, cb, 1]
-    return 0
+    cdef void set_coupling(self):
+        self._paulifct = self.paulifct
 
+    cdef void generate_coupling_terms(self,
+            long_t b, long_t bp, long_t bcharge,
+            KernelHandler kh) nogil:
 
-@cython.boundscheck(False)
-def generate_current_pauli(self):
-    cdef np.ndarray[double_t, ndim=1] phi0 = self.phi0
-    cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
-    cdef np.ndarray[double_t, ndim=3] paulifct = self.paulifct
-    si = self.si
-    #
-    cdef long_t c, cc, b, bb, cb
-    cdef int_t bcharge, ccharge, charge, l, nleads
-    cdef double_t fct1, fct2
-    nleads = si.nleads
-    #
-    cdef np.ndarray[double_t, ndim=1] current = np.zeros(nleads, dtype=doublenp)
-    cdef np.ndarray[double_t, ndim=1] energy_current = np.zeros(nleads, dtype=doublenp)
-    #
-    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
-    #
-    for charge in range(si.ncharge-1):
-        ccharge = charge+1
-        bcharge = charge
-        for c in si.statesdm[ccharge]:
-            cc = mapdm0[lenlst[ccharge]*dictdm[c] + dictdm[c] + shiftlst0[ccharge]]
-            for b in si.statesdm[bcharge]:
-                bb = mapdm0[lenlst[bcharge]*dictdm[b] + dictdm[b] + shiftlst0[bcharge]]
-                cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
-                for l in range(nleads):
-                    fct1 = +phi0[bb]*paulifct[l, cb, 0]
-                    fct2 = -phi0[cc]*paulifct[l, cb, 1]
-                    current[l] = current[l] + fct1 + fct2
-                    energy_current[l] = energy_current[l] - (E[b]-E[c])*(fct1 + fct2)
-    self.current = current
-    self.energy_current = energy_current
-    self.heat_current = energy_current - current*self.leads.mulst
-    return 0
+        cdef long_t a, c, aa, bb, cc, ba, cb
+        cdef double_t fctm, fctp
 
+        cdef long_t i, l
+        cdef long_t nleads = kh.nleads
+        cdef long_t [:, :] statesdm = kh.statesdm
 
-@cython.boundscheck(False)
-def generate_vec_pauli(self, np.ndarray[double_t, ndim=1] phi0):
-    cdef np.ndarray[double_t, ndim=3] paulifct = self.paulifct
-    si = self.si
-    cdef long_t norm_row = self.funcp.norm_row
-    #
-    cdef bool_t bb_bool
-    cdef long_t b, bb, a, aa, c, cc, ba, cb
-    cdef int_t acharge, bcharge, ccharge, charge, l
-    cdef int_t nleads = si.nleads
-    cdef double_t norm = 0
-    #
-    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[long_t, ndim=1] shiftlst1 = si.shiftlst1
-    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
-    #
-    cdef np.ndarray[double_t, ndim=1] dphi0_dt = np.zeros(si.npauli, dtype=doublenp)
-    for charge in range(si.ncharge):
-        acharge = charge-1
-        bcharge = charge
-        ccharge = charge+1
-        for b in si.statesdm[charge]:
-            bb = mapdm0[lenlst[bcharge]*dictdm[b] + dictdm[b] + shiftlst0[bcharge]]
-            bb_bool = booldm0[lenlst[bcharge]*dictdm[b] + dictdm[b] + shiftlst0[bcharge]]
-            norm = norm + phi0[bb]
-            if bb_bool:
-                for a in si.statesdm[charge-1]:
-                    aa = mapdm0[lenlst[acharge]*dictdm[a] + dictdm[a] + shiftlst0[acharge]]
-                    ba = lenlst[acharge]*dictdm[b] + dictdm[a] + shiftlst1[acharge]
-                    for l in range(nleads):
-                        dphi0_dt[bb] = dphi0_dt[bb] - paulifct[l, ba, 1]*phi0[bb]
-                        dphi0_dt[bb] = dphi0_dt[bb] + paulifct[l, ba, 0]*phi0[aa]
-                for c in si.statesdm[charge+1]:
-                    cc = mapdm0[lenlst[ccharge]*dictdm[c] + dictdm[c] + shiftlst0[ccharge]]
-                    cb = lenlst[bcharge]*dictdm[c] + dictdm[b] + shiftlst1[bcharge]
-                    for l in range(nleads):
-                        dphi0_dt[bb] = dphi0_dt[bb] - paulifct[l, cb, 0]*phi0[bb]
-                        dphi0_dt[bb] = dphi0_dt[bb] + paulifct[l, cb, 1]*phi0[cc]
-    dphi0_dt[norm_row] = norm-1
-    return dphi0_dt
+        cdef double_t [:, :, :] paulifct = self._paulifct
 
+        cdef long_t acharge = bcharge-1
+        cdef long_t ccharge = bcharge+1
 
-cdef class ApproachPauli(Approach):
+        cdef long_t acount = kh.statesdm_count[acharge] if acharge >= 0 else 0
+        cdef long_t ccount = kh.statesdm_count[ccharge] if ccharge <= kh.ncharge else 0
 
-    kerntype = 'Pauli'
+        bb = kh.get_ind_dm0(b, b, bcharge)
 
-    def get_kern_size(self):
-        return self.si.npauli
+        for i in range(acount):
+            a = statesdm[acharge, i]
+            aa = kh.get_ind_dm0(a, a, acharge)
+            ba = kh.get_ind_dm1(b, a, acharge)
+            fctm, fctp = 0, 0
+            for l in range(nleads):
+                fctm -= paulifct[l, ba, 1]
+                fctp += paulifct[l, ba, 0]
+            kh.set_matrix_element_pauli(fctm, fctp, bb, aa)
 
-    cpdef generate_fct(self):
-        generate_paulifct(self)
-
-    cpdef generate_kern(self):
-        generate_kern_pauli(self)
+        for i in range(ccount):
+            c = statesdm[ccharge, i]
+            cc = kh.get_ind_dm0(c, c, ccharge)
+            cb = kh.get_ind_dm1(c, b, bcharge)
+            fctm, fctp = 0, 0
+            for l in range(nleads):
+                fctm -= paulifct[l, cb, 0]
+                fctp += paulifct[l, cb, 1]
+            kh.set_matrix_element_pauli(fctm, fctp, bb, cc)
 
     cpdef generate_current(self):
-        generate_current_pauli(self)
+        cdef double_t [:] phi0 = self.phi0
+        cdef double_t [:] E = self.qd.Ea
+        cdef double_t [:, :, :] paulifct = self._paulifct
 
-    cpdef generate_vec(self, phi0):
-        return generate_vec_pauli(self, phi0)
+        cdef long_t i, j, l
+        cdef long_t bcharge, ccharge, bcount, ccount
+        cdef long_t b, c, bb, cc, cb
+        cdef double_t fct1, fct2
 
+        cdef KernelHandler kh = self._kernel_handler
+        cdef long_t [:, :] statesdm = kh.statesdm
+        cdef long_t nleads = kh.nleads
+
+        cdef np.ndarray[double_t, ndim=1] current = np.zeros(nleads, dtype=doublenp)
+        cdef np.ndarray[double_t, ndim=1] energy_current = np.zeros(nleads, dtype=doublenp)
+
+        for i in range(kh.ndm1):
+            c = kh.all_ba[i, 0]
+            b = kh.all_ba[i, 1]
+
+            bcharge = kh.all_ba[i, 2]
+            ccharge = bcharge+1
+
+            bcount = kh.statesdm_count[bcharge]
+            ccount = kh.statesdm_count[ccharge] if ccharge <= kh.ncharge else 0
+
+            bb = kh.get_ind_dm0(b, b, bcharge)
+            cc = kh.get_ind_dm0(c, c, ccharge)
+            cb = kh.get_ind_dm1(c, b, bcharge)
+
+            for l in range(nleads):
+                fct1 = +phi0[bb]*paulifct[l, cb, 0]
+                fct2 = -phi0[cc]*paulifct[l, cb, 1]
+                current[l] = current[l] + fct1 + fct2
+                energy_current[l] = energy_current[l] - (E[b]-E[c])*(fct1 + fct2)
+
+        self.current = current
+        self.energy_current = energy_current
+        self.heat_current = energy_current - current*self.leads.mulst
 # ---------------------------------------------------------------------------------------------------

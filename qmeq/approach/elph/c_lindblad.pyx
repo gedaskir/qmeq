@@ -1,3 +1,11 @@
+# cython: boundscheck=False
+# cython: cdivision=True
+# cython: infertypes=False
+# cython: initializedcheck=False
+# cython: nonecheck=False
+# cython: profile=False
+# cython: wraparound=False
+
 """Module containing cython functions, which generate first order Lindblad kernel.
    For docstrings see documentation of module lindblad."""
 
@@ -22,150 +30,117 @@ from libc.math cimport sqrt
 from ...specfunc.c_specfunc_elph cimport FuncPauliElPh
 
 from ..c_aprclass cimport ApproachElPh
+from ..c_aprclass cimport KernelHandler
 
-from ..base.c_lindblad cimport ApproachLindblad as Approach
+from ..base.c_lindblad cimport ApproachLindblad as ApproachLindbladBase
 
 
 # ---------------------------------------------------------------------------------------------------------
 # Lindblad approach
 # ---------------------------------------------------------------------------------------------------------
-@cython.cdivision(True)
-@cython.boundscheck(False)
-def generate_tLbbp_elph(self):
-    cdef np.ndarray[complex_t, ndim=3] Vbbp = self.baths.Vbbp
-    cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
-    si = self.si
-    #
-    cdef long_t b, bp
-    cdef int_t  charge, l
-    cdef double_t Ebbp
-    cdef int_t nbaths = si.nbaths
-    #
-    cdef np.ndarray[complex_t, ndim=4] tLbbp = np.zeros((nbaths, si.nmany, si.nmany, 2), dtype=complexnp)
-    #
-    func_pauli = FuncPauliElPh(self.baths.tlst_ph, self.baths.dlst_ph,
-                               self.baths.bath_func, self.funcp.eps_elph)
-    # Diagonal elements
-    for l in range(nbaths):
-        func_pauli.eval(0., l)
-        for charge in range(si.ncharge):
-            for b in si.statesdm[charge]:
-                tLbbp[l, b, b, 0] = sqrt(0.5*func_pauli.val)*Vbbp[l, b, b]
-                tLbbp[l, b, b, 1] = tLbbp[l, b, b, 0].conjugate()
-    # Off-diagonal elements
-    for charge in range(si.ncharge):
-        for b, bp in itertools.permutations(si.statesdm[charge], 2):
-            Ebbp = E[b]-E[bp]
-            for l in range(nbaths):
-                func_pauli.eval(Ebbp, l)
-                tLbbp[l, b, bp, 0] = sqrt(0.5*func_pauli.val)*Vbbp[l, b, bp]
-                tLbbp[l, b, bp, 1] = sqrt(0.5*func_pauli.val)*Vbbp[l, bp, b].conjugate()
-    self.tLbbp = tLbbp
-    return 0
-
-
-@cython.boundscheck(False)
-def generate_kern_lindblad_elph(self):
-    cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
-    cdef np.ndarray[complex_t, ndim=4] tLbbp = self.tLbbp
-    si = self.si
-    #
-    cdef bool_t bbp_bool, bbpi_bool
-    cdef int_t charge, l, q, nbaths, \
-               aap_sgn, bppbp_sgn, bbpp_sgn
-    cdef long_t b, bp, bbp, bbpi, bb, \
-                a, ap, aap, aapi, \
-                bpp, bppbp, bppbpi, bbpp, bbppi
-    cdef long_t ndm0, ndm0r, npauli,
-    cdef complex_t fct_aap, fct_bppbp, fct_bbpp
-    #
-    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
-    cdef np.ndarray[bool_t, ndim=1] conjdm0 = si.conjdm0
-    #
-    ndm0r, ndm0, npauli, nbaths = si.ndm0r, si.ndm0, si.npauli, si.nbaths
-    #
-    cdef np.ndarray[double_t, ndim=2] kern = self.kern
-    for charge in range(si.ncharge):
-        for b, bp in itertools.combinations_with_replacement(si.statesdm[charge], 2):
-            bbp = mapdm0[lenlst[charge]*dictdm[b] + dictdm[bp] + shiftlst0[charge]]
-            bbp_bool = booldm0[lenlst[charge]*dictdm[b] + dictdm[bp] + shiftlst0[charge]]
-            if bbp != -1 and bbp_bool:
-                bbpi = ndm0 + bbp - npauli
-                bbpi_bool = True if bbpi >= ndm0 else False
-                # --------------------------------------------------
-                for a, ap in itertools.product(si.statesdm[charge], si.statesdm[charge]):
-                    aap = mapdm0[lenlst[charge]*dictdm[a] + dictdm[ap] + shiftlst0[charge]]
-                    if aap != -1:
-                        fct_aap = 0
-                        for l in range(nbaths):
-                            for q in range(2):
-                                fct_aap += tLbbp[l, b, a, q]*tLbbp[l, bp, a, q].conjugate()
-                        aapi = ndm0 + aap - npauli
-                        aap_sgn = +1 if conjdm0[lenlst[charge]*dictdm[a] + dictdm[ap] + shiftlst0[charge]] else -1
-                        kern[bbp, aap] = kern[bbp, aap] + fct_aap.real
-                        if aapi >= ndm0:
-                            kern[bbp, aapi] = kern[bbp, aapi] - fct_aap.imag*aap_sgn
-                            if bbpi_bool:
-                                kern[bbpi, aapi] = kern[bbpi, aapi] + fct_aap.real*aap_sgn
-                        if bbpi_bool:
-                            kern[bbpi, aap] = kern[bbpi, aap] + fct_aap.imag
-                # --------------------------------------------------
-                for bpp in si.statesdm[charge]:
-                    bppbp = mapdm0[lenlst[charge]*dictdm[bpp] + dictdm[bp] + shiftlst0[charge]]
-                    if bppbp != -1:
-                        fct_bppbp = 0
-                        for a in si.statesdm[charge]:
-                            for l in range(nbaths):
-                                for q in range(2):
-                                    fct_bppbp += -0.5*tLbbp[l, a, b, q].conjugate()*tLbbp[l, a, bpp, q]
-                        bppbpi = ndm0 + bppbp - npauli
-                        bppbp_sgn = +1 if conjdm0[lenlst[charge]*dictdm[bpp] + dictdm[bp] + shiftlst0[charge]] else -1
-                        kern[bbp, bppbp] = kern[bbp, bppbp] + fct_bppbp.real
-                        if bppbpi >= ndm0:
-                            kern[bbp, bppbpi] = kern[bbp, bppbpi] - fct_bppbp.imag*bppbp_sgn
-                            if bbpi_bool:
-                                kern[bbpi, bppbpi] = kern[bbpi, bppbpi] + fct_bppbp.real*bppbp_sgn
-                        if bbpi_bool:
-                            kern[bbpi, bppbp] = kern[bbpi, bppbp] + fct_bppbp.imag
-                    # --------------------------------------------------
-                    bbpp = mapdm0[lenlst[charge]*dictdm[b] + dictdm[bpp] + shiftlst0[charge]]
-                    if bbpp != -1:
-                        fct_bbpp = 0
-                        for a in si.statesdm[charge]:
-                            for l in range(nbaths):
-                                for q in range(2):
-                                    fct_bbpp += -0.5*tLbbp[l, a, bpp, q].conjugate()*tLbbp[l, a, bp, q]
-                        bbppi = ndm0 + bbpp - npauli
-                        bbpp_sgn = +1 if conjdm0[lenlst[charge]*dictdm[b] + dictdm[bpp] + shiftlst0[charge]] else -1
-                        kern[bbp, bbpp] = kern[bbp, bbpp] + fct_bbpp.real
-                        if bbppi >= ndm0:
-                            kern[bbp, bbppi] = kern[bbp, bbppi] - fct_bbpp.imag*bbpp_sgn
-                            if bbpi_bool:
-                                kern[bbpi, bbppi] = kern[bbpi, bbppi] + fct_bbpp.real*bbpp_sgn
-                        if bbpi_bool:
-                            kern[bbpi, bbpp] = kern[bbpi, bbpp] + fct_bbpp.imag
-                # --------------------------------------------------
-    return 0
-
-
 cdef class ApproachLindblad(ApproachElPh):
 
     kerntype = 'Lindblad'
 
     cpdef generate_fct(self):
-        Approach.generate_fct(self)
-        generate_tLbbp_elph(self)
+        ApproachLindbladBase.generate_fct(self)
 
-    cpdef generate_kern(self):
-        Approach.generate_kern(self)
-        generate_kern_lindblad_elph(self)
+        cdef complex_t [:, :, :] Vbbp = self.baths.Vbbp
+        cdef double_t [:] E = self.qd.Ea
+
+        cdef KernelHandler kh = self._kernel_handler.elph
+        cdef long_t nbaths = kh.nbaths
+
+        cdef long_t b, bp, bcharge, l, i
+        cdef double_t Ebbp
+
+        func_pauli = FuncPauliElPh(self.baths.tlst_ph, self.baths.dlst_ph,
+                                   self.baths.bath_func, self.funcp.eps_elph)
+
+        cdef complex_t [:, :, :, :] tLbbp = np.zeros((nbaths, kh.nmany, kh.nmany, 2), dtype=complexnp)
+
+        cdef double_t [:] func_pauli_at_zero = np.zeros(nbaths, dtype=doublenp)
+        for l in range(nbaths):
+            func_pauli.eval(0., l)
+            func_pauli_at_zero[l] = func_pauli.val
+
+        for i in range(kh.ndm0):
+            b = kh.all_bbp[i, 0]
+            bp = kh.all_bbp[i, 1]
+
+            if b == bp:
+                # Diagonal elements
+                for l in range(nbaths):
+                    tLbbp[l, b, b, 0] = sqrt(0.5*func_pauli_at_zero[l])*Vbbp[l, b, b]
+                    tLbbp[l, b, b, 1] = tLbbp[l, b, b, 0].conjugate()
+            else:
+                # Off-diagonal elements
+                Ebbp = E[b]-E[bp]
+                for l in range(nbaths):
+                    func_pauli.eval(Ebbp, l)
+                    tLbbp[l, b, bp, 0] = sqrt(0.5*func_pauli.val)*Vbbp[l, b, bp]
+                    tLbbp[l, b, bp, 1] = sqrt(0.5*func_pauli.val)*Vbbp[l, bp, b].conjugate()
+
+
+        self.tLbbp = tLbbp
+
+    cdef void set_coupling(self):
+        ApproachLindbladBase.set_coupling(self)
+        self._tLbbp = self.tLbbp
+
+    cdef void generate_coupling_terms(self,
+                long_t b, long_t bp, long_t bcharge,
+                KernelHandler kh) nogil:
+
+        ApproachLindbladBase.generate_coupling_terms(self, b, bp, bcharge, kh)
+
+        cdef long_t bpp, a, ap
+        cdef complex_t fct_aap, fct_bppbp, fct_bbpp
+
+        cdef long_t i, j, l, q
+        cdef long_t nbaths = kh.nbaths
+        cdef long_t [:, :] statesdm = kh.statesdm
+
+        cdef complex_t [:, :, :, :] tLbbp = self._tLbbp
+
+        cdef long_t acharge = bcharge
+
+        cdef long_t acount = kh.statesdm_count[acharge]
+        cdef long_t bcount = kh.statesdm_count[bcharge]
+
+        # --------------------------------------------------
+        for i in range(acount):
+            for j in range(acount):
+                a = statesdm[acharge, i]
+                ap = statesdm[acharge, j]
+                if not kh.is_included(a, ap, acharge):
+                    continue
+                fct_aap = 0
+                for l in range(nbaths):
+                    for q in range(2):
+                        fct_aap += tLbbp[l, b, a, q]*tLbbp[l, bp, a, q].conjugate()
+                kh.set_matrix_element(1j*fct_aap, b, bp, bcharge, a, ap, acharge)
+        # --------------------------------------------------
+        for i in range(bcount):
+            bpp = statesdm[bcharge, i]
+            if kh.is_included(bpp, bp, bcharge):
+                fct_bppbp = 0
+                for j in range(acount):
+                    a = statesdm[acharge, j]
+                    for l in range(nbaths):
+                        for q in range(2):
+                            fct_bppbp += -0.5*tLbbp[l, a, b, q].conjugate()*tLbbp[l, a, bpp, q]
+                kh.set_matrix_element(1j*fct_bppbp, b, bp, bcharge, bpp, bp, bcharge)
+            # --------------------------------------------------
+            if kh.is_included(b, bpp, bcharge):
+                fct_bbpp = 0
+                for j in range(acount):
+                    a = statesdm[acharge, j]
+                    for l in range(nbaths):
+                        for q in range(2):
+                            fct_bbpp += -0.5*tLbbp[l, a, bpp, q].conjugate()*tLbbp[l, a, bp, q]
+                kh.set_matrix_element(1j*fct_bbpp, b, bp, bcharge, b, bpp, bcharge)
+        # --------------------------------------------------
 
     cpdef generate_current(self):
-        Approach.generate_current(self)
-
-    cpdef generate_vec(self, phi0):
-        return Approach.generate_vec(self, phi0)
+        ApproachLindbladBase.generate_current(self)
