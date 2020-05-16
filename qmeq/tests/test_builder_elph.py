@@ -50,7 +50,8 @@ class SpinfulDoubleDotWithElPh(BuilderElPh):
                  itype_ph=0,
                  indexing='ssq',
                  symq=True,
-                 mfreeq=False):
+                 mfreeq=False,
+                 indexing_class_name=None):
         """Initialization of the Model class."""
 
         self.p = ModelParameters(locals())
@@ -90,7 +91,8 @@ class SpinfulDoubleDotWithElPh(BuilderElPh):
             symq=symq,
             mfreeq=mfreeq,
             indexing=indexing,
-            symmetry='spin')
+            symmetry='spin',
+            indexing_class_name=indexing_class_name)
 
     # ------------------------------------------------
 

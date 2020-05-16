@@ -96,7 +96,8 @@ class BuilderBase(object):
                  kerntype='Pauli', symq=True, norm_row=0, solmethod=None,
                  itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
                  mtype_qd=complex, mtype_leads=complex,
-                 symmetry=None, herm_hs=True, herm_c=False, m_less_n=True):
+                 symmetry=None, herm_hs=True, herm_c=False, m_less_n=True,
+                 indexing_class_name=None):
 
         self._init_copy_data(locals())
         self._init_validate_data()
@@ -136,7 +137,9 @@ class BuilderBase(object):
                                         mtype_qd=data.mtype_qd, mtype_leads=data.mtype_leads,
                                         kpnt=data.kpnt, dband=data.dband)
 
-        icn = self.Approach.indexing_class_name
+        icn = data.indexing_class_name
+        icn = self.Approach.indexing_class_name if icn is None else icn
+
         self.si = self.globals[icn](data.nsingle, data.indexing, data.symmetry)
         self.qd = QuantumDot(data.hsingle, data.coulomb, self.si,
                              data.herm_hs, data.herm_c, data.m_less_n, data.mtype_qd)

@@ -86,7 +86,8 @@ class BuilderElPh(BuilderBase):
                  mfreeq=False, phi0_init=None,
                  mtype_qd=complex, mtype_leads=complex,
                  symmetry=None, herm_hs=True, herm_c=False, m_less_n=True,
-                 bath_func=None, eps_elph=1.0e-6):
+                 bath_func=None, eps_elph=1.0e-6,
+                 indexing_class_name=None):
 
         self._init_copy_data(locals())
         self._init_validate_data()

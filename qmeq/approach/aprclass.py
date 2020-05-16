@@ -11,6 +11,8 @@ from scipy import optimize
 from ..mytypes import doublenp
 from ..mytypes import complexnp
 
+from ..indexing import StateIndexingDMc
+
 
 class Approach(object):
     """
@@ -75,6 +77,10 @@ class Approach(object):
         self.leads = builder.leads
         self.si = builder.si
         self.funcp = builder.funcp
+
+        if isinstance(self.si, StateIndexingDMc):
+            self.dtype = complexnp
+
         self.restart()
 
     def restart(self):
@@ -107,7 +113,13 @@ class Approach(object):
         ncharge, statesdm = si.ncharge, si.statesdm
 
         for bcharge in range(ncharge):
-            for b, bp in itertools.combinations_with_replacement(statesdm[bcharge], 2):
+
+            if isinstance(si, StateIndexingDMc):
+                iterator = itertools.product(statesdm[bcharge], statesdm[bcharge])
+            else:
+                iterator = itertools.combinations_with_replacement(statesdm[bcharge], 2)
+
+            for b, bp in iterator:
                 if not (kh.is_included(b, bp, bcharge) and kh.is_unique(b, bp, bcharge)):
                     continue
                 kh.set_energy(E[b]-E[bp], b, bp, bcharge)
@@ -153,6 +165,9 @@ class Approach(object):
         return dphi0_dt
 
     def get_kern_size(self):
+        if isinstance(self.si, StateIndexingDMc):
+            return self.si.ndm0
+
         return self.si.ndm0r
 
     def set_phi0_init(self):
@@ -209,7 +224,7 @@ class Approach(object):
             self.success = True
         except Exception as exept:
             self.funcp.print_error(exept)
-            self.phi0 = np.zeros(self.si.ndm0r)
+            self.phi0 = np.zeros(self.get_kern_size())
             self.success = False
 
         # Return back the replaced equation
@@ -529,6 +544,15 @@ class KernelHandler(object):
         self.phi0 = None
         self.kern = None
 
+        if isinstance(si, StateIndexingDMc):
+            self.set_energy = self.set_energy_complex
+            self.set_matrix_element = self.set_matrix_element_complex
+            self.get_phi0_element = self.get_phi0_element_complex
+        else:
+            self.set_energy = self.set_energy_real
+            self.set_matrix_element = self.set_matrix_element_real
+            self.get_phi0_element = self.get_phi0_element_real
+
     def set_kern(self, kern):
         self.kern = kern
 
@@ -546,7 +570,16 @@ class KernelHandler(object):
         bbp_bool = self.si.get_ind_dm0(b, bp, bcharge, maptype=2)
         return bbp_bool
 
-    def set_energy(self, energy, b, bp, bcharge):
+    def set_energy_complex(self, energy, b, bp, bcharge):
+        bbp = self.si.get_ind_dm0(b, bp, bcharge)
+        self.kern[bbp, bbp] = energy
+
+    def set_matrix_element_complex(self, fct, b, bp, bcharge, a, ap, acharge):
+        bbp = self.si.get_ind_dm0(b, bp, bcharge)
+        aap = self.si.get_ind_dm0(a, ap, acharge)
+        self.kern[bbp, aap] += fct
+
+    def set_energy_real(self, energy, b, bp, bcharge):
         bbp = self.si.get_ind_dm0(b, bp, bcharge)
         bbpi = self.ndm0 + bbp - self.npauli
         bbpi_bool = True if bbpi >= self.ndm0 else False
@@ -555,7 +588,7 @@ class KernelHandler(object):
             self.kern[bbp, bbpi] = self.kern[bbp, bbpi] + energy
             self.kern[bbpi, bbp] = self.kern[bbpi, bbp] - energy
 
-    def set_matrix_element(self, fct, b, bp, bcharge, a, ap, acharge):
+    def set_matrix_element_real(self, fct, b, bp, bcharge, a, ap, acharge):
         bbp = self.si.get_ind_dm0(b, bp, bcharge)
         bbpi = self.ndm0 + bbp - self.npauli
         bbpi_bool = True if bbpi >= self.ndm0 else False
@@ -579,7 +612,7 @@ class KernelHandler(object):
         self.kern[bb, bb] += fctm
         self.kern[bb, aa] += fctp
 
-    def get_phi0_element(self, b, bp, bcharge):
+    def get_phi0_element_real(self, b, bp, bcharge):
         bbp = self.si.get_ind_dm0(b, bp, bcharge)
         if bbp == -1:
             return 0.0
@@ -594,6 +627,13 @@ class KernelHandler(object):
             phi0_imag = self.phi0[bbpi] if bbp_conj else -self.phi0[bbpi]
 
         return phi0_real + 1j*phi0_imag
+
+    def get_phi0_element_complex(self, b, bp, bcharge):
+        bbp = self.si.get_ind_dm0(b, bp, bcharge)
+        if bbp == -1:
+            return 0.0
+
+        return self.phi0[bbp]
 
 class KernelHandlerMatrixFree(KernelHandler):
 

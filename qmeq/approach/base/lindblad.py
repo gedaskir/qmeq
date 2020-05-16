@@ -110,23 +110,22 @@ class ApproachLindblad(Approach):
         ndm0, npauli = si.ndm0, si.npauli
         ncharge, nleads, statesdm = si.ncharge, si.nleads, si.statesdm
 
+        kh = self.kernel_handler
+        kh.set_phi0(self.phi0)
+
         current = np.zeros(nleads, dtype=complexnp)
         energy_current = np.zeros(nleads, dtype=complexnp)
-        #
-        phi0 = np.zeros(ndm0, dtype=complexnp)
-        phi0[0:npauli] = phi0p[0:npauli]
-        phi0[npauli:ndm0] = phi0p[npauli:ndm0] + 1j*phi0p[ndm0:]
-        #
+
         for charge in range(ncharge):
             ccharge = charge+1
             bcharge = charge
             acharge = charge-1
+
             for b, bp in itertools.product(statesdm[bcharge], statesdm[bcharge]):
-                bbp = si.get_ind_dm0(b, bp, bcharge)
-                if bbp == -1:
+                if not kh.is_included(b, bp, bcharge):
                     continue
-                bbp_conj = si.get_ind_dm0(b, bp, bcharge, maptype=3)
-                phi0bbp = phi0[bbp] if bbp_conj else phi0[bbp].conjugate()
+                phi0bbp = kh.get_phi0_element(b, bp, bcharge)
+
                 for l in range(nleads):
                     for a in statesdm[acharge]:
                         fcta = tLba[l, a, b]*phi0bbp*tLba[l, a, bp].conjugate()
@@ -136,6 +135,7 @@ class ApproachLindblad(Approach):
                         fctc = tLba[l, c, b]*phi0bbp*tLba[l, c, bp].conjugate()
                         current[l] += fctc
                         energy_current[l] += (E[c]-0.5*(E[b]+E[bp]))*fctc
+
         self.current = np.array(current.real, dtype=doublenp)
         self.energy_current = np.array(energy_current.real, dtype=doublenp)
         self.heat_current = self.energy_current - self.current*self.leads.mulst
