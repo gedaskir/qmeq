@@ -529,6 +529,8 @@ class StateIndexing(object):
         self.removed_fock_states = None
         self.nmany_ = self.nmany
 
+        self.states_changed = True
+
     def get_state(self, ind, linq=False, strq=False):
         """
         Returns a list containing digits of a binary number corresponding to a state index.
@@ -665,6 +667,8 @@ class StateIndexing(object):
 
         self.qn_ind, self.ind_qn = make_quantum_numbers(self)
 
+        self.states_changed = True
+
 
 class StateIndexingPauli(StateIndexing):
     """
@@ -724,6 +728,8 @@ class StateIndexingPauli(StateIndexing):
         for j1 in range(self.ncharge):
             self.npauli_ += len(statesdm[j1])
         self.set_dictdm()
+
+        self.states_changed = True
 
     def set_dictdm(self):
         """
@@ -901,6 +907,8 @@ class StateIndexingDM(StateIndexing):
             if j1 < self.ncharge-1:
                 self.ndm1_ += len(statesdm[j1])*len(statesdm[j1+1])
         self.set_dictdm()
+
+        self.states_changed = True
 
     def set_dictdm(self):
         """
@@ -1101,6 +1109,8 @@ class StateIndexingDMc(StateIndexing):
             if j1 < self.ncharge-1:
                 self.ndm1_ += len(statesdm[j1])*len(statesdm[j1+1])
         self.set_dictdm()
+
+        self.states_changed = True
 
     def set_dictdm(self):
         """

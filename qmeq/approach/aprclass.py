@@ -161,6 +161,11 @@ class Approach(object):
         return phi0_init
 
     def prepare_kern(self):
+        if not self.si.states_changed:
+            self.kern_ext.fill(0.0)
+            return
+
+        self.si.states_changed = False
         self.prepare_kernel_handler()
 
         if not self.funcp.mfreeq:

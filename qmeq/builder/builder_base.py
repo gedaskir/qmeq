@@ -170,6 +170,7 @@ class BuilderBase(object):
             self.si = self.globals[icn](si.nsingle, si.indexing, si.symmetry, si.nleads)
             self.qd.si = self.si
             self.leads.si = self.si
+        self.si.states_changed = True
 
     # kerntype
     def get_kerntype(self):
