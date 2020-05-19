@@ -20,6 +20,15 @@ class ApproachLindblad(Approach):
 
     kerntype = 'pyLindblad'
 
+    def prepare_arrays(self):
+        Approach.prepare_arrays(self)
+        Tba, mtype = self.leads.Tba, self.leads.mtype
+        self.tLba = np.zeros(Tba.shape, dtype=mtype)
+
+    def clean_arrays(self):
+        Approach.clean_arrays(self)
+        self.tLba.fill(0.0)
+
     def generate_fct(self):
         """
         Make factors used for generating Lindblad master equation kernel.
@@ -31,10 +40,10 @@ class ApproachLindblad(Approach):
         """
         Tba, E, si = self.leads.Tba, self.qd.Ea, self.si
         mulst, tlst, dlst = self.leads.mulst, self.leads.tlst, self.leads.dlst
-        mtype, itype = self.leads.mtype, self.funcp.itype
+        itype = self.funcp.itype
         ncharge, nleads, statesdm = si.ncharge, si.nleads, si.statesdm
-        #
-        tLba = np.zeros(Tba.shape, dtype=mtype)
+
+        tLba = self.tLba
         for charge in range(ncharge-1):
             bcharge = charge+1
             acharge = charge
@@ -44,7 +53,6 @@ class ApproachLindblad(Approach):
                     fct1, fct2 = func_pauli(Eba, mulst[l], tlst[l], dlst[l, 0], dlst[l, 1], itype)
                     tLba[l, b, a] = np.sqrt(fct1)*Tba[l, b, a]
                     tLba[l, a, b] = np.sqrt(fct2)*Tba[l, a, b]
-        self.tLba = tLba
 
     def generate_coupling_terms(self, b, bp, bcharge):
         tLba = self.tLba
@@ -110,12 +118,10 @@ class ApproachLindblad(Approach):
         ndm0, npauli = si.ndm0, si.npauli
         ncharge, nleads, statesdm = si.ncharge, si.nleads, si.statesdm
 
+        current = self.current
+        energy_current = self.energy_current
+
         kh = self.kernel_handler
-        kh.set_phi0(self.phi0)
-
-        current = np.zeros(nleads, dtype=complexnp)
-        energy_current = np.zeros(nleads, dtype=complexnp)
-
         for charge in range(ncharge):
             ccharge = charge+1
             bcharge = charge
@@ -127,16 +133,19 @@ class ApproachLindblad(Approach):
                 phi0bbp = kh.get_phi0_element(b, bp, bcharge)
 
                 for l in range(nleads):
+                    current_l, energy_current_l = 0, 0
+
                     for a in statesdm[acharge]:
                         fcta = tLba[l, a, b]*phi0bbp*tLba[l, a, bp].conjugate()
-                        current[l] -= fcta
-                        energy_current[l] += (E[a]-0.5*(E[b]+E[bp]))*fcta
+                        current_l -= fcta
+                        energy_current_l += (E[a]-0.5*(E[b]+E[bp]))*fcta
                     for c in statesdm[ccharge]:
                         fctc = tLba[l, c, b]*phi0bbp*tLba[l, c, bp].conjugate()
-                        current[l] += fctc
-                        energy_current[l] += (E[c]-0.5*(E[b]+E[bp]))*fctc
+                        current_l += fctc
+                        energy_current_l += (E[c]-0.5*(E[b]+E[bp]))*fctc
 
-        self.current = np.array(current.real, dtype=doublenp)
-        self.energy_current = np.array(energy_current.real, dtype=doublenp)
-        self.heat_current = self.energy_current - self.current*self.leads.mulst
+                    current[l] += current_l.real
+                    energy_current[l] += energy_current_l.real
+
+        self.heat_current[:] = energy_current - current*self.leads.mulst
 # ---------------------------------------------------------------------------------------------------

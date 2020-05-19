@@ -147,10 +147,13 @@ def test_Builder_elph_double_dot_spinful():
 
         if PRNTQ:
             print(kerntype, itype)
+            print('current')
             print(system.current)
             print( data[attr+'current'] )
+            print('energy_current')
             print(system.energy_current)
             print( data[attr+'energy_current'] )
+            print('differences:')
             print( norm(system.current - data[attr+'current']) )
             print( norm(system.energy_current - data[attr+'energy_current']) )
 

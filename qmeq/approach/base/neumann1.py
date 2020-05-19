@@ -20,6 +20,19 @@ class Approach1vN(Approach):
 
     kerntype = 'py1vN'
 
+    def prepare_arrays(self):
+        Approach.prepare_arrays(self)
+        nleads, ndm1 = self.si.nleads, self.si.ndm1
+        self.phi1fct = np.zeros((nleads, ndm1, 2), dtype=complexnp)
+        self.phi1fct_energy = np.zeros((nleads, ndm1, 2), dtype=complexnp)
+        self.phi1 = np.zeros((nleads, ndm1), dtype=complexnp)
+
+    def clean_arrays(self):
+        Approach.clean_arrays(self)
+        self.phi1fct.fill(0.0)
+        self.phi1fct_energy.fill(0.0)
+        self.phi1.fill(0.0)
+
     def generate_fct(self):
         """
         Make factors used for generating 1vN, Redfield master equation kernels.
@@ -34,10 +47,10 @@ class Approach1vN(Approach):
         E, si = self.qd.Ea, self.si,
         mulst, tlst, dlst = self.leads.mulst, self.leads.tlst, self.leads.dlst
         itype, limit = self.funcp.itype, self.funcp.dqawc_limit
-        ndm1, ncharge, nleads, statesdm = si.ndm1, si.ncharge, si.nleads, si.statesdm
+        ncharge, nleads, statesdm = si.ncharge, si.nleads, si.statesdm
 
-        phi1fct = np.zeros((nleads, ndm1, 2), dtype=complexnp)
-        phi1fct_energy = np.zeros((nleads, ndm1, 2), dtype=complexnp)
+        phi1fct = self.phi1fct
+        phi1fct_energy = self.phi1fct_energy
         for charge in range(ncharge-1):
             ccharge = charge+1
             bcharge = charge
@@ -50,8 +63,6 @@ class Approach1vN(Approach):
                     phi1fct[l, cb, 1] = rez[1]
                     phi1fct_energy[l, cb, 0] = rez[2]
                     phi1fct_energy[l, cb, 1] = rez[3]
-        self.phi1fct = phi1fct
-        self.phi1fct_energy = phi1fct_energy
 
     def generate_coupling_terms(self, b, bp, bcharge):
         Tba, phi1fct = self.leads.Tba, self.phi1fct
@@ -128,16 +139,13 @@ class Approach1vN(Approach):
         phi1fct, phi1fct_energy = self.phi1fct, self.phi1fct_energy
 
         si = self.si
-        ndm0, ndm1, npauli = si.ndm0, si.ndm1, si.npauli
         ncharge, nleads, statesdm = si.ncharge, si.nleads, si.statesdm
 
+        phi1 = self.phi1
+        current = self.current
+        energy_current = self.energy_current
+
         kh = self.kernel_handler
-        kh.set_phi0(self.phi0)
-
-        phi1 = np.zeros((nleads, ndm1), dtype=complexnp)
-        current = np.zeros(nleads, dtype=complexnp)
-        energy_current = np.zeros(nleads, dtype=complexnp)
-
         for charge in range(ncharge-1):
             ccharge = charge+1
             bcharge = charge
@@ -145,6 +153,8 @@ class Approach1vN(Approach):
                 cb = si.get_ind_dm1(c, b, bcharge)
 
                 for l in range(nleads):
+                    current_l, energy_current_l = 0, 0
+
                     fct1 = phi1fct[l, cb, 0]
                     fct2 = phi1fct[l, cb, 1]
                     fct1h = phi1fct_energy[l, cb, 0]
@@ -156,8 +166,8 @@ class Approach1vN(Approach):
                         phi0bpb = kh.get_phi0_element(bp, b, bcharge)
 
                         phi1[l, cb] += Tba[l, c, bp]*phi0bpb*fct1
-                        current[l] += Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1
-                        energy_current[l] += Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1h
+                        current_l += Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1
+                        energy_current_l += Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1h
 
                     for cp in statesdm[ccharge]:
                         if not kh.is_included(c, cp, ccharge):
@@ -165,11 +175,11 @@ class Approach1vN(Approach):
                         phi0ccp = kh.get_phi0_element(c, cp, ccharge)
 
                         phi1[l, cb] += Tba[l, cp, b]*phi0ccp*fct2
-                        current[l] += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2
-                        energy_current[l] += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2h
+                        current_l += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2
+                        energy_current_l += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2h
 
-        self.phi1 = phi1
-        self.current = np.array(-2*current.imag, dtype=doublenp)
-        self.energy_current = np.array(-2*energy_current.imag, dtype=doublenp)
-        self.heat_current = self.energy_current - self.current*self.leads.mulst
+                    current[l] += -2*current_l.imag
+                    energy_current[l] += -2*energy_current_l.imag
+
+        self.heat_current[:] = energy_current - current*self.leads.mulst
 # ---------------------------------------------------------------------------------------------------

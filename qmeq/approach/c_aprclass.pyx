@@ -98,6 +98,12 @@ cdef class Approach:
     def prepare_kern(self):
         ApproachPy.prepare_kern(self)
 
+    def clean_arrays(self):
+        ApproachPy.clean_arrays(self)
+
+    def prepare_arrays(self):
+        ApproachPy.prepare_arrays(self)
+
     def prepare_kernel_handler(self):
         if self.funcp.mfreeq:
             self.kernel_handler = KernelHandlerMatrixFree(self.si, self.no_coherences)
@@ -252,7 +258,7 @@ cdef class KernelHandler:
     cpdef void set_kern(self, double_t [:, :] kern):
         self.kern = kern
 
-    cdef void set_phi0(self, double_t [:] phi0):
+    cpdef void set_phi0(self, double_t [:] phi0):
         self.phi0 = phi0
 
     cdef bool_t is_included(self, long_t b, long_t bp, long_t bcharge) nogil:

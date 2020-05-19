@@ -21,18 +21,27 @@ class ApproachLindblad(ApproachElPh):
 
     kerntype = 'pyLindblad'
 
+    def prepare_arrays(self):
+        ApproachLindbladBase.prepare_arrays(self)
+        Vbbp, mtype = self.baths.Vbbp, self.baths.mtype
+        tLbbp_shape = Vbbp.shape + (2,)
+        self.tLbbp = np.zeros(tLbbp_shape, dtype=mtype)
+
+    def clean_arrays(self):
+        ApproachLindbladBase.clean_arrays(self)
+        self.tLbbp.fill(0.0)
+
     def generate_fct(self):
         ApproachLindbladBase.generate_fct(self)
 
         Vbbp, E = self.baths.Vbbp, self.qd.Ea,
-        si, mtype = self.si, self.baths.mtype
+        si = self.si
         ncharge, nbaths, statesdm = si.ncharge, si.nbaths, si.statesdm
 
         func_pauli = FuncPauliElPh(self.baths.tlst_ph, self.baths.dlst_ph,
                                    self.baths.bath_func, self.funcp.eps_elph)
-        #
-        tLbbp_shape = Vbbp.shape + (2,)
-        tLbbp = np.zeros(tLbbp_shape, dtype=mtype)
+
+        tLbbp = self.tLbbp
         # Diagonal elements
         for l in range(nbaths):
             func_pauli.eval(0., l)

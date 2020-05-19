@@ -21,6 +21,12 @@ class ApproachRedfield(Approach):
 
     kerntype = 'pyRedfield'
 
+    def prepare_arrays(self):
+        Approach1vN.prepare_arrays(self)
+
+    def clean_arrays(self):
+        Approach1vN.clean_arrays(self)
+
     def generate_fct(self):
         Approach1vN.generate_fct(self)
 
@@ -84,16 +90,13 @@ class ApproachRedfield(Approach):
         phi1fct, phi1fct_energy = self.phi1fct, self.phi1fct_energy
 
         si = self.si
-        ndm0, ndm1, npauli = si.ndm0, si.ndm1, si.npauli
         ncharge, nleads, statesdm = si.ncharge, si.nleads, si.statesdm
 
+        phi1 = self.phi1
+        current = self.current
+        energy_current = self.energy_current
+
         kh = self.kernel_handler
-        kh.set_phi0(self.phi0)
-
-        phi1 = np.zeros((nleads, ndm1), dtype=complexnp)
-        current = np.zeros(nleads, dtype=complexnp)
-        energy_current = np.zeros(nleads, dtype=complexnp)
-
         for charge in range(ncharge-1):
             ccharge = charge+1
             bcharge = charge
@@ -101,6 +104,8 @@ class ApproachRedfield(Approach):
                 cb = si.get_ind_dm1(c, b, bcharge)
 
                 for l in range(nleads):
+                    current_l, energy_current_l = 0, 0
+
                     for bp in statesdm[bcharge]:
                         if not kh.is_included(bp, b, bcharge):
                             continue
@@ -111,8 +116,8 @@ class ApproachRedfield(Approach):
                         fct1h = phi1fct_energy[l, cbp, 0]
 
                         phi1[l, cb] += Tba[l, c, bp]*phi0bpb*fct1
-                        current[l] += Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1
-                        energy_current[l] += Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1h
+                        current_l += Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1
+                        energy_current_l += Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1h
 
                     for cp in statesdm[ccharge]:
                         if not kh.is_included(c, cp, ccharge):
@@ -124,11 +129,11 @@ class ApproachRedfield(Approach):
                         fct2h = phi1fct_energy[l, cpb, 1]
 
                         phi1[l, cb] += Tba[l, cp, b]*phi0ccp*fct2
-                        current[l] += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2
-                        energy_current[l] += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2h
+                        current_l += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2
+                        energy_current_l += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2h
 
-        self.phi1 = phi1
-        self.current = np.array(-2*current.imag, dtype=doublenp)
-        self.energy_current = np.array(-2*energy_current.imag, dtype=doublenp)
-        self.heat_current = self.energy_current - self.current*self.leads.mulst
+                    current[l] += -2*current_l.imag
+                    energy_current[l] += -2*energy_current_l.imag
+
+        self.heat_current[:] = energy_current - current*self.leads.mulst
 # ---------------------------------------------------------------------------------------------------

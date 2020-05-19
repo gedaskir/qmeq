@@ -22,6 +22,15 @@ class ApproachPauli(Approach):
     def get_kern_size(self):
         return self.si.npauli
 
+    def prepare_arrays(self):
+        Approach.prepare_arrays(self)
+        nleads, ndm1 = self.si.nleads, self.si.ndm1
+        self.paulifct = np.zeros((nleads, ndm1, 2), dtype=doublenp)
+
+    def clean_arrays(self):
+        Approach.clean_arrays(self)
+        self.paulifct.fill(0.0)
+
     def generate_fct(self):
         """
         Make factors used for generating Pauli master equation kernel.
@@ -33,10 +42,10 @@ class ApproachPauli(Approach):
         """
         E, Tba, si = self.qd.Ea, self.leads.Tba, self.si
         mulst, tlst, dlst = self.leads.mulst, self.leads.tlst, self.leads.dlst
-        ndm1, ncharge, nleads, statesdm = si.ndm1, si.ncharge, si.nleads, si.statesdm
+        ncharge, nleads, statesdm = si.ncharge, si.nleads, si.statesdm
 
         itype = self.funcp.itype
-        paulifct = np.zeros((nleads, ndm1, 2), dtype=doublenp)
+        paulifct = self.paulifct
         for charge in range(ncharge-1):
             ccharge = charge+1
             bcharge = charge
@@ -48,7 +57,6 @@ class ApproachPauli(Approach):
                     rez = func_pauli(Ecb, mulst[l], tlst[l], dlst[l, 0], dlst[l, 1], itype)
                     paulifct[l, cb, 0] = xcb*rez[0]
                     paulifct[l, cb, 1] = xcb*rez[1]
-        self.paulifct = paulifct
 
     def generate_kern(self):
         """
@@ -110,8 +118,9 @@ class ApproachPauli(Approach):
         phi0, E, paulifct, si = self.phi0, self.qd.Ea, self.paulifct, self.si
         ncharge, nleads, statesdm = si.ncharge, si.nleads, si.statesdm
 
-        current = np.zeros(nleads, dtype=doublenp)
-        energy_current = np.zeros(nleads, dtype=doublenp)
+        current = self.current
+        energy_current = self.energy_current
+
         for charge in range(ncharge-1):
             ccharge = charge+1
             bcharge = charge
@@ -126,7 +135,5 @@ class ApproachPauli(Approach):
                         current[l] += fct1 + fct2
                         energy_current[l] += -(E[b]-E[c])*(fct1 + fct2)
 
-        self.current = current
-        self.energy_current = energy_current
-        self.heat_current = energy_current - current*self.leads.mulst
+        self.heat_current[:] = energy_current - current*self.leads.mulst
 # ---------------------------------------------------------------------------------------------------

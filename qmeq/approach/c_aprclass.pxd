@@ -81,7 +81,7 @@ cdef class KernelHandler:
 
     cpdef void set_kern(self, double_t [:, :] kern)
 
-    cdef void set_phi0(self, double_t [:] phi0)
+    cpdef void set_phi0(self, double_t [:] phi0)
 
     cdef void set_statesdm(self, si)
 

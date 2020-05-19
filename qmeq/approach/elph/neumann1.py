@@ -22,17 +22,27 @@ class Approach1vN(ApproachElPh):
 
     kerntype = 'py1vN'
 
+    def prepare_arrays(self):
+        Approach1vNBase.prepare_arrays(self)
+        nbaths, ndm0 = self.si_elph.nbaths, self.si_elph.ndm0
+        self.w1fct = np.zeros((nbaths, ndm0, 2), dtype=complexnp)
+
+    def clean_arrays(self):
+        Approach1vNBase.clean_arrays(self)
+        self.w1fct.fill(0.0)
+
     def generate_fct(self):
         Approach1vNBase.generate_fct(self)
 
         E, si = self.qd.Ea, self.si_elph
-        ndm0, ncharge, nbaths, statesdm = si.ndm0, si.ncharge, si.nbaths, si.statesdm
+        ncharge, nbaths, statesdm = si.ncharge, si.nbaths, si.statesdm
 
-        w1fct = np.zeros((nbaths, ndm0, 2), dtype=complexnp)
         func_1vN_elph = Func1vNElPh(self.baths.tlst_ph, self.baths.dlst_ph,
                                     self.funcp.itype_ph, self.funcp.dqawc_limit,
                                     self.baths.bath_func,
                                     self.funcp.eps_elph)
+
+        w1fct = self.w1fct
         # Diagonal elements
         for l in range(nbaths):
             func_1vN_elph.eval(0., l)
@@ -54,7 +64,6 @@ class Approach1vN(ApproachElPh):
                         func_1vN_elph.eval(Ebbp, l)
                         w1fct[l, bbp, 0] = func_1vN_elph.val0
                         w1fct[l, bbp, 1] = func_1vN_elph.val1
-        self.w1fct = w1fct
 
     def generate_coupling_terms(self, b, bp, bcharge):
         Approach1vNBase.generate_coupling_terms(self, b, bp, bcharge)

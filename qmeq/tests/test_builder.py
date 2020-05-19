@@ -124,16 +124,19 @@ def test_Builder_double_dot_spinful():
         system.solve()
         attr = kerntype+str(itype)
         setattr(calcs, attr, system)
-        #
+
         if PRNTQ:
             print(kerntype, itype)
+            print('current')
             print(system.current)
             print( data[attr+'current'] )
+            print('energy_current')
             print(system.energy_current)
             print( data[attr+'energy_current'] )
+            print('differences:')
             print( norm(system.current - data[attr+'current']) )
             print( norm(system.energy_current - data[attr+'energy_current']) )
-        #
+
         assert norm(system.current - data[attr+'current']) < EPS
         assert norm(system.energy_current - data[attr+'energy_current']) < EPS
 

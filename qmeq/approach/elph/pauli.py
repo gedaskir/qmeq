@@ -24,17 +24,26 @@ class ApproachPauli(ApproachElPh):
     def get_kern_size(self):
         return self.si.npauli
 
+    def prepare_arrays(self):
+        ApproachPauliBase.prepare_arrays(self)
+        nbaths, ndm0 = self.si_elph.nbaths, self.si_elph.ndm0
+        self.paulifct_elph = np.zeros((nbaths, ndm0), dtype=doublenp)
+
+    def clean_arrays(self):
+        ApproachPauliBase.clean_arrays(self)
+        self.paulifct_elph.fill(0.0)
+
     def generate_fct(self):
         ApproachPauliBase.generate_fct(self)
 
         E, Vbbp = self.qd.Ea, self.baths.Vbbp
         si, kh = self.si_elph, self.kernel_handler
-        ndm0, ncharge, nbaths, statesdm = si.ndm0, si.ncharge, si.nbaths, si.statesdm
+        ncharge, nbaths, statesdm = si.ncharge, si.nbaths, si.statesdm
 
         func_pauli = FuncPauliElPh(self.baths.tlst_ph, self.baths.dlst_ph,
                                    self.baths.bath_func, self.funcp.eps_elph)
 
-        paulifct = np.zeros((nbaths, ndm0), dtype=doublenp)
+        paulifct = self.paulifct_elph
         for charge in range(ncharge):
             # The diagonal elements b=bp are excluded, because they do not contribute
             for b, bp in itertools.permutations(statesdm[charge], 2):
@@ -48,8 +57,6 @@ class ApproachPauli(ApproachElPh):
                                 Vbbp[l, bp, b].conjugate()*Vbbp[l, bp, b]).real
                     func_pauli.eval(Ebbp, l)
                     paulifct[l, bbp] = xbbp*func_pauli.val
-
-        self.paulifct_elph = paulifct
 
     def generate_kern(self):
         ApproachPauliBase.generate_kern(self)

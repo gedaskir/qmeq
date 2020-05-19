@@ -9,7 +9,7 @@ import itertools
 from ...mytypes import doublenp
 
 from ..aprclass import ApproachElPh
-from ..base.redfield import ApproachRedfield as ApproachRefieldBase
+from ..base.redfield import ApproachRedfield as ApproachRedfieldBase
 from .neumann1 import Approach1vN
 
 
@@ -20,11 +20,17 @@ class ApproachRedfield(ApproachElPh):
 
     kerntype = 'pyRedfield'
 
+    def prepare_arrays(self):
+        Approach1vN.prepare_arrays(self)
+
+    def clean_arrays(self):
+        Approach1vN.clean_arrays(self)
+
     def generate_fct(self):
         Approach1vN.generate_fct(self)
 
     def generate_coupling_terms(self, b, bp, bcharge):
-        ApproachRefieldBase.generate_coupling_terms(self, b, bp, bcharge)
+        ApproachRedfieldBase.generate_coupling_terms(self, b, bp, bcharge)
 
         Vbbp, w1fct = self.baths.Vbbp, self.w1fct
         si, si_elph, kh = self.si, self.si_elph, self.kernel_handler
@@ -103,4 +109,4 @@ class ApproachRedfield(ApproachElPh):
         # --------------------------------------------------
 
     def generate_current(self):
-        ApproachRefieldBase.generate_current(self)
+        ApproachRedfieldBase.generate_current(self)

@@ -162,11 +162,34 @@ class Approach(object):
 
     def prepare_kern(self):
         if not self.si.states_changed:
-            self.kern_ext.fill(0.0)
+            self.clean_arrays()
             return
 
         self.si.states_changed = False
         self.prepare_kernel_handler()
+        self.prepare_arrays()
+
+    def clean_arrays(self):
+        self.kern_ext.fill(0.0)
+        self.bvec.fill(0.0)
+
+        norm_row, symq = self.funcp.norm_row, self.funcp.symq
+        self.bvec[norm_row] = 1 if symq else 0
+
+        self.current.fill(0.0)
+        self.energy_current.fill(0.0)
+        self.heat_current.fill(0.0)
+
+    def prepare_arrays(self):
+        kern_size = self.get_kern_size()
+        nleads = self.si.nleads
+
+        self.current = np.zeros(nleads, dtype=doublenp)
+        self.energy_current = np.zeros(nleads, dtype=doublenp)
+        self.heat_current = np.zeros(nleads, dtype=doublenp)
+
+        self.phi0 = np.zeros(kern_size, dtype=self.dtype)
+        self.kernel_handler.set_phi0(self.phi0)
 
         if not self.funcp.mfreeq:
             kern_size = self.get_kern_size()
@@ -176,8 +199,14 @@ class Approach(object):
 
             self.generate_norm_vec(kern_size)
 
+    def prepare_kernel_handler(self):
+        if self.funcp.mfreeq:
+            self.kernel_handler = KernelHandlerMatrixFree(self.si)
+        else:
+            self.kernel_handler = KernelHandler(self.si)
+
     def solve_kern(self):
-        """Finds the stationary state using least squares or by inverting the matrix."""
+        """Finds the stationary state using least squares or using LU decomposition."""
         solmethod = self.funcp.solmethod
         symq = self.funcp.symq
         norm_row = self.funcp.norm_row
@@ -207,23 +236,16 @@ class Approach(object):
             elif solmethod == 'lsqr':
                 self.sol0 = np.linalg.lstsq(kern, bvec, rcond=-1)
 
-            self.phi0 = self.sol0[0]
+            self.phi0[:] = self.sol0[0]
             self.success = True
         except Exception as exept:
             self.funcp.print_error(exept)
-            self.phi0 = np.zeros(self.get_kern_size())
+            self.phi0.fill(0.0)
             self.success = False
 
         # Return back the replaced equation
         if symq:
             kern[norm_row] = replaced_eq
-
-    def prepare_kernel_handler(self):
-        if self.funcp.mfreeq:
-            self.kernel_handler = KernelHandlerMatrixFree(self.si)
-        else:
-            self.kernel_handler = KernelHandler(self.si)
-            self.kernel_handler.set_kern(self.kern)
 
     def solve_matrix_free(self):
         """Finds the stationary state using matrix free methods like broyden, krylov, etc."""
