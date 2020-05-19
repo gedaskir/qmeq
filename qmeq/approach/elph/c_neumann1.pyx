@@ -39,7 +39,7 @@ cdef class Approach1vN(ApproachElPh):
 
     kerntype = '1vN'
 
-    cpdef generate_fct(self):
+    cpdef void generate_fct(self):
         Approach1vNBase.generate_fct(self)
 
         cdef double_t [:] E = self.qd.Ea
@@ -196,5 +196,5 @@ cdef class Approach1vN(ApproachElPh):
                 kh.set_matrix_element(fct_ccp, b, bp, bcharge, c, cp, ccharge)
         # --------------------------------------------------
 
-    cpdef generate_current(self):
+    cpdef void generate_current(self):
         Approach1vNBase.generate_current(self)

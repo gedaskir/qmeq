@@ -37,7 +37,7 @@ cdef class Approach1vN(Approach):
 
     kerntype = '1vN'
 
-    cpdef generate_fct(self):
+    cpdef void generate_fct(self):
         cdef double_t [:] E = self.qd.Ea
         cdef double_t [:] mulst = self.leads.mulst
         cdef double_t [:] tlst = self.leads.tlst
@@ -154,7 +154,7 @@ cdef class Approach1vN(Approach):
                 kh.set_matrix_element(fct_ccp, b, bp, bcharge, c, cp, ccharge)
         # --------------------------------------------------
 
-    cpdef generate_current(self):
+    cpdef void generate_current(self):
         cdef double_t [:] E = self.qd.Ea
         cdef complex_t [:, :, :] Tba = self._Tba
 

@@ -37,7 +37,7 @@ cdef class ApproachRedfield(Approach):
 
     kerntype = 'Redfield'
 
-    cpdef generate_fct(self):
+    cpdef void generate_fct(self):
         Approach1vN.generate_fct(self)
 
     cdef void generate_coupling_terms(self,
@@ -122,7 +122,7 @@ cdef class ApproachRedfield(Approach):
                 kh.set_matrix_element(fct_ccp, b, bp, bcharge, c, cp, ccharge)
         # --------------------------------------------------
 
-    cpdef generate_current(self):
+    cpdef void generate_current(self):
         cdef double_t [:] E = self.qd.Ea
         cdef complex_t [:, :, :] Tba = self._Tba
 

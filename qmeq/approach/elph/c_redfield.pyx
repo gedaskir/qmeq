@@ -41,7 +41,7 @@ cdef class ApproachRedfield(ApproachElPh):
 
     kerntype = 'Redfield'
 
-    cpdef generate_fct(self):
+    cpdef void generate_fct(self):
         Approach1vN.generate_fct(self)
 
     cdef void set_coupling(self):
@@ -155,5 +155,5 @@ cdef class ApproachRedfield(ApproachElPh):
                 kh.set_matrix_element(fct_ccp, b, bp, bcharge, c, cp, ccharge)
         # --------------------------------------------------
 
-    cpdef generate_current(self):
+    cpdef void generate_current(self):
         ApproachRedfieldBase.generate_current(self)

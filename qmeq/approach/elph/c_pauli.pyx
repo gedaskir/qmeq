@@ -43,7 +43,7 @@ cdef class ApproachPauli(ApproachElPh):
     def get_kern_size(self):
         return self.si.npauli
 
-    cpdef generate_fct(self):
+    cpdef void generate_fct(self):
         ApproachPauliBase.generate_fct(self)
 
         cdef double_t [:] E = self.qd.Ea
@@ -119,5 +119,5 @@ cdef class ApproachPauli(ApproachElPh):
                 fctp += paulifct[l, ba]
             kh.set_matrix_element_pauli(fctm, fctp, bb, aa)
 
-    cpdef generate_current(self):
+    cpdef void generate_current(self):
         ApproachPauliBase.generate_current(self)

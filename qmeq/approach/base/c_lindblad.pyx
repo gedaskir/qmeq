@@ -39,7 +39,7 @@ cdef class ApproachLindblad(Approach):
 
     kerntype = 'Lindblad'
 
-    cpdef generate_fct(self):
+    cpdef void generate_fct(self):
         cdef complex_t [:, :, :] Tba = self.leads.Tba
         cdef double_t [:] E = self.qd.Ea
         cdef double_t [:] mulst = self.leads.mulst
@@ -146,7 +146,7 @@ cdef class ApproachLindblad(Approach):
                 kh.set_matrix_element(1j*fct_ccp, b, bp, bcharge, c, cp, ccharge)
         # --------------------------------------------------
 
-    cpdef generate_current(self):
+    cpdef void generate_current(self):
         cdef double_t [:] E = self.qd.Ea
         cdef complex_t [:, :, :] tLba = self.tLba
 

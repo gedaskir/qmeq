@@ -40,7 +40,7 @@ cdef class ApproachPauli(Approach):
     def get_kern_size(self):
         return self.si.npauli
 
-    cpdef generate_fct(self):
+    cpdef void generate_fct(self):
         cdef double_t [:] E = self.qd.Ea
         cdef complex_t [:, :, :] Tba = self.leads.Tba
         cdef double_t [:] mulst = self.leads.mulst
@@ -116,7 +116,7 @@ cdef class ApproachPauli(Approach):
                 fctp += paulifct[l, cb, 1]
             kh.set_matrix_element_pauli(fctm, fctp, bb, cc)
 
-    cpdef generate_current(self):
+    cpdef void generate_current(self):
         cdef double_t [:] phi0 = self.phi0
         cdef double_t [:] E = self.qd.Ea
         cdef double_t [:, :, :] paulifct = self._paulifct

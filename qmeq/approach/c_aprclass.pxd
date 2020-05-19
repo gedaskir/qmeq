@@ -19,9 +19,9 @@ cdef class Approach:
     cdef complex_t [:, :, :] _phi1fct
     cdef complex_t [:, :, :] _phi1fct_energy
 
-    cpdef generate_fct(self)
-    cpdef generate_kern(self)
-    cpdef generate_current(self)
+    cpdef void generate_fct(self)
+    cpdef void generate_kern(self)
+    cpdef void generate_current(self)
     cpdef generate_vec(self, phi0)
 
     cdef void set_coupling(self)

@@ -42,7 +42,7 @@ cdef class ApproachLindblad(ApproachElPh):
 
     kerntype = 'Lindblad'
 
-    cpdef generate_fct(self):
+    cpdef void generate_fct(self):
         ApproachLindbladBase.generate_fct(self)
 
         cdef complex_t [:, :, :] Vbbp = self.baths.Vbbp
@@ -142,5 +142,5 @@ cdef class ApproachLindblad(ApproachElPh):
                 kh.set_matrix_element(1j*fct_bbpp, b, bp, bcharge, b, bpp, bcharge)
         # --------------------------------------------------
 
-    cpdef generate_current(self):
+    cpdef void generate_current(self):
         ApproachLindbladBase.generate_current(self)

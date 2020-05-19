@@ -38,10 +38,10 @@ cdef class Approach:
     def __init__(self, builder):
         ApproachPy.__init__(self, builder)
 
-    cpdef generate_fct(self):
+    cpdef void generate_fct(self):
         pass
 
-    cpdef generate_kern(self):
+    cpdef void generate_kern(self):
         self.set_coupling()
 
         cdef double_t [:] E = self.qd.Ea
@@ -66,7 +66,7 @@ cdef class Approach:
             KernelHandler kh) nogil:
         pass
 
-    cpdef generate_current(self):
+    cpdef void generate_current(self):
         pass
 
     cpdef generate_vec(self, phi0):
