@@ -170,7 +170,7 @@ class Approach(object):
         self.prepare_arrays()
 
     def clean_arrays(self):
-        self.kern_ext.fill(0.0)
+        self.kern.fill(0.0)
         self.bvec.fill(0.0)
 
         norm_row, symq = self.funcp.norm_row, self.funcp.symq
@@ -261,11 +261,11 @@ class Approach(object):
         solmethod = solmethod if solmethod is not None else 'krylov'
         try:
             self.sol0 = optimize.root(self.generate_vec, phi0_init, method=solmethod)
-            self.phi0 = self.sol0.x
+            self.phi0[:] = self.sol0.x
             self.success = self.sol0.success
         except Exception as exept:
             self.funcp.print_error(exept)
-            self.phi0 = 0 * phi0_init
+            self.phi0.fill(0.0)
             self.success = False
         self.funcp.solmethod = solmethod
 

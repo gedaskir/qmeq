@@ -13,25 +13,53 @@ cdef class Approach:
 
     cdef KernelHandler _kernel_handler
 
+    cdef double_t [:] _rez_real
+    cdef complex_t [:] _rez_complex
+
+    cdef double_t [:] _tlst
+    cdef double_t [:] _mulst
+    cdef double_t [:, :] _dlst
+
+    cdef double_t [:] _Ea
     cdef complex_t [:, :, :] _Tba
     cdef complex_t [:, :, :] _tLba
     cdef double_t [:, :, :] _paulifct
     cdef complex_t [:, :, :] _phi1fct
     cdef complex_t [:, :, :] _phi1fct_energy
 
+    cdef double_t [:, :] _kern
+    cdef double_t [:, :] _kern_ext
+    cdef double_t [:] _bvec
+    cdef double_t [:] _bvec_ext
+
+    cdef double_t [:] _phi0
+    cdef double_t [:] _current
+    cdef double_t [:] _energy_current
+    cdef double_t [:] _heat_current
+
     cpdef void generate_fct(self)
     cpdef void generate_kern(self)
     cpdef void generate_current(self)
     cpdef generate_vec(self, phi0)
 
-    cdef void set_coupling(self)
-
     cdef void generate_coupling_terms(self,
                 long_t b, long_t bp, long_t bcharge,
                 KernelHandler kh) nogil
 
+    cpdef void prepare_kern(self)
+
+    cdef void prepare_arrays(self)
+
+    cdef void clean_arrays(self)
+
 
 cdef class ApproachElPh(Approach):
+
+    cdef double_t [:] _func_pauli_at_zero
+    cdef complex_t [:, :] _func_1vN_elph_at_zero
+
+    cdef double_t [:] _tlst_ph
+    cdef double_t [:, :] _dlst_ph
 
     cdef complex_t [:, :, :] _Vbbp
     cdef complex_t [:, :, :, :] _tLbbp

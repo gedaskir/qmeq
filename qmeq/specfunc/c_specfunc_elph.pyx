@@ -33,8 +33,8 @@ cdef class FuncBose:
 @cython.boundscheck(False)
 cdef class FuncPauliElPh:
 
-    def __init__(self, np.ndarray[double_t, ndim=1] tlst,
-                       np.ndarray[double_t, ndim=2] dlst,
+    def __init__(self, double_t [:] tlst,
+                       double_t [:, :] dlst,
                        bath_func,
                        double_t eps):
         self.tlst, self.dlst = tlst, dlst
@@ -68,8 +68,8 @@ cdef class FuncPauliElPh:
 @cython.boundscheck(False)
 cdef class Func1vNElPh:
 
-    def __init__(self, np.ndarray[double_t, ndim=1] tlst,
-                       np.ndarray[double_t, ndim=2] dlst,
+    def __init__(self, double_t [:] tlst,
+                       double_t [:, :] dlst,
                        int_t itype,
                        long_t limit,
                        bath_func,

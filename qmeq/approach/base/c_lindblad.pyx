@@ -39,12 +39,24 @@ cdef class ApproachLindblad(Approach):
 
     kerntype = 'Lindblad'
 
+    cdef void prepare_arrays(self):
+        Approach.prepare_arrays(self)
+        Tba, mtype = self.leads.Tba, self.leads.mtype
+        self.tLba = np.zeros(Tba.shape, dtype=mtype)
+
+        self._tLba = self.tLba
+        self._rez_real = np.zeros(2, dtype=doublenp)
+
+    cdef void clean_arrays(self):
+        Approach.clean_arrays(self)
+        self._tLba[::1] = 0.0
+
     cpdef void generate_fct(self):
-        cdef complex_t [:, :, :] Tba = self.leads.Tba
-        cdef double_t [:] E = self.qd.Ea
-        cdef double_t [:] mulst = self.leads.mulst
-        cdef double_t [:] tlst = self.leads.tlst
-        cdef double_t [:, :] dlst = self.leads.dlst
+        cdef complex_t [:, :, :] Tba = self._Tba
+        cdef double_t [:] E = self._Ea
+        cdef double_t [:] mulst = self._mulst
+        cdef double_t [:] tlst = self._tlst
+        cdef double_t [:, :] dlst = self._dlst
 
         cdef KernelHandler kh = self._kernel_handler
         cdef long_t nleads = kh.nleads
@@ -54,8 +66,8 @@ cdef class ApproachLindblad(Approach):
         cdef long_t b, a, l
         cdef double_t Eba
 
-        cdef complex_t [:, :, :] tLba = np.zeros((nleads, kh.nmany, kh.nmany), dtype=complexnp)
-        cdef np.ndarray[double_t, ndim=1] rez = np.zeros(2, dtype=doublenp)
+        cdef complex_t [:, :, :] tLba = self._tLba
+        cdef double_t [:] rez = self._rez_real
 
         for i in range(kh.ndm1):
             b = kh.all_ba[i, 0]
@@ -67,11 +79,6 @@ cdef class ApproachLindblad(Approach):
                 func_pauli(Eba, mulst[l], tlst[l], dlst[l, 0], dlst[l, 1], itype, rez)
                 tLba[l, b, a] = sqrt(rez[0])*Tba[l, b, a]
                 tLba[l, a, b] = sqrt(rez[1])*Tba[l, a, b]
-
-        self.tLba = tLba
-
-    cdef void set_coupling(self):
-        self._tLba = self.tLba
 
     cdef void generate_coupling_terms(self,
                 long_t b, long_t bp, long_t bcharge,
@@ -147,8 +154,8 @@ cdef class ApproachLindblad(Approach):
         # --------------------------------------------------
 
     cpdef void generate_current(self):
-        cdef double_t [:] E = self.qd.Ea
-        cdef complex_t [:, :, :] tLba = self.tLba
+        cdef double_t [:] E = self._Ea
+        cdef complex_t [:, :, :] tLba = self._tLba
 
         cdef long_t i, j, k, l
         cdef long_t a, b, bp, c
@@ -159,10 +166,12 @@ cdef class ApproachLindblad(Approach):
         cdef KernelHandler kh = self._kernel_handler
         cdef long_t [:, :] statesdm = kh.statesdm
         cdef long_t nleads = kh.nleads
-        kh.set_phi0(self.phi0)
 
-        cdef np.ndarray[complex_t, ndim=1] current = np.zeros(nleads, dtype=complexnp)
-        cdef np.ndarray[complex_t, ndim=1] energy_current = np.zeros(nleads, dtype=complexnp)
+        cdef double_t [:] current = self._current
+        cdef double_t [:] energy_current = self._energy_current
+        cdef double_t [:] heat_current = self._heat_current
+
+        cdef complex_t current_l, energy_current_l
 
         for bcharge in range(kh.ncharge):
             acharge = bcharge-1
@@ -181,18 +190,23 @@ cdef class ApproachLindblad(Approach):
 
                     phi0bbp = kh.get_phi0_element(b, bp, bcharge)
                     for l in range(nleads):
+                        current_l, energy_current_l = 0, 0
+
                         for k in range(acount):
                             a = statesdm[acharge, k]
                             fcta = tLba[l, a, b]*phi0bbp*tLba[l, a, bp].conjugate()
-                            current[l] = current[l] - fcta
-                            energy_current[l] = energy_current[l] + (E[a]-0.5*(E[b]+E[bp]))*fcta
+                            current_l += -fcta
+                            energy_current_l += (E[a]-0.5*(E[b]+E[bp]))*fcta
                         for k in range(ccount):
                             c = statesdm[ccharge, k]
                             fctc = tLba[l, c, b]*phi0bbp*tLba[l, c, bp].conjugate()
-                            current[l] = current[l] + fctc
-                            energy_current[l] = energy_current[l] + (E[c]-0.5*(E[b]+E[bp]))*fctc
+                            current_l += fctc
+                            energy_current_l += (E[c]-0.5*(E[b]+E[bp]))*fctc
 
-        self.current = np.array(current.real, dtype=doublenp)
-        self.energy_current = np.array(energy_current.real, dtype=doublenp)
-        self.heat_current = self.energy_current - self.current*self.leads.mulst
+                        current[l] += current_l.real
+                        energy_current[l] += energy_current_l.real
+
+        for l in range(nleads):
+            heat_current[l] = energy_current[l] - current[l]*self._mulst[l]
+
 # ---------------------------------------------------------------------------------------------------

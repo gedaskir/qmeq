@@ -115,60 +115,69 @@ def test_Builder_double_dot_spinful():
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
     kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     itypes = [0, 1, 2]
+    repetitions = 3
     for kerntype, itype in itertools.product(kerns, itypes):
         if kerntype in {'Pauli', 'pyPauli', 'Lindblad', 'pyLindblad'} and itype in [0, 1]:
             continue
 
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
                          kerntype=kerntype, itype=itype)
-        system.solve()
-        attr = kerntype+str(itype)
-        setattr(calcs, attr, system)
 
-        if PRNTQ:
-            print(kerntype, itype)
-            print('current')
-            print(system.current)
-            print( data[attr+'current'] )
-            print('energy_current')
-            print(system.energy_current)
-            print( data[attr+'energy_current'] )
-            print('differences:')
-            print( norm(system.current - data[attr+'current']) )
-            print( norm(system.energy_current - data[attr+'energy_current']) )
+        for i in range(repetitions):
+            system.solve()
+            attr = kerntype+str(itype)
+            setattr(calcs, attr, system)
 
-        assert norm(system.current - data[attr+'current']) < EPS
-        assert norm(system.energy_current - data[attr+'energy_current']) < EPS
+            if PRNTQ:
+                print(kerntype, itype)
+                print('current')
+                print(system.current)
+                print( data[attr+'current'] )
+                print('energy_current')
+                print(system.energy_current)
+                print( data[attr+'energy_current'] )
+                print('differences:')
+                print( norm(system.current - data[attr+'current']) )
+                print( norm(system.energy_current - data[attr+'energy_current']) )
+
+            assert norm(system.current - data[attr+'current']) < EPS
+            assert norm(system.energy_current - data[attr+'energy_current']) < EPS
 
     # Check least-squares solution with non-square matrix, i.e., symq=False
     for kerntype in kerns:
         itype = 2
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
                          kerntype=kerntype, itype=itype, symq=False)
-        system.solve()
-        attr = kerntype+str(itype)
-        for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - data[attr+param]) < EPS
+
+        for i in range(repetitions):
+            system.solve()
+            attr = kerntype+str(itype)
+            for param in ['current', 'energy_current']:
+                assert norm(getattr(system, param) - data[attr+param]) < EPS
 
     # Check matrix-free methods
     for kerntype in kerns:
         itype = 2
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
                          kerntype=kerntype, itype=itype, mfreeq=True)
-        system.solve()
-        attr = kerntype+str(itype)
-        for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - data[attr+param]) < 1e-4
+
+        for i in range(repetitions):
+            system.solve()
+            attr = kerntype+str(itype)
+            for param in ['current', 'energy_current']:
+                assert norm(getattr(system, param) - data[attr+param]) < 1e-4
 
     # Check results with different indexing
     indexings = ['Lin', 'charge', 'sz', 'ssq']
     for kerntype, indexing in itertools.product(kerns, indexings):
         system = Builder(p.nsingle, p.hsingle, p.coulomb, p.nleads, p.tleads, p.mulst, p.tlst, p.dlst,
                          kerntype=kerntype, itype=2, indexing=indexing)
-        system.solve()
-        attr = kerntype+str(itype)
-        for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - data[attr+param]) < EPS
+
+        for i in range(repetitions):
+            system.solve()
+            attr = kerntype+str(itype)
+            for param in ['current', 'energy_current']:
+                assert norm(getattr(system, param) - data[attr+param]) < EPS
 
 
 def test_Builder_double_dot_spinless_2vN():

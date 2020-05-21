@@ -43,11 +43,25 @@ cdef class ApproachPauli(ApproachElPh):
     def get_kern_size(self):
         return self.si.npauli
 
+    cdef void prepare_arrays(self):
+        ApproachElPh.prepare_arrays(self)
+        ApproachPauliBase.prepare_arrays(self)
+
+        nbaths, ndm0 = self.si_elph.nbaths, self.si_elph.ndm0
+        self.paulifct_elph = np.zeros((nbaths, ndm0), dtype=doublenp)
+
+        self._paulifct_elph = self.paulifct_elph
+
+    cdef void clean_arrays(self):
+        ApproachElPh.clean_arrays(self)
+        ApproachPauliBase.clean_arrays(self)
+        self._paulifct_elph[::1] = 0.0
+
     cpdef void generate_fct(self):
         ApproachPauliBase.generate_fct(self)
 
-        cdef double_t [:] E = self.qd.Ea
-        cdef complex_t [:, :, :] Vbbp = self.baths.Vbbp
+        cdef double_t [:] E = self._Ea
+        cdef complex_t [:, :, :] Vbbp = self._Vbbp
 
         cdef KernelHandler kh = self._kernel_handler.elph
         cdef long_t nbaths = kh.nbaths
@@ -55,10 +69,10 @@ cdef class ApproachPauli(ApproachElPh):
         cdef long_t b, bp, bbp, bcharge, l, i
         cdef double_t Ebbp, xbbp
 
-        func_pauli = FuncPauliElPh(self.baths.tlst_ph, self.baths.dlst_ph,
+        func_pauli = FuncPauliElPh(self._tlst_ph, self._dlst_ph,
                                    self.baths.bath_func, self.funcp.eps_elph)
 
-        cdef double_t [:, :] paulifct = np.zeros((nbaths, kh.ndm0), dtype=doublenp)
+        cdef double_t [:, :] paulifct = self._paulifct_elph
 
         for i in range(kh.ndm0):
             b = kh.all_bbp[i, 0]
@@ -76,12 +90,6 @@ cdef class ApproachPauli(ApproachElPh):
                             Vbbp[l, bp, b].conjugate()*Vbbp[l, bp, b]).real
                 func_pauli.eval(Ebbp, l)
                 paulifct[l, bbp] = xbbp*func_pauli.val
-
-        self.paulifct_elph = paulifct
-
-    cdef void set_coupling(self):
-        ApproachPauliBase.set_coupling(self)
-        self._paulifct_elph = self.paulifct_elph
 
     cdef void generate_coupling_terms(self,
                 long_t b, long_t bp, long_t bcharge,

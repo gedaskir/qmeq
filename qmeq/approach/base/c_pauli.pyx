@@ -40,12 +40,24 @@ cdef class ApproachPauli(Approach):
     def get_kern_size(self):
         return self.si.npauli
 
+    cdef void prepare_arrays(self):
+        Approach.prepare_arrays(self)
+        nleads, ndm1 = self.si.nleads, self.si.ndm1
+        self.paulifct = np.zeros((nleads, ndm1, 2), dtype=doublenp)
+
+        self._paulifct = self.paulifct
+        self._rez_real = np.zeros(2, dtype=doublenp)
+
+    cdef void clean_arrays(self):
+        Approach.clean_arrays(self)
+        self._paulifct[::1] = 0.0
+
     cpdef void generate_fct(self):
-        cdef double_t [:] E = self.qd.Ea
-        cdef complex_t [:, :, :] Tba = self.leads.Tba
-        cdef double_t [:] mulst = self.leads.mulst
-        cdef double_t [:] tlst = self.leads.tlst
-        cdef double_t [:, :] dlst = self.leads.dlst
+        cdef double_t [:] E = self._Ea
+        cdef complex_t [:, :, :] Tba = self._Tba
+        cdef double_t [:] mulst = self._mulst
+        cdef double_t [:] tlst = self._tlst
+        cdef double_t [:, :] dlst = self._dlst
 
         cdef KernelHandler kh = self._kernel_handler
         cdef long_t nleads = kh.nleads
@@ -55,8 +67,8 @@ cdef class ApproachPauli(Approach):
         cdef long_t c, b, bcharge, cb, l
         cdef double_t Ecb, xcb
 
-        cdef double_t [:, :, :] paulifct = np.zeros((nleads, kh.ndm1, 2), dtype=doublenp)
-        cdef np.ndarray[double_t, ndim=1] rez = np.zeros(2, dtype=doublenp)
+        cdef double_t [:, :, :] paulifct = self._paulifct
+        cdef double_t [:] rez = self._rez_real
 
         for i in range(kh.ndm1):
             c = kh.all_ba[i, 0]
@@ -69,11 +81,6 @@ cdef class ApproachPauli(Approach):
                 func_pauli(Ecb, mulst[l], tlst[l], dlst[l, 0], dlst[l, 1], itype, rez)
                 paulifct[l, cb, 0] = xcb*rez[0]
                 paulifct[l, cb, 1] = xcb*rez[1]
-
-        self.paulifct = paulifct
-
-    cdef void set_coupling(self):
-        self._paulifct = self.paulifct
 
     cdef void generate_coupling_terms(self,
             long_t b, long_t bp, long_t bcharge,
@@ -117,8 +124,8 @@ cdef class ApproachPauli(Approach):
             kh.set_matrix_element_pauli(fctm, fctp, bb, cc)
 
     cpdef void generate_current(self):
-        cdef double_t [:] phi0 = self.phi0
-        cdef double_t [:] E = self.qd.Ea
+        cdef double_t [:] phi0 = self._phi0
+        cdef double_t [:] E = self._Ea
         cdef double_t [:, :, :] paulifct = self._paulifct
 
         cdef long_t i, j, l
@@ -130,8 +137,9 @@ cdef class ApproachPauli(Approach):
         cdef long_t [:, :] statesdm = kh.statesdm
         cdef long_t nleads = kh.nleads
 
-        cdef np.ndarray[double_t, ndim=1] current = np.zeros(nleads, dtype=doublenp)
-        cdef np.ndarray[double_t, ndim=1] energy_current = np.zeros(nleads, dtype=doublenp)
+        cdef double_t [:] current = self._current
+        cdef double_t [:] energy_current = self._energy_current
+        cdef double_t [:] heat_current = self._heat_current
 
         for i in range(kh.ndm1):
             c = kh.all_ba[i, 0]
@@ -153,7 +161,6 @@ cdef class ApproachPauli(Approach):
                 current[l] = current[l] + fct1 + fct2
                 energy_current[l] = energy_current[l] - (E[b]-E[c])*(fct1 + fct2)
 
-        self.current = current
-        self.energy_current = energy_current
-        self.heat_current = energy_current - current*self.leads.mulst
+        for l in range(nleads):
+            heat_current[l] = energy_current[l] - current[l]*self._mulst[l]
 # ---------------------------------------------------------------------------------------------------

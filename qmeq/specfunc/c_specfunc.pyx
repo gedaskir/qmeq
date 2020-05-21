@@ -44,7 +44,7 @@ cdef double_t fermi_func(double_t x):
 @cython.cdivision(True)
 cdef int_t func_pauli(double_t Ecb, double_t mu, double_t T,
                       double_t Dm, double_t Dp, int_t itype,
-                      np.ndarray[double_t, ndim=1] rez):
+                      double_t [:] rez):
     cdef double_t alpha, Rm, Rp, cur0, cur1
     alpha = (Ecb-mu)/T
     Rm, Rp = (Dm-mu)/T, (Dp-mu)/T
@@ -63,7 +63,7 @@ cdef int_t func_pauli(double_t Ecb, double_t mu, double_t T,
 cdef int_t func_1vN(double_t Ecb, double_t mu, double_t T,
                     double_t Dm, double_t Dp,
                     int_t itype, int_t limit,
-                    np.ndarray[complex_t, ndim=1] rez):
+                    complex_t [:] rez):
     cdef double_t alpha, Rm, Rp, err
     cdef complex_t cur0, cur1, en0, en1, const0, const1
     # -------------------------

@@ -153,7 +153,7 @@ class Approach1vN(Approach):
                 cb = si.get_ind_dm1(c, b, bcharge)
 
                 for l in range(nleads):
-                    current_l, energy_current_l = 0, 0
+                    current_l, energy_current_l, phi1_l = 0, 0, 0
 
                     fct1 = phi1fct[l, cb, 0]
                     fct2 = phi1fct[l, cb, 1]
@@ -165,7 +165,7 @@ class Approach1vN(Approach):
                             continue
                         phi0bpb = kh.get_phi0_element(bp, b, bcharge)
 
-                        phi1[l, cb] += Tba[l, c, bp]*phi0bpb*fct1
+                        phi1_l += Tba[l, c, bp]*phi0bpb*fct1
                         current_l += Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1
                         energy_current_l += Tba[l, b, c]*Tba[l, c, bp]*phi0bpb*fct1h
 
@@ -174,10 +174,11 @@ class Approach1vN(Approach):
                             continue
                         phi0ccp = kh.get_phi0_element(c, cp, ccharge)
 
-                        phi1[l, cb] += Tba[l, cp, b]*phi0ccp*fct2
+                        phi1_l += Tba[l, cp, b]*phi0ccp*fct2
                         current_l += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2
                         energy_current_l += Tba[l, b, c]*phi0ccp*Tba[l, cp, b]*fct2h
 
+                    phi1[l, cb] += phi1_l
                     current[l] += -2*current_l.imag
                     energy_current[l] += -2*energy_current_l.imag
 

@@ -1,14 +1,16 @@
 import numpy as np
 cimport numpy as np
 
-ctypedef np.uint8_t bool_t
-ctypedef np.int_t int_t
-ctypedef np.int64_t long_t
-ctypedef np.float64_t double_t
-ctypedef np.complex128_t complex_t
+from ..approach.c_aprclass cimport bool_t
+from ..approach.c_aprclass cimport int_t
+from ..approach.c_aprclass cimport long_t
+from ..approach.c_aprclass cimport double_t
+from ..approach.c_aprclass cimport complex_t
 
 cdef double_t fermi_func(double_t)
+
 cdef int_t func_pauli(double_t, double_t, double_t, double_t, double_t,
-                      int_t, np.ndarray[double_t, ndim=1])
+                      int_t, double_t [:])
+
 cdef int_t func_1vN(double_t, double_t, double_t, double_t, double_t,
-                    int_t, int_t, np.ndarray[complex_t, ndim=1])
+                    int_t, int_t, complex_t [:])

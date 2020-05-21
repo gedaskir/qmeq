@@ -39,10 +39,27 @@ cdef class Approach1vN(ApproachElPh):
 
     kerntype = '1vN'
 
+    cdef void prepare_arrays(self):
+        ApproachElPh.prepare_arrays(self)
+        Approach1vNBase.prepare_arrays(self)
+
+        nbaths, ndm0 = self.si_elph.nbaths, self.si_elph.ndm0
+        self.w1fct = np.zeros((nbaths, ndm0, 2), dtype=complexnp)
+        self.func_1vN_elph_at_zero = np.zeros((nbaths, 2), dtype=complexnp)
+
+        self._w1fct = self.w1fct
+        self._func_1vN_elph_at_zero = self.func_1vN_elph_at_zero
+
+    cdef void clean_arrays(self):
+        ApproachElPh.clean_arrays(self)
+        Approach1vNBase.clean_arrays(self)
+        self._w1fct[::1] = 0.0
+        self._func_1vN_elph_at_zero[::1] = 0.0
+
     cpdef void generate_fct(self):
         Approach1vNBase.generate_fct(self)
 
-        cdef double_t [:] E = self.qd.Ea
+        cdef double_t [:] E = self._Ea
 
         cdef KernelHandler kh = self._kernel_handler.elph
         cdef long_t nbaths = kh.nbaths
@@ -50,14 +67,14 @@ cdef class Approach1vN(ApproachElPh):
         cdef long_t b, bp, bbp, bb, bcharge, l, i
         cdef double_t Ebbp
 
-        func_1vN_elph = Func1vNElPh(self.baths.tlst_ph, self.baths.dlst_ph,
+        func_1vN_elph = Func1vNElPh(self._tlst_ph, self._dlst_ph,
                                     self.funcp.itype_ph, self.funcp.dqawc_limit,
                                     self.baths.bath_func,
                                     self.funcp.eps_elph)
 
-        cdef complex_t [:, :, :] w1fct = np.zeros((nbaths, kh.ndm0, 2), dtype=complexnp)
+        cdef complex_t [:, :, :] w1fct = self._w1fct
 
-        cdef complex_t [:, :] func_1vN_elph_at_zero = np.zeros((nbaths, 2), dtype=complexnp)
+        cdef complex_t [:, :] func_1vN_elph_at_zero = self._func_1vN_elph_at_zero
         for l in range(nbaths):
             func_1vN_elph.eval(0., l)
             func_1vN_elph_at_zero[l, 0] = func_1vN_elph.val0 - 0.5j*func_1vN_elph.val0.imag
@@ -79,13 +96,6 @@ cdef class Approach1vN(ApproachElPh):
                     func_1vN_elph.eval(Ebbp, l)
                     w1fct[l, bbp, 0] = func_1vN_elph.val0
                     w1fct[l, bbp, 1] = func_1vN_elph.val1
-
-        self.w1fct = w1fct
-
-    cdef void set_coupling(self):
-        Approach1vNBase.set_coupling(self)
-        self._w1fct = self.w1fct
-        self._Vbbp = self.baths.Vbbp
 
     cdef void generate_coupling_terms(self,
                 long_t b, long_t bp, long_t bcharge,

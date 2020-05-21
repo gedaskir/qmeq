@@ -135,52 +135,61 @@ def test_Builder_elph_double_dot_spinful():
     kerns = ['Pauli', 'Redfield', '1vN', 'Lindblad']
     kerns += ['pyPauli', 'pyRedfield', 'py1vN', 'pyLindblad'] if CHECK_PY else []
     itypes, itypes_ph = [0, 1, 2], [0, 2]
+    repetitions = 3
     for kerntype, itype, itype_ph in itertools.product(kerns, itypes, itypes_ph):
         if kerntype in {'Pauli', 'pyPauli', 'Lindblad', 'pyLindblad'} and (itype in [0, 1] or itype_ph in [0]):
             continue
 
         system = SpinfulDoubleDotWithElPh(kerntype=kerntype, itype=itype, itype_ph=itype_ph)
-        system.solve()
 
-        attr = kerntype+str(itype)+str(itype_ph)
-        setattr(calcs, attr, system)
+        for i in range(repetitions):
+            system.solve()
 
-        if PRNTQ:
-            print(kerntype, itype)
-            print('current')
-            print(system.current)
-            print( data[attr+'current'] )
-            print('energy_current')
-            print(system.energy_current)
-            print( data[attr+'energy_current'] )
-            print('differences:')
-            print( norm(system.current - data[attr+'current']) )
-            print( norm(system.energy_current - data[attr+'energy_current']) )
+            attr = kerntype+str(itype)+str(itype_ph)
+            setattr(calcs, attr, system)
 
-        for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - data[attr+param]) < EPS
+            if PRNTQ:
+                print(kerntype, itype)
+                print('current')
+                print(system.current)
+                print( data[attr+'current'] )
+                print('energy_current')
+                print(system.energy_current)
+                print( data[attr+'energy_current'] )
+                print('differences:')
+                print( norm(system.current - data[attr+'current']) )
+                print( norm(system.energy_current - data[attr+'energy_current']) )
+
+            for param in ['current', 'energy_current']:
+                assert norm(getattr(system, param) - data[attr+param]) < EPS
 
         # Check least-squares solution with non-square matrix, i.e., symq=False
         system = SpinfulDoubleDotWithElPh(kerntype=kerntype, itype=itype, itype_ph=itype_ph, symq=False)
-        system.solve()
-        for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - data[attr+param]) < EPS
+
+        for i in range(repetitions):
+            system.solve()
+            for param in ['current', 'energy_current']:
+                assert norm(getattr(system, param) - data[attr+param]) < EPS
 
     # Check matrix-free methods
     for kerntype in kerns:
         itype, itype_ph = 2, 2
         system = SpinfulDoubleDotWithElPh(kerntype=kerntype, itype=itype, itype_ph=itype_ph, mfreeq=True)
-        system.solve()
-        attr = kerntype+str(itype)+str(itype_ph)
-        for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - data[attr+param]) < 1e-4
+
+        for i in range(repetitions):
+            system.solve()
+            attr = kerntype+str(itype)+str(itype_ph)
+            for param in ['current', 'energy_current']:
+                assert norm(getattr(system, param) - data[attr+param]) < 1e-4
 
     # Check results with different indexing
     indexings = ['Lin', 'charge', 'sz', 'ssq']
     for kerntype, indexing in itertools.product(kerns, indexings):
         itype, itype_ph = 2, 2
         system = SpinfulDoubleDotWithElPh(kerntype=kerntype, itype=itype, itype_ph=itype_ph, indexing=indexing)
-        system.solve()
-        attr = kerntype+str(itype)+str(itype_ph)
-        for param in ['current', 'energy_current']:
-            assert norm(getattr(system, param) - data[attr+param]) < EPS
+
+        for i in range(repetitions):
+            system.solve()
+            attr = kerntype+str(itype)+str(itype_ph)
+            for param in ['current', 'energy_current']:
+                assert norm(getattr(system, param) - data[attr+param]) < EPS

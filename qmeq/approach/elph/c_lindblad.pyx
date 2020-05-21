@@ -42,11 +42,29 @@ cdef class ApproachLindblad(ApproachElPh):
 
     kerntype = 'Lindblad'
 
+    cdef void prepare_arrays(self):
+        ApproachElPh.prepare_arrays(self)
+        ApproachLindbladBase.prepare_arrays(self)
+
+        Vbbp, mtype = self.baths.Vbbp, self.baths.mtype
+        tLbbp_shape = Vbbp.shape + (2,)
+        self.tLbbp = np.zeros(tLbbp_shape, dtype=mtype)
+        self.func_pauli_at_zero = np.zeros(self.si.nbaths, dtype=doublenp)
+
+        self._tLbbp = self.tLbbp
+        self._func_pauli_at_zero = self.func_pauli_at_zero
+
+    cdef void clean_arrays(self):
+        ApproachElPh.clean_arrays(self)
+        ApproachLindbladBase.clean_arrays(self)
+        self._tLbbp[::1] = 0.0
+        self._func_pauli_at_zero[::1] = 0.0
+
     cpdef void generate_fct(self):
         ApproachLindbladBase.generate_fct(self)
 
-        cdef complex_t [:, :, :] Vbbp = self.baths.Vbbp
-        cdef double_t [:] E = self.qd.Ea
+        cdef complex_t [:, :, :] Vbbp = self._Vbbp
+        cdef double_t [:] E = self._Ea
 
         cdef KernelHandler kh = self._kernel_handler.elph
         cdef long_t nbaths = kh.nbaths
@@ -54,12 +72,12 @@ cdef class ApproachLindblad(ApproachElPh):
         cdef long_t b, bp, bcharge, l, i
         cdef double_t Ebbp
 
-        func_pauli = FuncPauliElPh(self.baths.tlst_ph, self.baths.dlst_ph,
+        func_pauli = FuncPauliElPh(self._tlst_ph, self._dlst_ph,
                                    self.baths.bath_func, self.funcp.eps_elph)
 
-        cdef complex_t [:, :, :, :] tLbbp = np.zeros((nbaths, kh.nmany, kh.nmany, 2), dtype=complexnp)
+        cdef complex_t [:, :, :, :] tLbbp = self._tLbbp
 
-        cdef double_t [:] func_pauli_at_zero = np.zeros(nbaths, dtype=doublenp)
+        cdef double_t [:] func_pauli_at_zero = self._func_pauli_at_zero
         for l in range(nbaths):
             func_pauli.eval(0., l)
             func_pauli_at_zero[l] = func_pauli.val
@@ -80,13 +98,6 @@ cdef class ApproachLindblad(ApproachElPh):
                     func_pauli.eval(Ebbp, l)
                     tLbbp[l, b, bp, 0] = sqrt(0.5*func_pauli.val)*Vbbp[l, b, bp]
                     tLbbp[l, b, bp, 1] = sqrt(0.5*func_pauli.val)*Vbbp[l, bp, b].conjugate()
-
-
-        self.tLbbp = tLbbp
-
-    cdef void set_coupling(self):
-        ApproachLindbladBase.set_coupling(self)
-        self._tLbbp = self.tLbbp
 
     cdef void generate_coupling_terms(self,
                 long_t b, long_t bp, long_t bcharge,

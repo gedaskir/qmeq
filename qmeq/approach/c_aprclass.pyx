@@ -42,8 +42,6 @@ cdef class Approach:
         pass
 
     cpdef void generate_kern(self):
-        self.set_coupling()
-
         cdef double_t [:] E = self.qd.Ea
         cdef KernelHandler kh = self._kernel_handler
 
@@ -55,11 +53,6 @@ cdef class Approach:
             bcharge = kh.all_bbp[i, 2]
             kh.set_energy(E[b]-E[bp], b, bp, bcharge)
             self.generate_coupling_terms(b, bp, bcharge, kh)
-
-    cdef void set_coupling(self):
-        self._Tba = self.leads.Tba
-        self._phi1fct = self.phi1fct
-        self._phi1fct_energy = self.phi1fct_energy
 
     cdef void generate_coupling_terms(self,
             long_t b, long_t bp, long_t bcharge,
@@ -95,14 +88,55 @@ cdef class Approach:
     def set_phi0_init(self):
         return ApproachPy.set_phi0_init(self)
 
-    def prepare_kern(self):
-        ApproachPy.prepare_kern(self)
+    cpdef void prepare_kern(self):
+        if not self.si.states_changed:
+            self.clean_arrays()
+            return
 
-    def clean_arrays(self):
-        ApproachPy.clean_arrays(self)
+        self.si.states_changed = False
+        self.prepare_kernel_handler()
+        self.prepare_arrays()
 
-    def prepare_arrays(self):
+    cdef void clean_arrays(self):
+
+        cdef long_t norm_row = self.funcp.norm_row
+        cdef bool_t symq = self.funcp.symq
+        if not self.funcp.mfreeq:
+            self._kern[::1] = 0.0
+            self._bvec[::1] = 0.0
+            self._bvec[norm_row] = 1 if symq else 0
+
+        self._phi0[::1] = 0.0
+        self._current[::1] = 0.0
+        self._energy_current[::1] = 0.0
+        self._heat_current[::1] = 0.0
+
+        self._tlst = self.leads.tlst
+        self._mulst = self.leads.mulst
+        self._dlst = self.leads.dlst
+
+        self._Ea = self.qd.Ea
+        self._Tba = self.leads.Tba
+
+    cdef void prepare_arrays(self):
         ApproachPy.prepare_arrays(self)
+
+        self._kern = self.kern
+        self._kern_ext = self.kern_ext
+        self._bvec = self.bvec
+        self._bvec_ext = self.bvec_ext
+
+        self._phi0 = self.phi0
+        self._current = self.current
+        self._energy_current = self.energy_current
+        self._heat_current = self.heat_current
+
+        self._tlst = self.leads.tlst
+        self._mulst = self.leads.mulst
+        self._dlst = self.leads.dlst
+
+        self._Ea = self.qd.Ea
+        self._Tba = self.leads.Tba
 
     def prepare_kernel_handler(self):
         if self.funcp.mfreeq:
@@ -160,6 +194,18 @@ cdef class ApproachElPh(Approach):
             self.kernel_handler_elph = KernelHandler(self.si_elph)
 
         self._kernel_handler.elph = self.kernel_handler_elph
+
+    cdef void prepare_arrays(self):
+        self._tlst_ph = self.baths.tlst_ph
+        self._dlst_ph = self.baths.dlst_ph
+        self._Vbbp = self.baths.Vbbp
+
+    cdef void clean_arrays(self):
+        Approach.clean_arrays(self)
+
+        self._tlst_ph = self.baths.tlst_ph
+        self._dlst_ph = self.baths.dlst_ph
+        self._Vbbp = self.baths.Vbbp
 
     def restart(self):
         ApproachElPhPy.restart(self)

@@ -41,11 +41,14 @@ cdef class ApproachRedfield(ApproachElPh):
 
     kerntype = 'Redfield'
 
+    cdef void prepare_arrays(self):
+        Approach1vN.prepare_arrays(self)
+
+    cdef void clean_arrays(self):
+        Approach1vN.clean_arrays(self)
+
     cpdef void generate_fct(self):
         Approach1vN.generate_fct(self)
-
-    cdef void set_coupling(self):
-        Approach1vN.set_coupling(self)
 
     cdef void generate_coupling_terms(self,
                 long_t b, long_t bp, long_t bcharge,
