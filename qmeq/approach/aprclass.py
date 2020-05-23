@@ -29,10 +29,6 @@ class Approach(object):
     bvec : array
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
-    kern_ext : array
-        Same as kern, only with one additional row added.
-    bvec_ext : array
-        Same as bvec, only with one additional entry added.
     sol0 : array
         Least squares solution for the master equation.
     phi0 : array
@@ -62,6 +58,49 @@ class Approach(object):
     dtype = doublenp
     indexing_class_name = 'StateIndexingDM'
 
+    #region Properties
+
+    @property
+    def solmethod(self):
+        return self.funcp.solmethod
+    @solmethod.setter
+    def solmethod(self, value):
+        self.funcp.solmethod = value
+        self.prepare_solver()
+
+    @property
+    def mfreeq(self):
+        return self.funcp.mfreeq
+    @mfreeq.setter
+    def mfreeq(self, value):
+        self.funcp.mfreeq = value
+
+    @property
+    def symq(self):
+        return self.funcp.symq
+    @symq.setter
+    def symq(self, value):
+        if value == self.funcp.symq:
+            return
+        self.is_prepared = False
+        self.funcp.symq = value
+
+    @property
+    def norm_row(self):
+        return self.funcp.norm_row
+    @norm_row.setter
+    def norm_row(self, value):
+        self.funcp.norm_row = value
+
+    @property
+    def itype(self):
+        return self.funcp.itype
+    @itype.setter
+    def itype(self, value):
+        self.funcp.itype = value
+
+    #endregion Properties
+
     def __init__(self, builder):
         """
         Initialization of the Approach class.
@@ -79,9 +118,11 @@ class Approach(object):
 
     def restart(self):
         """Restart values of some variables."""
+        self.is_prepared = False
+
         self.kern, self.bvec, self.norm_vec = None, None, None
-        self.kern_ext, self.bvec_ext = None, None
         self.sol0, self.phi0, self.phi1 = None, None, None
+        self.dphi0_dt = None
         self.current = None
         self.energy_current = None
         self.heat_current = None
@@ -142,15 +183,14 @@ class Approach(object):
         kh.set_phi0(phi0)
         norm = kh.get_phi0_norm()
 
-        dphi0_dt = np.zeros(phi0.shape, dtype=doublenp)
-        kh.set_dphi0_dt(dphi0_dt)
+        self.dphi0_dt.fill(0.0)
 
-        # Here i_dphi0_dt and norm will be implicitly calculated by using KernelHandlerMatrixFree
+        # Here dphi0_dt and norm will be implicitly calculated by using KernelHandlerMatrixFree
         self.generate_kern()
 
-        dphi0_dt[norm_row] = norm-1
+        self.dphi0_dt[norm_row] = norm-1
 
-        return dphi0_dt
+        return self.dphi0_dt
 
     def get_kern_size(self):
         return self.si.ndm0r
@@ -161,20 +201,21 @@ class Approach(object):
         return phi0_init
 
     def prepare_kern(self):
-        if not self.si.states_changed:
+        if self.is_prepared and not self.si.states_changed:
             self.clean_arrays()
             return
 
-        self.si.states_changed = False
         self.prepare_kernel_handler()
         self.prepare_arrays()
+        self.prepare_solver()
+
+        self.si.states_changed = False
+        self.is_prepared = True
 
     def clean_arrays(self):
-        self.kern.fill(0.0)
-        self.bvec.fill(0.0)
-
-        norm_row, symq = self.funcp.norm_row, self.funcp.symq
-        self.bvec[norm_row] = 1 if symq else 0
+        if not self.mfreeq:
+            self.kern.fill(0.0)
+            self.bvec.fill(0.0)
 
         self.current.fill(0.0)
         self.energy_current.fill(0.0)
@@ -191,13 +232,23 @@ class Approach(object):
         self.phi0 = np.zeros(kern_size, dtype=self.dtype)
         self.kernel_handler.set_phi0(self.phi0)
 
-        if not self.funcp.mfreeq:
-            kern_size = self.get_kern_size()
-            self.kern_ext = np.zeros((kern_size+1, kern_size), dtype=self.dtype)
-            self.kern = self.kern_ext[0:-1, :]
+        if self.funcp.mfreeq:
+            self.dphi0_dt = np.zeros(kern_size, dtype=self.dtype)
+            self.kernel_handler.set_dphi0_dt(self.dphi0_dt)
+        else:
+            kern_size_rows = kern_size if self.funcp.symq else kern_size+1
+
+            self.kern = np.zeros((kern_size_rows, kern_size), dtype=self.dtype)
+
             self.kernel_handler.set_kern(self.kern)
 
-            self.generate_norm_vec(kern_size)
+            self.bvec = np.zeros(kern_size_rows, dtype=self.dtype)
+
+            self.replaced_eq = np.zeros(kern_size, dtype=self.dtype)
+
+            self.norm_vec = np.zeros(kern_size, dtype=self.dtype)
+
+            self.generate_norm_vec()
 
     def prepare_kernel_handler(self):
         if self.funcp.mfreeq:
@@ -205,29 +256,41 @@ class Approach(object):
         else:
             self.kernel_handler = KernelHandler(self.si)
 
-    def solve_kern(self):
-        """Finds the stationary state using least squares or using LU decomposition."""
+    def prepare_solver(self):
         solmethod = self.funcp.solmethod
-        symq = self.funcp.symq
-        norm_row = self.funcp.norm_row
-        replaced_eq = None
-
         # Determine the proper solution method
+        if self.funcp.mfreeq:
+            solmethod = solmethod if solmethod is not None else 'krylov'
+            self.funcp.solmethod = solmethod
+            return
+
+        symq = self.funcp.symq
         if solmethod is None:
             solmethod = 'solve' if symq else 'lsqr'
         if not symq and solmethod != 'lsqr' and solmethod != 'lsmr':
             print("WARNING: Using solmethod=lsqr, because the kernel is not symmetric, symq=False.")
             solmethod = 'lsqr'
+
         self.funcp.solmethod = solmethod
+
+    def solve_kern(self):
+        """Finds the stationary state using least squares or using LU decomposition."""
+        solmethod = self.funcp.solmethod
+        symq = self.funcp.symq
+        norm_row = self.funcp.norm_row
+        replaced_eq = self.replaced_eq
+
+        kern = self.kern
+        bvec = self.bvec
 
         # Replace one equation by the normalisation condition
         if symq:
-            kern, bvec = self.kern, self.bvec
-            replaced_eq = np.array(kern[norm_row])
+            replaced_eq[:] = kern[norm_row]
             kern[norm_row] = self.norm_vec
+            bvec[norm_row] = 1
         else:
-            kern, bvec = self.kern_ext, self.bvec_ext
             kern[-1] = self.norm_vec
+            bvec[-1] = 1
 
         # Try to solve the master equation
         try:
@@ -250,15 +313,14 @@ class Approach(object):
     def solve_matrix_free(self):
         """Finds the stationary state using matrix free methods like broyden, krylov, etc."""
         solmethod = self.funcp.solmethod
-        #
         phi0_init = self.funcp.phi0_init
+
         if phi0_init is None:
             self.funcp.print_warning(0, "WARNING: For mfreeq=True no phi0_init is specified. " +
                                      "Using phi0_init[0]=1.0 as a default. " +
                                      "This warning will not be shown again.")
             phi0_init = self.set_phi0_init()
-        #
-        solmethod = solmethod if solmethod is not None else 'krylov'
+
         try:
             self.sol0 = optimize.root(self.generate_vec, phi0_init, method=solmethod)
             self.phi0[:] = self.sol0.x
@@ -267,38 +329,22 @@ class Approach(object):
             self.funcp.print_error(exept)
             self.phi0.fill(0.0)
             self.success = False
-        self.funcp.solmethod = solmethod
 
-    def generate_norm_vec(self, length):
+    def generate_norm_vec(self):
         """
         Generates normalisation condition for 1vN approach.
 
         Parameters
         ----------
-        length: int
-            Length of the normalisation row.
-
         self.norm_vec : array
             (Modifies) Left hand side of the normalisation condition.
-        self.bvec : array
-            (Modifies) Right hand side column vector for master equation.
-            The entry funcp.norm_row is 1 representing normalization condition.
         """
-        si, symq, norm_row = self.si, self.funcp.symq, self.funcp.norm_row
-
-        self.bvec_ext = np.zeros(length+1, dtype=self.dtype)
-        self.bvec_ext[-1] = 1
-
-        self.bvec = self.bvec_ext[0:-1]
-        self.bvec[norm_row] = 1 if symq else 0
-
-        self.norm_vec = np.zeros(length, dtype=self.dtype)
-        norm_vec = self.norm_vec
+        si = self.si
 
         for charge in range(si.ncharge):
             for b in si.statesdm[charge]:
                 bb = si.get_ind_dm0(b, b, charge)
-                norm_vec[bb] += 1
+                self.norm_vec[bb] += 1
 
     def rotate(self):
         self.leads.rotate(self.qd.vecslst)
@@ -468,6 +514,8 @@ class ApproachBase2vN(Approach):
 
     def restart(self):
         """Restart values of some variables for new calculations."""
+        self.is_prepared = False
+
         self.kern, self.bvec = None, None
         self.sol0, self.phi0, self.phi1 = None, None, None
         self.current = None

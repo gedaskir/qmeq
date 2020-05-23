@@ -68,9 +68,9 @@ attribute_map = dict(
     heat_current='appr', phi0='appr', phi1='appr', niter='appr',
     iters='appr', kern='appr', success='appr',
     # FunctionProperties
-    kpnt='funcp', symq='funcp', norm_row='funcp', solmethod='funcp',
-    itype='funcp', dqawc_limit='funcp',
-    mfreeq='funcp', phi0_init='funcp',
+    kpnt='funcp', symq='appr', norm_row='appr', solmethod='appr',
+    itype='appr', dqawc_limit='funcp',
+    mfreeq='appr', phi0_init='funcp',
     )
 
 

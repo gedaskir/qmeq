@@ -35,6 +35,48 @@ cdef class Approach:
     indexing_class_name = 'StateIndexingDM'
     no_coherences = False
 
+    #region Properties
+
+    @property
+    def solmethod(self):
+        return self.funcp.solmethod
+    @solmethod.setter
+    def solmethod(self, value):
+        ApproachPy.solmethod.fset(self, value)
+
+    @property
+    def mfreeq(self):
+        return self.funcp.mfreeq
+    @mfreeq.setter
+    def mfreeq(self, value):
+        ApproachPy.mfreeq.fset(self, value)
+        self._mfreeq = value
+
+    @property
+    def symq(self):
+        return self.funcp.symq
+    @symq.setter
+    def symq(self, value):
+        ApproachPy.symq.fset(self, value)
+        self._symq = value
+
+    @property
+    def norm_row(self):
+        return self.funcp.norm_row
+    @norm_row.setter
+    def norm_row(self, value):
+        ApproachPy.norm_row.fset(self, value)
+        self._norm_row = value
+
+    @property
+    def itype(self):
+        return self.funcp.itype
+    @itype.setter
+    def itype(self, value):
+        ApproachPy.itype.fset(self, value)
+
+    #endregion
+
     def __init__(self, builder):
         ApproachPy.__init__(self, builder)
 
@@ -42,7 +84,7 @@ cdef class Approach:
         pass
 
     cpdef void generate_kern(self):
-        cdef double_t [:] E = self.qd.Ea
+        cdef double_t [:] E = self._Ea
         cdef KernelHandler kh = self._kernel_handler
 
         cdef long_t i, b, bp, bcharge
@@ -63,21 +105,20 @@ cdef class Approach:
         pass
 
     cpdef generate_vec(self, phi0):
-        cdef long_t norm_row = self.funcp.norm_row
+        cdef long_t norm_row = self._norm_row
 
         cdef KernelHandlerMatrixFree kh = self._kernel_handler
         kh.set_phi0(phi0)
         cdef double_t norm = kh.get_phi0_norm()
 
-        cdef double_t [:] dphi0_dt = np.zeros(phi0.shape, dtype=doublenp)
-        kh.set_dphi0_dt(dphi0_dt)
+        self._dphi0_dt[::1] = 0.0
 
         # Here dphi0_dt and norm will be implicitly calculated by using KernelHandlerMatrixFree
         self.generate_kern()
 
-        dphi0_dt[norm_row] = norm-1
+        self._dphi0_dt[norm_row] = norm-1
 
-        return dphi0_dt
+        return self._dphi0_dt
 
     def get_kern_size(self):
         return ApproachPy.get_kern_size(self)
@@ -89,22 +130,26 @@ cdef class Approach:
         return ApproachPy.set_phi0_init(self)
 
     cpdef void prepare_kern(self):
-        if not self.si.states_changed:
+        if self.is_prepared and not self.si.states_changed:
             self.clean_arrays()
             return
 
-        self.si.states_changed = False
         self.prepare_kernel_handler()
         self.prepare_arrays()
+        self.prepare_solver()
+
+        self._mfreeq = self.funcp.mfreeq
+        self._norm_row = self.funcp.norm_row
+        self._symq = self.funcp.symq
+
+        self.si.states_changed = False
+        self.is_prepared = True
 
     cdef void clean_arrays(self):
 
-        cdef long_t norm_row = self.funcp.norm_row
-        cdef bool_t symq = self.funcp.symq
-        if not self.funcp.mfreeq:
+        if not self._mfreeq:
             self._kern[::1] = 0.0
             self._bvec[::1] = 0.0
-            self._bvec[norm_row] = 1 if symq else 0
 
         self._phi0[::1] = 0.0
         self._current[::1] = 0.0
@@ -115,11 +160,11 @@ cdef class Approach:
         ApproachPy.prepare_arrays(self)
 
         self._kern = self.kern
-        self._kern_ext = self.kern_ext
         self._bvec = self.bvec
-        self._bvec_ext = self.bvec_ext
+        self._norm_vec = self.norm_vec
 
         self._phi0 = self.phi0
+        self._dphi0_dt = self.dphi0_dt
         self._current = self.current
         self._energy_current = self.energy_current
         self._heat_current = self.heat_current
@@ -139,24 +184,19 @@ cdef class Approach:
 
         self._kernel_handler = self.kernel_handler
 
+    def prepare_solver(self):
+        ApproachPy.prepare_solver(self)
+
     def solve_kern(self):
         ApproachPy.solve_kern(self)
 
     def solve_matrix_free(self):
         ApproachPy.solve_matrix_free(self)
 
-    @cython.wraparound(True)
-    def generate_norm_vec(self, length):
-        kh, symq, norm_row = self._kernel_handler, self.funcp.symq, self.funcp.norm_row
+    def generate_norm_vec(self):
+        kh = self._kernel_handler
 
-        self.bvec_ext = np.zeros(length+1, dtype=self.dtype)
-        self.bvec_ext[-1] = 1
-
-        self.bvec = self.bvec_ext[0:-1]
-        self.bvec[norm_row] = 1 if symq else 0
-
-        cdef double_t [:] norm_vec = np.zeros(length, dtype=self.dtype)
-
+        cdef double_t [:] norm_vec = self.norm_vec
         cdef int_t bcharge, bcount, b, bb, i
         for bcharge in range(kh.ncharge):
             bcount = kh.statesdm_count[bcharge]
@@ -164,8 +204,6 @@ cdef class Approach:
                 b = kh.statesdm[bcharge, i]
                 bb = kh.get_ind_dm0(b, b, bcharge)
                 norm_vec[bb] += 1
-
-        self.norm_vec = norm_vec
 
     def rotate(self):
         ApproachPy.rotate(self)
@@ -386,7 +424,7 @@ cdef class KernelHandlerMatrixFree(KernelHandler):
         KernelHandler.__init__(self, si, no_coherences)
         self.dphi0_dt = None
 
-    cdef void set_dphi0_dt(self, double_t [:] dphi0_dt):
+    cpdef void set_dphi0_dt(self, double_t [:] dphi0_dt):
         self.dphi0_dt = dphi0_dt
 
     cdef void set_energy(self,

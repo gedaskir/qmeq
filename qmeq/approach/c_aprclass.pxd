@@ -28,14 +28,18 @@ cdef class Approach:
     cdef complex_t [:, :, :] _phi1fct_energy
 
     cdef double_t [:, :] _kern
-    cdef double_t [:, :] _kern_ext
     cdef double_t [:] _bvec
-    cdef double_t [:] _bvec_ext
+    cdef double_t [:] _norm_vec
 
     cdef double_t [:] _phi0
+    cdef double_t [:] _dphi0_dt
     cdef double_t [:] _current
     cdef double_t [:] _energy_current
     cdef double_t [:] _heat_current
+
+    cdef bool_t _mfreeq
+    cdef bool_t _symq
+    cdef long_t _norm_row
 
     cpdef void generate_fct(self)
     cpdef void generate_kern(self)
@@ -147,6 +151,6 @@ cdef class KernelHandlerMatrixFree(KernelHandler):
 
     cdef double_t [:] dphi0_dt
 
-    cdef void set_dphi0_dt(self, double_t [:] dphi0_dt)
+    cpdef void set_dphi0_dt(self, double_t [:] dphi0_dt)
 
     cdef double_t get_phi0_norm(self)
