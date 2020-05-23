@@ -940,4 +940,4 @@ class QuantumDot(object):
 
     def set_Ea(self):
         """Sets the many-body eigenstates using construct_Ea_manybody()."""
-        self.Ea = construct_Ea_manybody(self.valslst, self.si)
+        self.Ea[:] = construct_Ea_manybody(self.valslst, self.si)

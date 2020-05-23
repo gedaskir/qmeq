@@ -111,13 +111,6 @@ cdef class Approach:
         self._energy_current[::1] = 0.0
         self._heat_current[::1] = 0.0
 
-        self._tlst = self.leads.tlst
-        self._mulst = self.leads.mulst
-        self._dlst = self.leads.dlst
-
-        self._Ea = self.qd.Ea
-        self._Tba = self.leads.Tba
-
     cdef void prepare_arrays(self):
         ApproachPy.prepare_arrays(self)
 
@@ -201,11 +194,7 @@ cdef class ApproachElPh(Approach):
         self._Vbbp = self.baths.Vbbp
 
     cdef void clean_arrays(self):
-        Approach.clean_arrays(self)
-
-        self._tlst_ph = self.baths.tlst_ph
-        self._dlst_ph = self.baths.dlst_ph
-        self._Vbbp = self.baths.Vbbp
+        pass
 
     def restart(self):
         ApproachElPhPy.restart(self)

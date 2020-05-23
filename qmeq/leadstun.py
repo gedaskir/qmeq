@@ -419,7 +419,7 @@ class LeadsTunneling(object):
 
     def _init_coupling(self):
         self.Tba0 = construct_Tba(self, self.tleads)
-        self.Tba = self.Tba0
+        self.Tba = np.array(self.Tba0)
 
     def add(self, tleads=None, mulst=None, tlst=None, dlst=None, updateq=True, lstq=True):
         """
@@ -466,11 +466,11 @@ class LeadsTunneling(object):
             For example, tleads[(lead, state)] = the new value.
         """
         if mulst is not None:
-            self.mulst = make_array(self.mulst, mulst, self.si)
+            self.mulst[:] = make_array(self.mulst, mulst, self.si)
         if tlst is not None:
-            self.tlst = make_array(self.tlst, tlst, self.si)
+            self.tlst[:] = make_array(self.tlst, tlst, self.si)
         if dlst is not None:
-            self.dlst = make_array_dlst(self.dlst, dlst, self.si)
+            self.dlst[:] = make_array_dlst(self.dlst, dlst, self.si)
         #
         if tleads is not None:
             tleads = make_tleads_dict(tleads, self.si, True)
@@ -502,13 +502,13 @@ class LeadsTunneling(object):
         indexing : string
             Specifies what kind of rotation procedure to use. Default is si.indexing.
         """
-        self.Tba = rotate_Tba(self.Tba0, vecslst, self.si, indexing, self.mtype)
+        self.Tba[:] = rotate_Tba(self.Tba0, vecslst, self.si, indexing, self.mtype)
 
     def use_Tba0(self):
         """
         Sets the Tba matrix for calculation to Tba0 in the Fock basis.
         """
-        self.Tba = self.Tba0
+        self.Tba[:] = self.Tba0
 
     def update_Tba0(self, nleads, tleads, mtype=complex):
         """
