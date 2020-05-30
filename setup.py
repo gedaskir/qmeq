@@ -35,7 +35,9 @@ def get_ext_modules():
                  'qmeq/approach/elph/c_lindblad.c',
                  'qmeq/approach/elph/c_redfield.c',
                  'qmeq/approach/elph/c_neumann1.c',
-                 'qmeq/specfunc/c_specfunc_elph.c']
+                 'qmeq/specfunc/c_specfunc_elph.c',
+                 # wrappers
+                 'qmeq/wrappers/c_lapack.c',]
     c_files_exist = all([os.path.isfile(f) for f in file_list])
 
     # Check if --cython option is specified
@@ -95,11 +97,13 @@ setup(name='qmeq',
                 'qmeq/approach/elph',
                 'qmeq/builder',
                 'qmeq/specfunc',
-                'qmeq/tests'],
+                'qmeq/tests',
+                'qmeq/wrappers',],
       package_data={'qmeq/approach':      ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
                     'qmeq/approach/base': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
                     'qmeq/approach/elph': ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
-                    'qmeq/specfunc':      ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'], },
+                    'qmeq/specfunc':      ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'],
+                    'qmeq/wrappers':      ['*.pyx', '*.c', '*.pyd', '*.o', '*.so'], },
       zip_safe=False,
       install_requires=['numpy', 'scipy'],
       include_dirs=[np.get_include()],

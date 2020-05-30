@@ -238,7 +238,7 @@ class Approach(object):
         else:
             kern_size_rows = kern_size if self.funcp.symq else kern_size+1
 
-            self.kern = np.zeros((kern_size_rows, kern_size), dtype=self.dtype)
+            self.kern = np.zeros((kern_size_rows, kern_size), dtype=self.dtype, order='F')
 
             self.kernel_handler.set_kern(self.kern)
 

@@ -1,6 +1,8 @@
 import numpy as np
 cimport numpy as np
 
+from ..wrappers.c_lapack cimport LapackSolver
+
 ctypedef np.uint8_t bool_t
 ctypedef np.int_t int_t
 ctypedef np.int64_t long_t
@@ -12,6 +14,7 @@ cdef class Approach:
     cdef dict __dict__
 
     cdef KernelHandler _kernel_handler
+    cdef LapackSolver _solver
 
     cdef double_t [:] _rez_real
     cdef complex_t [:] _rez_complex
@@ -37,6 +40,7 @@ cdef class Approach:
     cdef double_t [:] _energy_current
     cdef double_t [:] _heat_current
 
+    cdef bool_t _success
     cdef bool_t _mfreeq
     cdef bool_t _symq
     cdef long_t _norm_row
@@ -55,6 +59,8 @@ cdef class Approach:
     cdef void prepare_arrays(self)
 
     cdef void clean_arrays(self)
+
+    cpdef void solve_kern(self)
 
 
 cdef class ApproachElPh(Approach):

@@ -88,10 +88,16 @@ class FunctionProperties(object):
 
     def print_error(self, exept):
         if not self.suppress_err:
-            print(str(exept))
-            print("WARNING: Could not invert the kernel. " +
-                  "All the transport channels may be outside the bandwidth. " +
-                  "This warning will not be shown again.")
+            print("WARNING: Could not solve the linear set of equations.\n" +
+                  "  Error from the solver: " + exept + "\n"
+                  "  The reasons for such a failure can be various:\n" +
+                  "  1. Some of the transport channels may be outside the bandwidth D of the leads.\n" +
+                  "     In this case removing some of the states with the method [remove_states()] will help.\n" +
+                  "  2. Replacement of one of the equations with the normalisation condition.\n" +
+                  "     In this case try to use different [norm_row]\n"+
+                  "     or solve the linear system using [symq=False] and the solution method [solmethod='lsqr'].\n"
+                  "  This warning will not be shown again.\n"
+                  "  To check if the solution succeeded check the property [success].")
             self.suppress_err = True
 
     def print_warning(self, i, message):

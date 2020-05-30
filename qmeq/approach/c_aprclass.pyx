@@ -27,6 +27,9 @@ from ..indexing import StateIndexingDMc
 cimport numpy as np
 cimport cython
 
+from ..wrappers.c_lapack cimport LapackSolverDGESV
+from ..wrappers.c_lapack cimport LapackSolverDGELSD
+
 
 cdef class Approach:
 
@@ -75,7 +78,14 @@ cdef class Approach:
     def itype(self, value):
         ApproachPy.itype.fset(self, value)
 
-    #endregion
+    @property
+    def success(self):
+        return self._success
+    @success.setter
+    def success(self, value):
+        self._success = value
+
+    #endregion Properties
 
     def __init__(self, builder):
         ApproachPy.__init__(self, builder)
@@ -186,9 +196,42 @@ cdef class Approach:
 
     def prepare_solver(self):
         ApproachPy.prepare_solver(self)
+        if self.funcp.mfreeq:
+            return
 
-    def solve_kern(self):
-        ApproachPy.solve_kern(self)
+        solmethod = self.funcp.solmethod
+        if solmethod == 'lsqr':
+            self._solver = LapackSolverDGELSD(self.kern, self.bvec)
+        else:
+        #else if solmethod == 'solve':
+            self._solver = LapackSolverDGESV(self.kern, self.bvec)
+
+    cpdef void solve_kern(self):
+        """Finds the stationary state using least squares or using LU decomposition."""
+
+        # Replace one equation by the normalisation condition
+        cdef double_t [:, :] kern = self._kern
+        cdef double_t [:] bvec = self._bvec
+
+        cdef long_t norm_row = self._norm_row if self._symq else kern.shape[0] - 1
+        kern[norm_row, :] = self._norm_vec
+        bvec[norm_row] = 1
+
+        # Try to solve the master equation
+        # Solver modifies the arrays kern and bvec
+        # The solution is stored in bvec
+        self._solver.solve()
+
+        # Copy over the solution
+        cdef long_t phi0_size = self._phi0.shape[0]
+        self._phi0[:] = self._bvec[0:phi0_size]
+
+        if self._solver.info == 0:
+            self._success = True
+        else:
+            self.funcp.print_error("Singular matrix.")
+            self._phi0[::1] = 0.0
+            self._success = False
 
     def solve_matrix_free(self):
         ApproachPy.solve_matrix_free(self)
