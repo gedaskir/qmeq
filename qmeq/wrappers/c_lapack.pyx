@@ -29,9 +29,18 @@ cdef class LapackSolver:
     cdef void solve(self):
         pass
 
-    cdef void determine_pointer_a(self, a):
-        cdef double [:, :] a_matrix = a
-        self.a_double = &a_matrix[0, 0]
+    cdef void determine_pointer_a(self, a, make_copy):
+        self.make_copy = make_copy
+        cdef double [:, :] a_matrix
+
+        if make_copy:
+            self.a_double = a
+            self.a_double_copy = np.array(a)
+            a_matrix = self.a_double_copy
+        else:
+            a_matrix = a
+
+        self.a_double_pointer = &a_matrix[0, 0]
 
     cdef void determine_pointer_b(self, b):
         cdef double [:] b_vector
@@ -39,10 +48,14 @@ cdef class LapackSolver:
 
         if len(b.shape) == 1:
             b_vector = b
-            self.b_double = &b_vector[0]
+            self.b_double_pointer = &b_vector[0]
         else:
             b_matrix = b
-            self.b_double = &b_matrix[0, 0]
+            self.b_double_pointer = &b_matrix[0, 0]
+
+    cdef void make_copy_of_a_double(self):
+        if self.make_copy:
+            self.a_double_copy[:] = self.a_double
 
 
 #------------------------------------------
@@ -66,19 +79,20 @@ cdef class LapackSolverXGESV(LapackSolver):
 
 cdef class LapackSolverDGESV(LapackSolverXGESV):
 
-    def __init__(self, a, b):
+    def __init__(self, a, b, make_copy=False):
         LapackSolverXGESV.__init__(self, a, b)
-        self.determine_pointer_a(a)
+        self.determine_pointer_a(a, make_copy)
         self.determine_pointer_b(b)
 
     cdef void solve(self):
+        self.make_copy_of_a_double()
         scipy.linalg.cython_lapack.dgesv(
             &self.n,
             &self.nrhs,
-             self.a_double,
+             self.a_double_pointer,
             &self.lda,
              self.ipiv,
-             self.b_double,
+             self.b_double_pointer,
             &self.ldb,
             &self.info)
 
@@ -116,9 +130,9 @@ cdef class LapackSolverXGELSD(LapackSolver):
 
 cdef class LapackSolverDGELSD(LapackSolverXGELSD):
 
-    def __init__(self, a, b):
+    def __init__(self, a, b, make_copy=False):
         LapackSolverXGELSD.__init__(self, a, b)
-        self.determine_pointer_a(a)
+        self.determine_pointer_a(a, make_copy)
         self.determine_pointer_b(b)
 
         self.work = <double*> malloc(self.lwork * sizeof(double))
@@ -136,9 +150,9 @@ cdef class LapackSolverDGELSD(LapackSolverXGELSD):
             &self.m,
             &self.n,
             &self.nrhs,
-             self.a_double,
+             self.a_double_pointer,
             &self.lda,
-             self.b_double,
+             self.b_double_pointer,
             &self.ldb,
              self.s,
             &self.rcond,
@@ -151,13 +165,14 @@ cdef class LapackSolverDGELSD(LapackSolverXGELSD):
         self.lwork = int(lwork)
 
     cdef void solve(self):
+        self.make_copy_of_a_double()
         scipy.linalg.cython_lapack.dgelsd(
             &self.m,
             &self.n,
             &self.nrhs,
-             self.a_double,
+             self.a_double_pointer,
             &self.lda,
-             self.b_double,
+             self.b_double_pointer,
             &self.ldb,
              self.s,
             &self.rcond,

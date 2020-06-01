@@ -66,7 +66,7 @@ attribute_map = dict(
     # Approach
     solve='appr', current='appr', energy_current='appr',
     heat_current='appr', phi0='appr', phi1='appr', niter='appr',
-    iters='appr', kern='appr', success='appr',
+    iters='appr', kern='appr', success='appr', make_kern_copy='appr',
     # FunctionProperties
     kpnt='funcp', symq='appr', norm_row='appr', solmethod='appr',
     itype='appr', dqawc_limit='funcp',

@@ -85,6 +85,13 @@ cdef class Approach:
     def success(self, value):
         self._success = value
 
+    @property
+    def make_kern_copy(self):
+        return self._make_kern_copy
+    @make_kern_copy.setter
+    def make_kern_copy(self, value):
+        self._make_kern_copy = value
+
     #endregion Properties
 
     def __init__(self, builder):
@@ -201,10 +208,10 @@ cdef class Approach:
 
         solmethod = self.funcp.solmethod
         if solmethod == 'lsqr':
-            self._solver = LapackSolverDGELSD(self.kern, self.bvec)
+            self._solver = LapackSolverDGELSD(self.kern, self.bvec, self._make_kern_copy)
         else:
         #else if solmethod == 'solve':
-            self._solver = LapackSolverDGESV(self.kern, self.bvec)
+            self._solver = LapackSolverDGESV(self.kern, self.bvec, self._make_kern_copy)
 
     cpdef void solve_kern(self):
         """Finds the stationary state using least squares or using LU decomposition."""

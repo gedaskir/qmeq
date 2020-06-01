@@ -41,6 +41,7 @@ cdef class Approach:
     cdef double_t [:] _heat_current
 
     cdef bool_t _success
+    cdef bool_t _make_kern_copy
     cdef bool_t _mfreeq
     cdef bool_t _symq
     cdef long_t _norm_row

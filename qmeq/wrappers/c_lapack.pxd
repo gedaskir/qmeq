@@ -5,14 +5,19 @@ cimport numpy as np
 cdef class LapackSolver:
 
     cdef int info
+    cdef bint make_copy
 
-    cdef double* a_double
-    cdef double* b_double
+    cdef double* a_double_pointer
+    cdef double* b_double_pointer
+
+    cdef double [:, :] a_double
+    cdef double [:, :] a_double_copy
 
     cdef void solve(self)
 
-    cdef void determine_pointer_a(self, a)
+    cdef void determine_pointer_a(self, a, make_copy)
     cdef void determine_pointer_b(self, b)
+    cdef void make_copy_of_a_double(self)
 
 
 cdef class LapackSolverXGESV(LapackSolver):

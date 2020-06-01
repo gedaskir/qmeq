@@ -119,6 +119,7 @@ class Approach(object):
     def restart(self):
         """Restart values of some variables."""
         self.is_prepared = False
+        self.make_kern_copy = False
 
         self.kern, self.bvec, self.norm_vec = None, None, None
         self.sol0, self.phi0, self.phi1 = None, None, None
