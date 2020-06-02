@@ -13,8 +13,8 @@ except ImportError:
     # For backwards compatibility with older versions of SciPy
     from scipy.misc import factorial
 
-from .mytypes import boolnp
-from .mytypes import longnp
+from .wrappers.mytypes import boolnp
+from .wrappers.mytypes import longnp
 
 
 def binarylist_to_integer(lst):

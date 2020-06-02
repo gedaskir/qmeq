@@ -7,9 +7,9 @@ import numpy as np
 from scipy import pi
 import itertools
 
-from ...mytypes import complexnp
-from ...mytypes import doublenp
-from ...mytypes import intnp
+from ...wrappers.mytypes import complexnp
+from ...wrappers.mytypes import doublenp
+from ...wrappers.mytypes import intnp
 
 from ...specfunc.specfunc import kernel_fredriksen
 from ...specfunc.specfunc import hilbert_fredriksen

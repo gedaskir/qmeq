@@ -14,7 +14,7 @@ from .indexing import ssqrange
 from .indexing import sz_to_ind
 from .indexing import ssq_to_ind
 
-from .mytypes import doublenp
+from .wrappers.mytypes import doublenp
 
 
 def construct_Tba(leads, tleads, Tba_=None):

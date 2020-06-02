@@ -1,11 +1,11 @@
 import numpy as np
 cimport numpy as np
 
-from ..approach.c_aprclass cimport bool_t
-from ..approach.c_aprclass cimport int_t
-from ..approach.c_aprclass cimport long_t
-from ..approach.c_aprclass cimport double_t
-from ..approach.c_aprclass cimport complex_t
+from ..wrappers.c_mytypes cimport bool_t
+from ..wrappers.c_mytypes cimport int_t
+from ..wrappers.c_mytypes cimport long_t
+from ..wrappers.c_mytypes cimport double_t
+from ..wrappers.c_mytypes cimport complex_t
 
 cdef double_t fermi_func(double_t)
 

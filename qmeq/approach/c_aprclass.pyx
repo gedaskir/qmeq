@@ -16,9 +16,9 @@ import numpy as np
 from .aprclass import Approach as ApproachPy
 from .aprclass import ApproachElPh as ApproachElPhPy
 
-from ..mytypes import longnp
-from ..mytypes import doublenp
-from ..mytypes import complexnp
+from ..wrappers.mytypes import longnp
+from ..wrappers.mytypes import doublenp
+from ..wrappers.mytypes import complexnp
 
 from ..indexing import StateIndexingDMc
 

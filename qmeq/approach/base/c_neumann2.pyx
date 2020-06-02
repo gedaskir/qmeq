@@ -18,8 +18,8 @@ from .neumann2 import get_htransf_fk
 from .neumann2 import kern_phi0_2vN
 from .neumann2 import generate_current_2vN
 
-from ...mytypes import doublenp
-from ...mytypes import complexnp
+from ...wrappers.mytypes import doublenp
+from ...wrappers.mytypes import complexnp
 
 from ..aprclass import ApproachBase2vN
 

@@ -12,7 +12,7 @@ from scipy import exp
 from scipy.special import psi as digamma
 from scipy.integrate import quad
 
-from ..mytypes import doublenp
+from ..wrappers.mytypes import doublenp
 
 
 def fermi_func(x):

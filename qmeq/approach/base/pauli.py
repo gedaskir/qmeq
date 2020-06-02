@@ -6,7 +6,7 @@ from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...mytypes import doublenp
+from ...wrappers.mytypes import doublenp
 
 from ...specfunc.specfunc import func_pauli
 from ..aprclass import Approach

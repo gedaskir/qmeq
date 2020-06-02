@@ -8,31 +8,15 @@ import numpy as np
 from scipy.special import psi as digamma
 from scipy.integrate import quad
 
-from ..mytypes import doublenp
-from ..mytypes import complexnp
+from ..wrappers.mytypes import doublenp
+from ..wrappers.mytypes import complexnp
 
 cimport numpy as np
 cimport cython
 
-# These definitions are already specified in specfuncc.pxd
-# as well as 'import numpy as np' and 'cimport numpy as np'
-'''
-ctypedef np.uint8_t bool_t
-ctypedef np.int_t int_t
-ctypedef np.int64_t long_t
-ctypedef np.float64_t double_t
-ctypedef np.complex128_t complex_t
-'''
-
 cdef double_t pi = 3.14159265358979323846
-
 from libc.math cimport exp
-# cdef extern from "math.h":
-#     double_t exp(double_t)
-
 from libc.math cimport log
-# cdef extern from "math.h":
-#     double_t log(double_t)
 
 
 @cython.cdivision(True)

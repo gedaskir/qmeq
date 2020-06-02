@@ -8,8 +8,8 @@ import itertools
 import numpy as np
 from scipy import optimize
 
-from ..mytypes import doublenp
-from ..mytypes import complexnp
+from ..wrappers.mytypes import doublenp
+from ..wrappers.mytypes import complexnp
 
 
 class Approach(object):

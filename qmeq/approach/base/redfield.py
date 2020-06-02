@@ -7,8 +7,8 @@ from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...mytypes import doublenp
-from ...mytypes import complexnp
+from ...wrappers.mytypes import doublenp
+from ...wrappers.mytypes import complexnp
 
 from ..aprclass import Approach
 from .neumann1 import Approach1vN

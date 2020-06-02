@@ -7,7 +7,7 @@ from __future__ import print_function
 import copy
 import numpy as np
 
-from ..mytypes import longnp
+from ..wrappers.mytypes import longnp
 
 from ..approach.aprclass import Approach
 from ..indexing import StateIndexingDM

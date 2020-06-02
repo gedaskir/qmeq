@@ -37,7 +37,8 @@ def get_ext_modules():
                  'qmeq/approach/elph/c_neumann1.c',
                  'qmeq/specfunc/c_specfunc_elph.c',
                  # wrappers
-                 'qmeq/wrappers/c_lapack.c',]
+                 'qmeq/wrappers/c_lapack.c',
+                 'qmeq/wrappers/c_mytypes.c',]
     c_files_exist = all([os.path.isfile(f) for f in file_list])
 
     # Check if --cython option is specified

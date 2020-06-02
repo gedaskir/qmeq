@@ -6,8 +6,8 @@ from __future__ import print_function
 import numpy as np
 from scipy.integrate import quad
 
-from qmeq.mytypes import doublenp
-from qmeq.mytypes import complexnp
+from ..wrappers.mytypes import doublenp
+from ..wrappers.mytypes import complexnp
 
 cimport numpy as np
 cimport cython
