@@ -26,7 +26,7 @@ cimport numpy as np
 cimport cython
 
 from ..c_aprclass cimport Approach
-from ..c_aprclass cimport KernelHandler
+from ..c_kernel_handler cimport KernelHandler
 from .c_neumann1 cimport Approach1vN
 
 

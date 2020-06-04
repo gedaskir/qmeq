@@ -28,7 +28,7 @@ cimport cython
 from ...specfunc.c_specfunc_elph cimport FuncPauliElPh
 
 from ..c_aprclass cimport ApproachElPh
-from ..c_aprclass cimport KernelHandler
+from ..c_kernel_handler cimport KernelHandler
 
 from ..base.c_pauli cimport ApproachPauli as ApproachPauliBase
 

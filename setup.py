@@ -23,6 +23,7 @@ def get_ext_modules():
 
     # Check if *.c files are already there
     file_list = ['qmeq/approach/c_aprclass.c',
+                 'qmeq/approach/c_kernel_handler.c',
                  # base
                  'qmeq/approach/base/c_pauli.c',
                  'qmeq/approach/base/c_lindblad.c',

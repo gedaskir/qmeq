@@ -27,7 +27,7 @@ cimport cython
 
 from ...specfunc.c_specfunc cimport func_pauli
 from ..c_aprclass cimport Approach
-from ..c_aprclass cimport KernelHandler
+from ..c_kernel_handler cimport KernelHandler
 
 # ---------------------------------------------------------------------------------------------------
 # Pauli master equation

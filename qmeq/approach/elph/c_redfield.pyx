@@ -28,7 +28,7 @@ cimport cython
 from ...specfunc.c_specfunc_elph cimport Func1vNElPh
 
 from ..c_aprclass cimport ApproachElPh
-from ..c_aprclass cimport KernelHandler
+from ..c_kernel_handler cimport KernelHandler
 from .c_neumann1 cimport Approach1vN
 
 from ..base.c_redfield cimport ApproachRedfield as ApproachRedfieldBase

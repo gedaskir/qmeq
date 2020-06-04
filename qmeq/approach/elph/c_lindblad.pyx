@@ -30,7 +30,7 @@ from libc.math cimport sqrt
 from ...specfunc.c_specfunc_elph cimport FuncPauliElPh
 
 from ..c_aprclass cimport ApproachElPh
-from ..c_aprclass cimport KernelHandler
+from ..c_kernel_handler cimport KernelHandler
 
 from ..base.c_lindblad cimport ApproachLindblad as ApproachLindbladBase
 

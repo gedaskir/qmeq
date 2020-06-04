@@ -16,6 +16,7 @@ qmeq/pylintrc
 qmeq/specfunc/c_specfunc.c
 qmeq/specfunc/c_specfunc_elph.c
 qmeq/approach/c_aprclass.c
+qmeq/approach/c_kernel_handler.c
 qmeq/approach/base/c_pauli.c
 qmeq/approach/base/c_lindblad.c
 qmeq/approach/base/c_redfield.c

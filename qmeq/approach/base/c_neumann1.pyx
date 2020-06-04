@@ -28,7 +28,7 @@ cimport cython
 from ...specfunc.c_specfunc cimport func_1vN
 
 from ..c_aprclass cimport Approach
-from ..c_aprclass cimport KernelHandler
+from ..c_kernel_handler cimport KernelHandler
 
 # ---------------------------------------------------------------------------------------------------
 # 1 von Neumann approach
