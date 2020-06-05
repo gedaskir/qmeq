@@ -35,7 +35,7 @@ class ApproachLindblad(Approach):
 
         Parameters
         ----------
-        self.tLba : array
+        tLba : array
             (Modifies) Jump operator matrix in many-body basis.
         """
         Tba, E, si = self.leads.Tba, self.qd.Ea, self.si
@@ -104,14 +104,11 @@ class ApproachLindblad(Approach):
 
         Parameters
         ----------
-        self : Approach
-            Approach object.
-
-        self.current : array
+        current : array
             (Modifies) Values of the current having nleads entries.
-        self.energy_current : array
+        energy_current : array
             (Modifies) Values of the energy current having nleads entries.
-        self.heat_current : array
+        heat_current : array
             (Modifies) Values of the heat current having nleads entries.
         """
         phi0p, E, tLba, si = self.phi0, self.qd.Ea, self.tLba, self.si

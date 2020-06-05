@@ -223,7 +223,7 @@ class Approach(object):
 
         Parameters
         ----------
-        self.norm_vec : array
+        norm_vec : array
             (Modifies) Left hand side of the normalisation condition.
         """
         si = self.si
@@ -242,7 +242,7 @@ class Approach(object):
 
         Parameters
         ----------
-        self.kern : array
+        kern : array
             (Modifies) Kernel matrix for 1vN approach.
         """
         E = self.qd.Ea
@@ -421,11 +421,11 @@ class Iterations2vN(object):
 
     def __init__(self, appr):
         self.niter = appr.niter
-        self.phi0 = appr.phi0
-        self.phi1 = appr.phi1
-        self.current = appr.current
-        self.energy_current = appr.energy_current
-        self.heat_current = appr.heat_current
+        self.phi0 = np.copy(appr.phi0)
+        self.phi1 = np.copy(appr.phi1)
+        self.current = np.copy(appr.current)
+        self.energy_current = np.copy(appr.energy_current)
+        self.heat_current = np.copy(appr.heat_current)
 
 
 class ApproachBase2vN(Approach):
@@ -471,18 +471,6 @@ class ApproachBase2vN(Approach):
     dtype = complexnp
     indexing_class_name = 'StateIndexingDMc'
 
-    def iterate(self):
-        pass
-
-    def get_phi1_phi0(self):
-        pass
-
-    def kern_phi0(self):
-        pass
-
-    def generate_current(self):
-        pass
-
     def __init__(self, builder):
         """
         Initialization of the Approach2vN class.
@@ -505,62 +493,85 @@ class ApproachBase2vN(Approach):
         if type(self.si).__name__ != self.indexing_class_name:
             raise TypeError('The state indexing class for 2vN approach has to be StateIndexingDMc')
 
-    def make_Ek_grid(self):
-        """Make an energy grid on which 2vN equations are solved. """
-        if self.funcp.kpnt is None:
-            raise ValueError('kpnt needs to be specified.')
-        if self.si.nleads > 0:
-            dmin = np.min(self.leads.dlst)
-            dmax = np.max(self.leads.dlst)
-            Ek_grid, kpnt = self.Ek_grid, self.funcp.kpnt
-            if Ek_grid[0] != dmin or Ek_grid[-1] != dmax or Ek_grid.shape[0] != kpnt:
-                self.funcp.dmin = dmin
-                self.funcp.dmax = dmax
-                self.Ek_grid = np.linspace(dmin, dmax, kpnt)
-                #
-                if self.niter != -1:
-                    print("WARNING: Ek_grid has changed. Restarting the calculation.")
-                    self.restart()
-                #
-                if ((dmin * np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[0].tolist() or
-                        (dmax * np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[1].tolist()):
-                    print("WARNING: The bandwidth and Ek_grid for all leads will be the same: from " +
-                          "dmin=" + str(dmin) + " to dmax=" + str(dmax) + ".")
-
     def restart(self):
         """Restart values of some variables for new calculations."""
-        self.is_prepared = False
+        Approach.restart(self)
+        self.is_zeroth_iteration = True
 
-        self.kern, self.bvec = None, None
-        self.sol0, self.phi0, self.phi1 = None, None, None
-        self.current = None
-        self.energy_current = None
-        self.heat_current = None
-        #
-        self.niter = -1
+        self.h_phi1 = None
+
+        self.phi1_phi0 = None
+        self.e_phi1_phi0 = None
+
         self.phi1k = None
         self.phi1k_delta = None
         self.hphi1k_delta = None
         self.kern1k_inv = None
-        self.phi1_phi0 = None
-        self.e_phi1_phi0 = None
-        #
+
+        self.niter = -1
         self.iters = []
+
+    #region Preparation
 
     def get_kern_size(self):
         return self.si.ndm0
 
+    def prepare_arrays(self):
+        Approach.prepare_arrays(self)
+        nleads, ndm0, ndm1 = self.si.nleads, self.si.ndm0, self.si.ndm1
+
+        self.phi1 = np.zeros((nleads, ndm1), dtype=complexnp)
+        self.h_phi1 = np.zeros((nleads, ndm1), dtype=complexnp)
+
+        self.phi1_phi0 = np.zeros((nleads, ndm1, ndm0), dtype=complexnp)
+        self.e_phi1_phi0 = np.zeros((nleads, ndm1, ndm0), dtype=complexnp)
+
+        if self.is_zeroth_iteration:
+            Eklen = len(self.Ek_grid)
+            self.phi1k = np.zeros((Eklen, nleads, ndm1, ndm0), dtype=complexnp)
+            self.phi1k_delta = np.zeros((Eklen, nleads, ndm1, ndm0), dtype=complexnp)
+            self.kern1k_inv = np.zeros((Eklen, nleads, ndm1, ndm1), dtype=complexnp)
+
+    def clean_arrays(self):
+        Approach.clean_arrays(self)
+
+        self.phi1.fill(0.0)
+        self.h_phi1.fill(0.0)
+
+        self.phi1_phi0.fill(0.0)
+        self.e_phi1_phi0.fill(0.0)
+
+    #endregion Preparation
+
+    #region Generation
+
+    def iterate(self):
+        pass
+
+    def determine_phi1_phi0(self):
+        pass
+
+    def generate_kern(self):
+        pass
+
+    def generate_current(self):
+        pass
+
+    #endregion Generation
+
     def iteration(self):
         """Makes one iteration for solution of the 2vN integral equation."""
-        self.iterate()
-        self.phi1k = self.phi1k_delta if self.phi1k is None else self.phi1k + self.phi1k_delta
-        self.get_phi1_phi0()
-        self.niter += 1
         self.prepare_kern()
-        self.kern_phi0()
+
+        self.iterate()
+        self.phi1k += self.phi1k_delta
+        self.determine_phi1_phi0()
+        self.niter += 1
+
+        self.generate_kern()
         self.solve_kern()
         self.generate_current()
-        #
+
         self.iters.append(Iterations2vN(self))
 
     def solve(self,
@@ -593,13 +604,11 @@ class ApproachBase2vN(Approach):
             self.qd.diagonalise()
             if rotateq:
                 self.leads.rotate(self.qd.vecslst)
-        #
+
         if masterq:
-            # Exception
             if niter is None:
                 raise ValueError('Number of iterations niter needs to be specified')
-            self.make_Ek_grid()
-            #
+
             for it in range(niter):
                 self.iteration()
                 if func_iter is not None:

@@ -9,33 +9,23 @@ from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...specfunc.specfunc import kernel_fredriksen
-from ...specfunc.specfunc import hilbert_fredriksen
-from .neumann2 import get_emin_emax
-from .neumann2 import get_grid_ext
 from .neumann2 import get_htransf_phi1k
 from .neumann2 import get_htransf_fk
-from .neumann2 import kern_phi0_2vN
-from .neumann2 import generate_current_2vN
+from .neumann2 import Approach2vN as Approach2vNPy
+
+from ..aprclass import ApproachBase2vN
+
+from ...specfunc.specfunc import kernel_fredriksen
+from ...specfunc.specfunc import hilbert_fredriksen
 
 from ...wrappers.mytypes import doublenp
 from ...wrappers.mytypes import complexnp
-
-from ..aprclass import ApproachBase2vN
 
 # Cython imports
 
 cimport numpy as np
 cimport cython
 
-ctypedef np.uint8_t bool_t
-ctypedef np.int_t int_t
-ctypedef np.int64_t long_t
-ctypedef np.float64_t double_t
-ctypedef np.complex128_t complex_t
-
-# from scipy import pi as scipy_pi
-# cdef double_t pi = scipy_pi
 cdef double_t pi = 3.14159265358979323846
 
 
@@ -297,103 +287,63 @@ def phi1k_iterate_2vN(long_t ind,
     return kern0
 
 
-@cython.boundscheck(False)
-def get_phi1_phi0_2vN(self):
-    cdef long_t j1, Eklen
-    cdef double_t dx
-    cdef np.ndarray[double_t, ndim=1] Ek_grid = self.Ek_grid
-    #
-    (phi1k, si) = (self.phi1k, self.si)
-    # Get integrated Phi[1]_{cb} in terms of Phi[0]_{bb'}
-    # cdef np.ndarray[complex_t, ndim=3]
-    phi1_phi0 = np.zeros((si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
-    e_phi1_phi0 = np.zeros((si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
-    Eklen = Ek_grid.shape[0]  # len(Ek_grid)
-    #
-    for j1 in range(Eklen):
-        # Trapezoidal rule
-        if j1 == 0:
-          dx = Ek_grid[j1+1] - Ek_grid[j1]
-        elif j1 == Eklen-1:
-          dx = Ek_grid[j1] - Ek_grid[j1-1]
-        else:
-          dx = Ek_grid[j1+1] - Ek_grid[j1-1]
-        phi1_phi0 += 0.5*dx*phi1k[j1]
-        e_phi1_phi0 += 0.5*dx*Ek_grid[j1]*phi1k[j1]
-    self.phi1_phi0 = phi1_phi0
-    self.e_phi1_phi0 = e_phi1_phi0
-    return 0
-
-
-@cython.boundscheck(False)
-def iterate_2vN(self):
-    cdef long_t j1, Eklen, ind, kpnt_left
-    cdef np.ndarray[double_t, ndim=1] Ek_grid = self.Ek_grid
-    # cdef np.ndarray[double_t, ndim=1] Ek_grid_ext = self.Ek_grid_ext
-    cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Tba = self.leads.Tba
-    #
-    (Ek_grid_ext) = (self.Ek_grid_ext)
-    (si, funcp) = (self.si, self.funcp)
-    (mulst, tlst) = (self.leads.mulst, self.leads.tlst)
-    # Assign self.phi1k_delta to phi1k_delta_old, because the new phi1k_delta
-    # will be generated in this function
-    (phi1k_delta_old, kern1k_inv) = (self.phi1k_delta, self.kern1k_inv)
-    #
-    Eklen = Ek_grid.shape[0]  # len(Ek_grid)
-    if phi1k_delta_old is None:
-        # Define the extended grid Ek_grid_ext for calculations outside the bandwidth
-        # Here self.funcp.emin, self.funcp.emax are defined
-        get_emin_emax(self)
-        # Here self.Ek_grid_ext, self.funcp.kpnt_left, self.funcp.kpnt_right are defined
-        get_grid_ext(self)
-        Ek_grid_ext = self.Ek_grid_ext
-        Eklen_ext = Ek_grid_ext.shape[0]  # len(Ek_grid_ext)
-        # Generate the Fermi functions on the grid
-        # This is necessary to generate only if Ek_grid, mulst, or tlst are changed
-        self.fkp = np.zeros((si.nleads, Eklen), dtype=doublenp)
-        for l in range(si.nleads):
-            self.fkp[l] = 1/( np.exp((Ek_grid - mulst[l])/tlst[l]) + 1 )
-        self.fkm = 1-self.fkp
-        self.fkp, self.hfkp = get_htransf_fk(self.fkp, funcp)
-        self.fkm, self.hfkm = get_htransf_fk(self.fkm, funcp)
-        # Calculate the zeroth iteration of Phi[1](k)
-        phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
-        kern1k_inv = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm1), dtype=complexnp)
-        kpnt_left = funcp.kpnt_left
-        for j1 in range(Eklen):
-            ind = j1 + kpnt_left
-            phi1k_delta[j1], kern1k_inv[j1] = phi1k_local_2vN(ind, Ek_grid_ext, self.fkp,
-                                                              self.hfkp, self.hfkm, E, Tba, si)
-        hphi1k_delta = None
-    elif kern1k_inv is None:
-        pass
-    else:
-        # Hilbert transform phi1k_delta_old on extended grid Ek_grid_ext
-        # print('Hilbert transforming')
-        phi1k_delta_old, hphi1k_delta = get_htransf_phi1k(phi1k_delta_old, funcp)
-        # print('Making an iteration')
-        phi1k_delta = np.zeros((Eklen, si.nleads, si.ndm1, si.ndm0), dtype=complexnp)
-        kpnt_left = funcp.kpnt_left
-        for j1 in range(Eklen):
-            ind = j1 + kpnt_left
-            phi1k_delta[j1] = phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta,
-                                                self.fkp, kern1k_inv[j1], E, Tba, si)
-    self.phi1k_delta = phi1k_delta
-    self.hphi1k_delta = hphi1k_delta
-    self.kern1k_inv = kern1k_inv
-    return 0
-
-
-class Approach2vN(ApproachBase2vN):
+class Approach2vN(Approach2vNPy):
 
     kerntype = '2vN'
 
+    @cython.boundscheck(False)
     def iterate(self):
-        iterate_2vN(self)
+        cdef long_t i, Eklen, ind, kpnt_left
+        cdef np.ndarray[double_t, ndim=1] Ek_grid = self.Ek_grid
+        cdef np.ndarray[double_t, ndim=1] Ek_grid_ext = self.Ek_grid_ext
+        cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
+        cdef np.ndarray[complex_t, ndim=3] Tba = self.leads.Tba
 
-    def get_phi1_phi0(self):
-        get_phi1_phi0_2vN(self)
+        si, funcp = self.si, self.funcp
+        phi1k_delta = self.phi1k_delta
+        kern1k_inv = self.kern1k_inv
 
-    kern_phi0 = kern_phi0_2vN
-    generate_current = generate_current_2vN
+        Eklen = Ek_grid.shape[0]
+        kpnt_left = funcp.kpnt_left
+
+        if self.is_zeroth_iteration:
+            # Calculate the zeroth iteration of Phi[1](k)
+            for i in range(Eklen):
+                ind = i + funcp.kpnt_left
+                phi1k_delta[i, :], kern1k_inv[i, :] = phi1k_local_2vN(ind, Ek_grid_ext, self.fkp,
+                                                                      self.hfkp, self.hfkm, E, Tba, si)
+            self.is_zeroth_iteration = False
+        else:
+            # Hilbert transform phi1k_delta on extended grid Ek_grid_ext
+            # Here phi1k_delta_old is current phi1k_delta state, but on extended grid
+            # print('Hilbert transforming')
+            phi1k_delta_old, hphi1k_delta = get_htransf_phi1k(phi1k_delta, funcp)
+            # print('Making an iteration')
+            for i in range(Eklen):
+                ind = i + kpnt_left
+                phi1k_delta[i, :] = phi1k_iterate_2vN(ind, Ek_grid_ext, phi1k_delta_old, hphi1k_delta,
+                                                      self.fkp, kern1k_inv[i], E, Tba, si)
+            self.hphi1k_delta = hphi1k_delta
+
+    @cython.boundscheck(False)
+    def determine_phi1_phi0(self):
+        cdef long_t i, Eklen
+        cdef double_t dx
+        cdef np.ndarray[double_t, ndim=1] Ek_grid = self.Ek_grid
+
+        phi1k, si = self.phi1k, self.si
+        # Get integrated Phi[1]_{cb} in terms of Phi[0]_{bb'}
+        phi1_phi0 = self.phi1_phi0
+        e_phi1_phi0 = self.e_phi1_phi0
+
+        Eklen = Ek_grid.shape[0]
+        for i in range(Eklen):
+            # Trapezoidal rule
+            if i == 0:
+              dx = Ek_grid[i+1] - Ek_grid[i]
+            elif i == Eklen-1:
+              dx = Ek_grid[i] - Ek_grid[i-1]
+            else:
+              dx = Ek_grid[i+1] - Ek_grid[i-1]
+            phi1_phi0 += 0.5*dx*phi1k[i]
+            e_phi1_phi0 += 0.5*dx*Ek_grid[i]*phi1k[i]

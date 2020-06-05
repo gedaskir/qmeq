@@ -37,7 +37,7 @@ class ApproachPauli(Approach):
 
         Parameters
         ----------
-        self.paulifct : array
+        paulifct : array
             (Modifies) Factors used for generating Pauli master equation kernel.
         """
         E, Tba, si = self.qd.Ea, self.leads.Tba, self.si
@@ -64,7 +64,7 @@ class ApproachPauli(Approach):
 
         Parameters
         ----------
-        self.kern : array
+        kern : array
             (Modifies) Kernel matrix for Pauli master equation.
         """
         si, kh = self.si, self.kernel_handler
@@ -108,11 +108,11 @@ class ApproachPauli(Approach):
 
         Parameters
         ----------
-        self.current : array
+        current : array
             (Modifies) Values of the current having nleads entries.
-        self.energy_current : array
+        energy_current : array
             (Modifies) Values of the energy current having nleads entries.
-        self.heat_current : array
+        heat_current : array
             (Modifies) Values of the heat current having nleads entries.
         """
         phi0, E, paulifct, si = self.phi0, self.qd.Ea, self.paulifct, self.si

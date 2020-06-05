@@ -39,9 +39,9 @@ class Approach1vN(Approach):
 
         Parameters
         ----------
-        self.phi1fct : array
+        phi1fct : array
             (Modifies) Factors used for generating 1vN, Redfield master equation kernels.
-        self.phi1fct_energy : array
+        phi1fct_energy : array
             (Modifies) Factors used to calculate energy and heat currents in 1vN, Redfield approaches.
         """
         E, si = self.qd.Ea, self.si,
@@ -125,14 +125,14 @@ class Approach1vN(Approach):
 
         Parameters
         ----------
-        self.phi1 : array
+        phi1 : array
             (Modifies) Values of first order density matrix elements
             stored in nleads by ndm1 numpy array.
-        self.current : array
+        current : array
             (Modifies) Values of the current having nleads entries.
-        self.energy_current : array
+        energy_current : array
             (Modifies) Values of the energy current having nleads entries.
-        self.heat_current : array
+        heat_current : array
             (Modifies) Values of the heat current having nleads entries.
         """
         E, Tba = self.qd.Ea, self.leads.Tba

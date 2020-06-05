@@ -89,7 +89,7 @@ class FunctionProperties(object):
     def print_error(self, exept):
         if not self.suppress_err:
             print("WARNING: Could not solve the linear set of equations.\n" +
-                  "  Error from the solver: " + exept + "\n"
+                  "  Error from the solver: " + str(exept) + "\n"
                   "  The reasons for such a failure can be various:\n" +
                   "  1. Some of the transport channels may be outside the bandwidth D of the leads.\n" +
                   "     In this case removing some of the states with the method [remove_states()] will help.\n" +
