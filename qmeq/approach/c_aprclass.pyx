@@ -95,54 +95,13 @@ cdef class Approach:
     def __init__(self, builder):
         ApproachPy.__init__(self, builder)
 
-    cpdef void generate_fct(self):
-        pass
-
-    cpdef void generate_kern(self):
-        cdef double_t [:] E = self._Ea
-        cdef KernelHandler kh = self._kernel_handler
-
-        cdef long_t i, b, bp, bcharge
-
-        for i in range(kh.nelements):
-            b = kh.all_bbp[i, 0]
-            bp = kh.all_bbp[i, 1]
-            bcharge = kh.all_bbp[i, 2]
-            kh.set_energy(E[b]-E[bp], b, bp, bcharge)
-            self.generate_coupling_terms(b, bp, bcharge, kh)
-
-    cdef void generate_coupling_terms(self,
-            long_t b, long_t bp, long_t bcharge,
-            KernelHandler kh) nogil:
-        pass
-
-    cpdef void generate_current(self):
-        pass
-
-    cpdef generate_vec(self, phi0):
-        cdef long_t norm_row = self._norm_row
-
-        cdef KernelHandlerMatrixFree kh = self._kernel_handler
-        kh.set_phi0(phi0)
-        cdef double_t norm = kh.get_phi0_norm()
-
-        self._dphi0_dt[::1] = 0.0
-
-        # Here dphi0_dt and norm will be implicitly calculated by using KernelHandlerMatrixFree
-        self.generate_kern()
-
-        self._dphi0_dt[norm_row] = norm-1
-
-        return self._dphi0_dt
-
-    def get_kern_size(self):
-        return ApproachPy.get_kern_size(self)
-
     def restart(self):
         ApproachPy.restart(self)
 
-    def set_phi0_init(self):
-        return ApproachPy.set_phi0_init(self)
+    #region Preparation
+
+    def get_kern_size(self):
+        return ApproachPy.get_kern_size(self)
 
     cpdef void prepare_kern(self):
         if self.is_prepared and not self.si.states_changed:
@@ -211,6 +170,67 @@ cdef class Approach:
         #else if solmethod == 'solve':
             self._solver = LapackSolverDGESV(self.kern, self.bvec, self._make_kern_copy)
 
+    #endregion Preparation
+
+    #region Generation
+
+    def generate_norm_vec(self):
+        kh = self._kernel_handler
+
+        cdef double_t [:] norm_vec = self.norm_vec
+        cdef int_t bcharge, bcount, b, bb, i
+        for bcharge in range(kh.ncharge):
+            bcount = kh.statesdm_count[bcharge]
+            for i in range(bcount):
+                b = kh.statesdm[bcharge, i]
+                bb = kh.get_ind_dm0(b, b, bcharge)
+                norm_vec[bb] += 1
+
+    cpdef void generate_fct(self):
+        pass
+
+    cpdef void generate_kern(self):
+        cdef double_t [:] E = self._Ea
+        cdef KernelHandler kh = self._kernel_handler
+
+        cdef long_t i, b, bp, bcharge
+
+        for i in range(kh.nelements):
+            b = kh.all_bbp[i, 0]
+            bp = kh.all_bbp[i, 1]
+            bcharge = kh.all_bbp[i, 2]
+            kh.set_energy(E[b]-E[bp], b, bp, bcharge)
+            self.generate_coupling_terms(b, bp, bcharge, kh)
+
+    cdef void generate_coupling_terms(self,
+            long_t b, long_t bp, long_t bcharge,
+            KernelHandler kh) nogil:
+        pass
+
+    cpdef void generate_current(self):
+        pass
+
+    cpdef generate_vec(self, phi0):
+        cdef long_t norm_row = self._norm_row
+
+        cdef KernelHandlerMatrixFree kh = self._kernel_handler
+        kh.set_phi0(phi0)
+        cdef double_t norm = kh.get_phi0_norm()
+
+        self._dphi0_dt[::1] = 0.0
+
+        # Here dphi0_dt and norm will be implicitly calculated by using KernelHandlerMatrixFree
+        self.generate_kern()
+
+        self._dphi0_dt[norm_row] = norm-1
+
+        return self._dphi0_dt
+
+
+    #endregion Generation
+
+    #region Solution
+
     cpdef void solve_kern(self):
         """Finds the stationary state using least squares or using LU decomposition."""
 
@@ -241,23 +261,16 @@ cdef class Approach:
     def solve_matrix_free(self):
         ApproachPy.solve_matrix_free(self)
 
-    def generate_norm_vec(self):
-        kh = self._kernel_handler
-
-        cdef double_t [:] norm_vec = self.norm_vec
-        cdef int_t bcharge, bcount, b, bb, i
-        for bcharge in range(kh.ncharge):
-            bcount = kh.statesdm_count[bcharge]
-            for i in range(bcount):
-                b = kh.statesdm[bcharge, i]
-                bb = kh.get_ind_dm0(b, b, bcharge)
-                norm_vec[bb] += 1
+    def set_phi0_init(self):
+        return ApproachPy.set_phi0_init(self)
 
     def rotate(self):
         ApproachPy.rotate(self)
 
     def solve(self, qdq=True, rotateq=True, masterq=True, currentq=True, *args, **kwargs):
         ApproachPy.solve(self, qdq, rotateq, masterq, currentq, args, kwargs)
+
+    #endregion Solution
 
 
 cdef class ApproachElPh(Approach):

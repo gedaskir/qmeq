@@ -135,74 +135,10 @@ class Approach(object):
         self.tLba = None
         self.kernel_handler = None
 
-    def generate_fct(self):
-        pass
-
-    def generate_kern(self):
-        """
-        Generates a kernel (Liouvillian) matrix corresponding to first order von Neumann approach (1vN).
-
-        Parameters
-        ----------
-        self.kern : array
-            (Modifies) Kernel matrix for 1vN approach.
-        """
-        E = self.qd.Ea
-        si, kh = self.si, self.kernel_handler
-        ncharge, statesdm = si.ncharge, si.statesdm
-
-        for bcharge in range(ncharge):
-            for b, bp in itertools.combinations_with_replacement(statesdm[bcharge], 2):
-                if not (kh.is_included(b, bp, bcharge) and kh.is_unique(b, bp, bcharge)):
-                    continue
-                kh.set_energy(E[b]-E[bp], b, bp, bcharge)
-                self.generate_coupling_terms(b, bp, bcharge)
-
-    def generate_coupling_terms(self, b, bp, bcharge):
-        pass
-
-    def generate_current(self):
-        pass
-
-    def generate_vec(self, phi0):
-        """
-        Acts on given phi0 with Liouvillian of first-order approach.
-
-        Parameters
-        ----------
-        phi0 : array
-            Some values of zeroth order density matrix elements.
-        self : Approach
-            Approach object.
-
-        Returns
-        -------
-        dphi0_dt : array
-            Values of zeroth order density matrix elements
-            after acting with Liouvillian, i.e., dphi0_dt=L(phi0p).
-        """
-        norm_row = self.funcp.norm_row
-
-        kh = self.kernel_handler
-        kh.set_phi0(phi0)
-        norm = kh.get_phi0_norm()
-
-        self.dphi0_dt.fill(0.0)
-
-        # Here dphi0_dt and norm will be implicitly calculated by using KernelHandlerMatrixFree
-        self.generate_kern()
-
-        self.dphi0_dt[norm_row] = norm-1
-
-        return self.dphi0_dt
+    #region Preparation
 
     def get_kern_size(self):
         return self.si.ndm0r
-
-    def set_phi0_init(self):
-        phi0_init = np.zeros(self.get_kern_size(), dtype=self.dtype)
-        phi0_init[0] = 1.0
-        return phi0_init
 
     def prepare_kern(self):
         if self.is_prepared and not self.si.states_changed:
@@ -277,6 +213,91 @@ class Approach(object):
 
         self.funcp.solmethod = solmethod
 
+    #endregion Preparation
+
+    #region Generation
+
+    def generate_norm_vec(self):
+        """
+        Generates normalisation condition for 1vN approach.
+
+        Parameters
+        ----------
+        self.norm_vec : array
+            (Modifies) Left hand side of the normalisation condition.
+        """
+        si = self.si
+
+        for charge in range(si.ncharge):
+            for b in si.statesdm[charge]:
+                bb = si.get_ind_dm0(b, b, charge)
+                self.norm_vec[bb] += 1
+
+    def generate_fct(self):
+        pass
+
+    def generate_kern(self):
+        """
+        Generates a kernel (Liouvillian) matrix corresponding to first order von Neumann approach (1vN).
+
+        Parameters
+        ----------
+        self.kern : array
+            (Modifies) Kernel matrix for 1vN approach.
+        """
+        E = self.qd.Ea
+        si, kh = self.si, self.kernel_handler
+        ncharge, statesdm = si.ncharge, si.statesdm
+
+        for bcharge in range(ncharge):
+            for b, bp in itertools.combinations_with_replacement(statesdm[bcharge], 2):
+                if not (kh.is_included(b, bp, bcharge) and kh.is_unique(b, bp, bcharge)):
+                    continue
+                kh.set_energy(E[b]-E[bp], b, bp, bcharge)
+                self.generate_coupling_terms(b, bp, bcharge)
+
+    def generate_coupling_terms(self, b, bp, bcharge):
+        pass
+
+    def generate_current(self):
+        pass
+
+    def generate_vec(self, phi0):
+        """
+        Acts on given phi0 with Liouvillian of first-order approach.
+
+        Parameters
+        ----------
+        phi0 : array
+            Some values of zeroth order density matrix elements.
+        self : Approach
+            Approach object.
+
+        Returns
+        -------
+        dphi0_dt : array
+            Values of zeroth order density matrix elements
+            after acting with Liouvillian, i.e., dphi0_dt=L(phi0p).
+        """
+        norm_row = self.funcp.norm_row
+
+        kh = self.kernel_handler
+        kh.set_phi0(phi0)
+        norm = kh.get_phi0_norm()
+
+        self.dphi0_dt.fill(0.0)
+
+        # Here dphi0_dt and norm will be implicitly calculated by using KernelHandlerMatrixFree
+        self.generate_kern()
+
+        self.dphi0_dt[norm_row] = norm-1
+
+        return self.dphi0_dt
+
+    #endregion Generation
+
+    #region Solution
+
     def solve_kern(self):
         """Finds the stationary state using least squares or using LU decomposition."""
         solmethod = self.funcp.solmethod
@@ -334,21 +355,10 @@ class Approach(object):
             self.phi0.fill(0.0)
             self.success = False
 
-    def generate_norm_vec(self):
-        """
-        Generates normalisation condition for 1vN approach.
-
-        Parameters
-        ----------
-        self.norm_vec : array
-            (Modifies) Left hand side of the normalisation condition.
-        """
-        si = self.si
-
-        for charge in range(si.ncharge):
-            for b in si.statesdm[charge]:
-                bb = si.get_ind_dm0(b, b, charge)
-                self.norm_vec[bb] += 1
+    def set_phi0_init(self):
+        phi0_init = np.zeros(self.get_kern_size(), dtype=self.dtype)
+        phi0_init[0] = 1.0
+        return phi0_init
 
     def rotate(self):
         self.leads.rotate(self.qd.vecslst)
@@ -385,6 +395,7 @@ class Approach(object):
             if currentq:
                 self.generate_current()
 
+    #endregion Solution
 
 class ApproachElPh(Approach):
 
