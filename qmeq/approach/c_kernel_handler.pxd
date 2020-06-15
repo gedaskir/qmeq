@@ -45,9 +45,9 @@ cdef class KernelHandler:
 
     cdef KernelHandler elph
 
-    cpdef void set_kern(self, double_t [:, :] kern)
+    cpdef void set_kern(self, kern)
 
-    cpdef void set_phi0(self, double_t [:] phi0)
+    cpdef void set_phi0(self, phi0)
 
     cdef void set_statesdm(self, si)
 

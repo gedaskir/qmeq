@@ -239,323 +239,8 @@ class Approach2vN(ApproachBase2vN):
     #region Generation
 
     def iterate(self):
-        """
-        Performs the iterative solution of the 2vN approach integral equations.
-
-        Parameters
-        ----------
-        phi1k_delta : ndarray
-            (Modifies) Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm0).
-            Correction to Phi[1](k) after an iteration.
-        hphi1k_delta : ndarray
-            (Modifies) Numpy array with dimensions (len(Ek_grid_ext), nleads, ndm1, ndm0).
-            Hilbert transform of phi1k_delta on extended grid Ek_grid_ext.
-        kern1k_inv : ndarray
-            (Modifies) Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm1)
-            corresponding to inverse of energy resolved local kernel for Phi[1](k).
-        """
-        Eklen = len(self.Ek_grid)
-        nleads = self.si.nleads
-
-        if self.is_zeroth_iteration:
-            # Calculate the zeroth iteration of Phi[1](k)
-            for i in range(Eklen):
-                for l in range(nleads):
-                    self.phi1k_local(i, l)
-
-            self.is_zeroth_iteration = False
-        else:
-            # Hilbert transform phi1k_delta on extended grid Ek_grid_ext
-            # Here phi1k_delta_old is current phi1k_delta state, but on extended grid
-            # print('Hilbert transforming')
-            self.phi1k_delta_old, self.hphi1k_delta = get_htransf_phi1k(self.phi1k_delta, self.funcp)
-            # print('Making an iteration')
-            for i in range(Eklen):
-                for l in range(nleads):
-                    self.phi1k_iterate(i, l)
-
-    def phi1k_local(self, i, l):
-        """
-        Constructs Phi[1](k) corresponding to local approximation at Ek_grid[ind].
-        More precisely, generates local approximation kernels L1 and L0, Phi[1](k) = L0(k)Phi[0],
-        L1(k)Phi[1](k) = L0p(k)Phi[0], L0 = L1^{-1}L0p.
-
-        Parameters
-        ----------
-        i : int
-            Index of a point on a Ek_grid_ext.
-        l : int
-            Lead index.
-
-        kern0 : ndarray
-            (Modifies) Numpy array with dimensions (nleads, ndm1, ndm0).
-            Gives local approximation kernel L0(k) at Ek_grid[ind].
-            Shows how Phi[1](k) is expressed in terms of Phi[0].
-        kern1_inv : ndarray
-            (Modifies) Numpy array with dimensions (nleads, ndm1, ndm1).
-            Gives inverse of local approximation kernel L1(k) at Ek_grid[ind].
-        """
-        E, Tba, si = self.qd.Ea, self.leads.Tba, self.si
-        fk, hfkp, hfkm = self.fkp, self.hfkp, self.hfkm
-        Ek_grid = self.Ek_grid_ext
-
-        ncharge, nleads, ndm0, ndm1 = si.ncharge, si.nleads, si.ndm0, si.ndm1
-        statesdm = si.statesdm
-
-        kern0 = np.zeros((ndm1, ndm0), dtype=complexnp)
-        kern1 = np.zeros((ndm1, ndm1), dtype=complexnp)
-        kern1_inv = np.zeros((ndm1, ndm1), dtype=complexnp)
-
-        func_2vN = self.func_2vN
-
-        kpnt_left = self.funcp.kpnt_left
-        ind = i + kpnt_left
-        Ek = Ek_grid[ind]
-
-        # Note that the bias is put in the distributions and not in the dispersion
-        fp = fk[l, ind]  # fermi_func(+(Ek-mulst[l])/tlst[l])
-        fm = 1-fp        # fermi_func(-(Ek-mulst[l])/tlst[l])
-
-        for charge in range(ncharge-1):
-            dcharge = charge+2
-            ccharge = charge+1
-            bcharge = charge
-            acharge = charge-1
-            for c, b in itertools.product(statesdm[ccharge], statesdm[bcharge]):
-                cb = si.get_ind_dm1(c, b, bcharge)
-                kern1[cb, cb] += Ek-E[c]+E[b]
-                # Phi[0] terms
-                for b1 in statesdm[bcharge]:
-                    b1b = si.get_ind_dm0(b1, b, bcharge)
-                    kern0[cb, b1b] += +Tba[l, c, b1]*fp
-                for c1 in statesdm[ccharge]:
-                    cc1 = si.get_ind_dm0(c, c1, ccharge)
-                    kern0[cb, cc1] += -Tba[l, c1, b]*fm
-                # ---------------------------------------------------------------------------
-                # Phi[1] terms
-                # 2nd and 7th terms
-                for b1, a1 in itertools.product(statesdm[bcharge], statesdm[acharge]):
-                    b1a1 = si.get_ind_dm1(b1, a1, acharge)
-                    for l1 in range(nleads):
-                        kern1[cb, b1a1] -= +Tba[l1, c, b1]*Tba[l1, a1, b]*(
-                                             + func_2vN(+(Ek-E[b1]+E[b]), l1, +1, hfkp)
-                                             - func_2vN(-(Ek-E[c]+E[a1]), l1, -1, hfkp))
-                # 6th and 8th terms
-                for b1 in statesdm[bcharge]:
-                    cb1 = si.get_ind_dm1(c, b1, bcharge)
-                    for l1 in range(nleads):
-                        for c1 in statesdm[ccharge]:
-                            kern1[cb, cb1] -= (+Tba[l1, b1, c1]*Tba[l1, c1, b]
-                                               * func_2vN(+(Ek-E[c]+E[c1]), l1, +1, hfkp))
-                        for a1 in statesdm[acharge]:
-                            kern1[cb, cb1] -= (-Tba[l1, b1, a1]*Tba[l1, a1, b]
-                                               * func_2vN(-(Ek-E[c]+E[a1]), l1, -1, hfkm))
-                # 1st and 3rd terms
-                for c1 in statesdm[ccharge]:
-                    c1b = si.get_ind_dm1(c1, b, bcharge)
-                    for l1 in range(nleads):
-                        for b1 in statesdm[bcharge]:
-                            kern1[cb, c1b] -= (+Tba[l1, c, b1]*Tba[l1, b1, c1]
-                                               * func_2vN(+(Ek-E[b1]+E[b]), l1, +1, hfkm))
-                        for d1 in statesdm[dcharge]:
-                            kern1[cb, c1b] -= (-Tba[l1, c, d1]*Tba[l1, d1, c1]
-                                               * func_2vN(-(Ek-E[d1]+E[b]), l1, -1, hfkp))
-                # 5th and 4th terms
-                for d1, c1 in itertools.product(statesdm[dcharge], statesdm[ccharge]):
-                    d1c1 = si.get_ind_dm1(d1, c1, ccharge)
-                    for l1 in range(nleads):
-                        kern1[cb, d1c1] -= +Tba[l1, c, d1]*Tba[l1, c1, b]*(
-                                             + func_2vN(+(Ek-E[c]+E[c1]), l1, +1, hfkm)
-                                             - func_2vN(-(Ek-E[d1]+E[b]), l1, -1, hfkm))
-
-        kern1_inv = np.linalg.inv(kern1)
-        kern0 = np.dot(kern1_inv, kern0)
-
-        self.kern1k_inv[i, l, :] = kern1_inv
-        self.phi1k_delta[i, l, :] = kern0
-
-    def phi1k_iterate(self, i, l):
-        """
-        Iterates the 2vN integral equation.
-
-        Parameters
-        ----------
-        i : int
-            Index of a point on a Ek_grid.
-        l : int
-            Lead index.
-
-        kern0 : ndarray
-            (Modifies) Numpy array with dimensions (nleads, ndm1, ndm0)
-            Gives a correction to Phi[1](k) after iteration of integral equation.
-            Shows how delta[Phi[1](k)] is expressed in terms of Phi[0].
-        """
-        E, Tba, si = self.qd.Ea, self.leads.Tba, self.si
-        fk = self.fkp
-        Ek_grid = self.Ek_grid_ext
-
-        ncharge, nleads, ndm0, ndm1 = si.ncharge, si.nleads, si.ndm0, si.ndm1
-        statesdm = si.statesdm
-
-        kern1_inv = self.kern1k_inv[i, l]
-        kern0 = np.zeros((ndm1, ndm0), dtype=complexnp)
-        term = np.zeros(ndm0, dtype=complexnp)
-
-        get_at_k1 = self.get_at_k1
-
-        kpnt_left = self.funcp.kpnt_left
-        ind = i + kpnt_left
-        Ek = Ek_grid[ind]
-
-        fp = fk[l, ind]  # fermi_func((Ek-mulst[l])/tlst[l])
-        fm = 1-fp
-
-        for charge in range(ncharge-1):
-            dcharge = charge+2
-            ccharge = charge+1
-            bcharge = charge
-            acharge = charge-1
-            for c, b in itertools.product(statesdm[ccharge], statesdm[bcharge]):
-                cb = si.get_ind_dm1(c, b, bcharge)
-                term.fill(0.0)
-                # 1st term
-                for a1 in statesdm[acharge]:
-                    ba1 = si.get_ind_dm1(b, a1, acharge)
-                    for b1, l1 in itertools.product(statesdm[bcharge], range(nleads)):
-                        # print('1')
-                        hu, u = get_at_k1(+(Ek-E[b1]+E[b]), l1, ba1, True)
-                        term += -Tba[l1, c, b1]*Tba[l, b1, a1]*fp*(hu - 1j*u)
-                # 2nd and 5th terms
-                for b1, c1 in itertools.product(statesdm[bcharge], statesdm[ccharge]):
-                    # print('2 and 5')
-                    c1b1 = si.get_ind_dm1(c1, b1, bcharge)
-                    for l1 in range(nleads):
-                        # 2nd term
-                        hu, u = get_at_k1(+(Ek-E[b1]+E[b]), l1, c1b1, True)
-                        term += -Tba[l1, c, b1]*(hu - 1j*u)*fm*Tba[l, c1, b]
-                        # 5th term
-                        hu, u = get_at_k1(+(Ek-E[c]+E[c1]), l1, c1b1, True)
-                        term += -Tba[l, c, b1]*fp*(hu - 1j*u)*Tba[l1, c1, b]
-                # 3rd term
-                for c1 in statesdm[ccharge]:
-                    c1b = si.get_ind_dm1(c1, b, bcharge)
-                    for d1, l1 in itertools.product(statesdm[dcharge], range(nleads)):
-                        # print('3')
-                        hu, u = get_at_k1(-(Ek-E[d1]+E[b]), l1, c1b, False)
-                        term += +Tba[l1, c, d1]*Tba[l, d1, c1]*fp*(hu + 1j*u)
-                # 4th term
-                for d1, c1 in itertools.product(statesdm[dcharge], statesdm[ccharge]):
-                    # print('4')
-                    d1c1 = si.get_ind_dm1(d1, c1, ccharge)
-                    for l1 in range(nleads):
-                        hu, u = get_at_k1(-(Ek-E[d1]+E[b]), l1, d1c1, False)
-                        term += +Tba[l1, c, d1]*(hu + 1j*u)*fm*Tba[l, c1, b]
-                # 6th term
-                for d1 in statesdm[dcharge]:
-                    d1c = si.get_ind_dm1(d1, c, ccharge)
-                    for c1, l1 in itertools.product(statesdm[ccharge], range(nleads)):
-                        # print('6')
-                        hu, u = get_at_k1(+(Ek-E[c]+E[c1]), l1, d1c, True)
-                        term += -(hu - 1j*u)*fm*Tba[l, d1, c1]*Tba[l1, c1, b]
-                # 7th term
-                for b1, a1 in itertools.product(statesdm[bcharge], statesdm[acharge]):
-                    # print('7')
-                    b1a1 = si.get_ind_dm1(b1, a1, acharge)
-                    for l1 in range(nleads):
-                        hu, u = get_at_k1(-(Ek-E[c]+E[a1]), l1, b1a1, False)
-                        term += +Tba[l, c, b1]*fp*(hu + 1j*u)*Tba[l1, a1, b]
-                # 8th term
-                for b1 in statesdm[bcharge]:
-                    cb1 = si.get_ind_dm1(c, b1, bcharge)
-                    for a1, l1 in itertools.product(statesdm[acharge], range(nleads)):
-                        # print('8')
-                        hu, u = get_at_k1(-(Ek-E[c]+E[a1]), l1, cb1, False)
-                        term += +(hu + 1j*u)*fm*Tba[l, b1, a1]*Tba[l1, a1, b]
-                kern0[cb] = term
-
-        kern0 = np.dot(kern1_inv, kern0)
-        self.phi1k_delta[i, l, :] = kern0
-
-    def func_2vN(self, Ek, l, eta, hfk):
-        """
-        Linearly interpolate the value of hfk on Ek_grid at point Ek.
-
-        Parameters
-        ----------
-        Ek : float
-            Energy value (not necessarily a grid point).
-        l : int
-            Lead label.
-        eta : int
-            Integer describing (+/-1) if infinitesimal eta is positive or negative.
-        hfk : ndarray
-            Array containing Hilbert transform of Fermi function (or 1-Fermi).
-
-        Returns
-        -------
-        float
-            Interpolated value of hfk at Ek.
-        """
-        Ek_grid = self.Ek_grid_ext
-        if Ek < Ek_grid[0] or Ek > Ek_grid[-1]:
-            return 0
-        #
-        b_idx = int((Ek-Ek_grid[0])/(Ek_grid[1]-Ek_grid[0]))+1
-        if b_idx == len(Ek_grid):
-            b_idx -= 1
-        a_idx = b_idx - 1
-        b, a = Ek_grid[b_idx], Ek_grid[a_idx]
-        #
-        fb = hfk[l, b_idx]
-        fa = hfk[l, a_idx]
-        rez = (fb-fa)/(b-a)*Ek + (b*fa-a*fb)/(b-a)
-        return pi*rez if eta+1 else pi*rez.conjugate()
-
-    def get_at_k1(self, Ek, l, cb, conj):
-        """
-        Linearly interpolate the values of phi1k, hphi1k on Ek_grid at point Ek.
-
-        Parameters
-        ----------
-        Ek : float
-            Energy value (not necessarily a grid point).
-        l : int
-            Lead label.
-        cb : int
-            Index corresponding to Phi[1](k) matrix element.
-        conj : bool
-            If conj=True the term in the integral equation is conjugated.
-
-        Returns
-        -------
-        ndarray, ndarray
-            Interpolated values of phi1k and hphi1k at Ek.
-        """
-        Ek_grid = self.Ek_grid_ext
-        phi1k = self.phi1k_delta_old
-        hphi1k = self.hphi1k_delta
-
-        if Ek < Ek_grid[0] or Ek > Ek_grid[-1]:
-            return 0, 0
-        #
-        # b_idx = np.searchsorted(Ek_grid, Ek)
-        b_idx = int((Ek-Ek_grid[0])/(Ek_grid[1]-Ek_grid[0]))+1
-        if b_idx == len(Ek_grid):
-            b_idx -= 1
-        a_idx = b_idx - 1
-        b, a = Ek_grid[b_idx], Ek_grid[a_idx]
-        # print(a_idx, b_idx, a, Ek, b)
-        #
-        fb = phi1k[b_idx, l, cb]
-        fa = phi1k[a_idx, l, cb]
-        u = (fb-fa)/(b-a)*Ek + (b*fa-a*fb)/(b-a)
-        u = u.conjugate() if conj else u
-        #
-        fb = hphi1k[b_idx, l, cb]
-        fa = hphi1k[a_idx, l, cb]
-        hu = (fb-fa)/(b-a)*Ek + (b*fa-a*fb)/(b-a)
-        hu = hu.conjugate() if conj else hu
-        return pi*hu, pi*u
+        terms_calculator = TermsCalculator2vN(self)
+        terms_calculator.iterate()
 
     def determine_phi1_phi0(self):
         """
@@ -570,7 +255,7 @@ class Approach2vN(ApproachBase2vN):
             (Modifies) Numpy array with dimensions (nleads, ndm1, ndm0),
             corresponding to energy integrated Ek*Phi[1](k).
         """
-        phi1k, Ek_grid, si = self.phi1k, self.Ek_grid, self.si
+        phi1k, Ek_grid = self.phi1k, self.Ek_grid
         # Get integrated Phi[1]_{cb} in terms of Phi[0]_{bb'}
         phi1_phi0 = self.phi1_phi0
         e_phi1_phi0 = self.e_phi1_phi0
@@ -680,3 +365,351 @@ class Approach2vN(ApproachBase2vN):
         self.heat_current[:] = energy_current - current*self.leads.mulst
 
     #endregion Generation
+
+
+class TermsCalculator2vN(object):
+
+    def __init__(self, appr):
+        self.appr = appr
+
+    def iterate(self):
+        self.retrieve_approach_variables()
+
+
+    def retrieve_approach_variables(self):
+        self.si = self.appr.si
+        self.kpnt_left = self.appr.funcp.kpnt_left
+
+        self.Ek_grid = self.appr.Ek_grid
+        self.Ek_grid_ext = self.appr.Ek_grid_ext
+
+        self.Ea = self.appr.qd.Ea
+        self.Tba = self.appr.leads.Tba
+
+        self.fkp = self.appr.fkp
+        self.fkm = self.appr.fkm
+        self.hfkp = self.appr.hfkp
+        self.hfkm = self.appr.hfkm
+
+        self.phi1k_delta = self.appr.phi1k_delta
+        self.kern1k_inv = self.appr.kern1k_inv
+
+
+    def iterate(self):
+        """
+        Performs the iterative solution of the 2vN approach integral equations.
+
+        Parameters
+        ----------
+        phi1k_delta : ndarray
+            (Modifies) Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm0).
+            Correction to Phi[1](k) after an iteration.
+        hphi1k_delta : ndarray
+            (Modifies) Numpy array with dimensions (len(Ek_grid_ext), nleads, ndm1, ndm0).
+            Hilbert transform of phi1k_delta on extended grid Ek_grid_ext.
+        kern1k_inv : ndarray
+            (Modifies) Numpy array with dimensions (len(Ek_grid), nleads, ndm1, ndm1)
+            corresponding to inverse of energy resolved local kernel for Phi[1](k).
+        """
+        self.retrieve_approach_variables()
+
+        Eklen = len(self.Ek_grid)
+        nleads = self.si.nleads
+
+        if self.appr.is_zeroth_iteration:
+            # Calculate the zeroth iteration of Phi[1](k)
+            for k in range(Eklen):
+                for l in range(nleads):
+                    self.phi1k_local(k, l)
+
+            self.appr.is_zeroth_iteration = False
+        else:
+            # Hilbert transform phi1k_delta on extended grid Ek_grid_ext
+            # Here phi1k_delta_old is current phi1k_delta state, but on extended grid
+            # print('Hilbert transforming')
+            self.phi1k_delta_old, self.hphi1k_delta = get_htransf_phi1k(self.phi1k_delta, self.appr.funcp)
+            # print('Making an iteration')
+            for k in range(Eklen):
+                for l in range(nleads):
+                    self.phi1k_iterate(k, l)
+
+    def phi1k_local(self, k, l):
+        """
+        Constructs Phi[1](k) corresponding to local approximation at Ek_grid[ind].
+        More precisely, generates local approximation kernels L1 and L0, Phi[1](k) = L0(k)Phi[0],
+        L1(k)Phi[1](k) = L0p(k)Phi[0], L0 = L1^{-1}L0p.
+
+        Parameters
+        ----------
+        k : int
+            Index of a point on a Ek_grid_ext.
+        l : int
+            Lead index.
+
+        kern0 : ndarray
+            (Modifies) Numpy array with dimensions (nleads, ndm1, ndm0).
+            Gives local approximation kernel L0(k) at Ek_grid[ind].
+            Shows how Phi[1](k) is expressed in terms of Phi[0].
+        kern1_inv : ndarray
+            (Modifies) Numpy array with dimensions (nleads, ndm1, ndm1).
+            Gives inverse of local approximation kernel L1(k) at Ek_grid[ind].
+        """
+        E, Tba, si = self.Ea, self.Tba, self.si
+        fk, hfkp, hfkm = self.fkp, self.hfkp, self.hfkm
+        Ek_grid = self.Ek_grid_ext
+
+        ncharge, nleads, ndm0, ndm1 = si.ncharge, si.nleads, si.ndm0, si.ndm1
+        statesdm = si.statesdm
+
+        kern0 = np.zeros((ndm1, ndm0), dtype=complexnp)
+        kern1 = np.zeros((ndm1, ndm1), dtype=complexnp)
+        kern1_inv = np.zeros((ndm1, ndm1), dtype=complexnp)
+
+        func_2vN = self.func_2vN
+
+        ind = k + self.kpnt_left
+        Ek = Ek_grid[ind]
+
+        # Note that the bias is put in the distributions and not in the dispersion
+        fp = fk[l, ind]  # fermi_func(+(Ek-mulst[l])/tlst[l])
+        fm = 1-fp        # fermi_func(-(Ek-mulst[l])/tlst[l])
+
+        for charge in range(ncharge-1):
+            dcharge = charge+2
+            ccharge = charge+1
+            bcharge = charge
+            acharge = charge-1
+            for c, b in itertools.product(statesdm[ccharge], statesdm[bcharge]):
+                cb = si.get_ind_dm1(c, b, bcharge)
+                kern1[cb, cb] += Ek-E[c]+E[b]
+                # Phi[0] terms
+                for b1 in statesdm[bcharge]:
+                    b1b = si.get_ind_dm0(b1, b, bcharge)
+                    kern0[cb, b1b] += +Tba[l, c, b1]*fp
+                for c1 in statesdm[ccharge]:
+                    cc1 = si.get_ind_dm0(c, c1, ccharge)
+                    kern0[cb, cc1] += -Tba[l, c1, b]*fm
+                # ---------------------------------------------------------------------------
+                # Phi[1] terms
+                # 2nd and 7th terms
+                for b1, a1 in itertools.product(statesdm[bcharge], statesdm[acharge]):
+                    b1a1 = si.get_ind_dm1(b1, a1, acharge)
+                    for l1 in range(nleads):
+                        kern1[cb, b1a1] -= +Tba[l1, c, b1]*Tba[l1, a1, b]*(
+                                             + func_2vN(+(Ek-E[b1]+E[b]), l1, +1, hfkp)
+                                             - func_2vN(-(Ek-E[c]+E[a1]), l1, -1, hfkp))
+                # 6th and 8th terms
+                for b1 in statesdm[bcharge]:
+                    cb1 = si.get_ind_dm1(c, b1, bcharge)
+                    for l1 in range(nleads):
+                        for c1 in statesdm[ccharge]:
+                            kern1[cb, cb1] -= (+Tba[l1, b1, c1]*Tba[l1, c1, b]
+                                               * func_2vN(+(Ek-E[c]+E[c1]), l1, +1, hfkp))
+                        for a1 in statesdm[acharge]:
+                            kern1[cb, cb1] -= (-Tba[l1, b1, a1]*Tba[l1, a1, b]
+                                               * func_2vN(-(Ek-E[c]+E[a1]), l1, -1, hfkm))
+                # 1st and 3rd terms
+                for c1 in statesdm[ccharge]:
+                    c1b = si.get_ind_dm1(c1, b, bcharge)
+                    for l1 in range(nleads):
+                        for b1 in statesdm[bcharge]:
+                            kern1[cb, c1b] -= (+Tba[l1, c, b1]*Tba[l1, b1, c1]
+                                               * func_2vN(+(Ek-E[b1]+E[b]), l1, +1, hfkm))
+                        for d1 in statesdm[dcharge]:
+                            kern1[cb, c1b] -= (-Tba[l1, c, d1]*Tba[l1, d1, c1]
+                                               * func_2vN(-(Ek-E[d1]+E[b]), l1, -1, hfkp))
+                # 5th and 4th terms
+                for d1, c1 in itertools.product(statesdm[dcharge], statesdm[ccharge]):
+                    d1c1 = si.get_ind_dm1(d1, c1, ccharge)
+                    for l1 in range(nleads):
+                        kern1[cb, d1c1] -= +Tba[l1, c, d1]*Tba[l1, c1, b]*(
+                                             + func_2vN(+(Ek-E[c]+E[c1]), l1, +1, hfkm)
+                                             - func_2vN(-(Ek-E[d1]+E[b]), l1, -1, hfkm))
+
+        kern1_inv = np.linalg.inv(kern1)
+        kern0 = np.dot(kern1_inv, kern0)
+
+        self.kern1k_inv[k, l, :] = kern1_inv
+        self.phi1k_delta[k, l, :] = kern0
+
+    def phi1k_iterate(self, k, l):
+        """
+        Iterates the 2vN integral equation.
+
+        Parameters
+        ----------
+        k : int
+            Index of a point on a Ek_grid.
+        l : int
+            Lead index.
+
+        kern0 : ndarray
+            (Modifies) Numpy array with dimensions (nleads, ndm1, ndm0)
+            Gives a correction to Phi[1](k) after iteration of integral equation.
+            Shows how delta[Phi[1](k)] is expressed in terms of Phi[0].
+        """
+        E, Tba, si = self.Ea, self.Tba, self.si
+        fk = self.fkp
+        Ek_grid = self.Ek_grid_ext
+
+        ncharge, nleads, ndm0, ndm1 = si.ncharge, si.nleads, si.ndm0, si.ndm1
+        statesdm = si.statesdm
+
+        kern1_inv = self.kern1k_inv[k, l]
+        kern0 = np.zeros((ndm1, ndm0), dtype=complexnp)
+        term = np.zeros(ndm0, dtype=complexnp)
+
+        get_at_k1 = self.get_at_k1
+
+        ind = k + self.kpnt_left
+        Ek = Ek_grid[ind]
+
+        fp = fk[l, ind]  # fermi_func((Ek-mulst[l])/tlst[l])
+        fm = 1-fp
+
+        for charge in range(ncharge-1):
+            dcharge = charge+2
+            ccharge = charge+1
+            bcharge = charge
+            acharge = charge-1
+            for c, b in itertools.product(statesdm[ccharge], statesdm[bcharge]):
+                cb = si.get_ind_dm1(c, b, bcharge)
+                term.fill(0.0)
+                # 1st term
+                for a1 in statesdm[acharge]:
+                    ba1 = si.get_ind_dm1(b, a1, acharge)
+                    for b1, l1 in itertools.product(statesdm[bcharge], range(nleads)):
+                        # print('1')
+                        hu, u = get_at_k1(+(Ek-E[b1]+E[b]), l1, ba1, True)
+                        term += -Tba[l1, c, b1]*Tba[l, b1, a1]*fp*(hu - 1j*u)
+                # 2nd and 5th terms
+                for b1, c1 in itertools.product(statesdm[bcharge], statesdm[ccharge]):
+                    # print('2 and 5')
+                    c1b1 = si.get_ind_dm1(c1, b1, bcharge)
+                    for l1 in range(nleads):
+                        # 2nd term
+                        hu, u = get_at_k1(+(Ek-E[b1]+E[b]), l1, c1b1, True)
+                        term += -Tba[l1, c, b1]*(hu - 1j*u)*fm*Tba[l, c1, b]
+                        # 5th term
+                        hu, u = get_at_k1(+(Ek-E[c]+E[c1]), l1, c1b1, True)
+                        term += -Tba[l, c, b1]*fp*(hu - 1j*u)*Tba[l1, c1, b]
+                # 3rd term
+                for c1 in statesdm[ccharge]:
+                    c1b = si.get_ind_dm1(c1, b, bcharge)
+                    for d1, l1 in itertools.product(statesdm[dcharge], range(nleads)):
+                        # print('3')
+                        hu, u = get_at_k1(-(Ek-E[d1]+E[b]), l1, c1b, False)
+                        term += +Tba[l1, c, d1]*Tba[l, d1, c1]*fp*(hu + 1j*u)
+                # 4th term
+                for d1, c1 in itertools.product(statesdm[dcharge], statesdm[ccharge]):
+                    # print('4')
+                    d1c1 = si.get_ind_dm1(d1, c1, ccharge)
+                    for l1 in range(nleads):
+                        hu, u = get_at_k1(-(Ek-E[d1]+E[b]), l1, d1c1, False)
+                        term += +Tba[l1, c, d1]*(hu + 1j*u)*fm*Tba[l, c1, b]
+                # 6th term
+                for d1 in statesdm[dcharge]:
+                    d1c = si.get_ind_dm1(d1, c, ccharge)
+                    for c1, l1 in itertools.product(statesdm[ccharge], range(nleads)):
+                        # print('6')
+                        hu, u = get_at_k1(+(Ek-E[c]+E[c1]), l1, d1c, True)
+                        term += -(hu - 1j*u)*fm*Tba[l, d1, c1]*Tba[l1, c1, b]
+                # 7th term
+                for b1, a1 in itertools.product(statesdm[bcharge], statesdm[acharge]):
+                    # print('7')
+                    b1a1 = si.get_ind_dm1(b1, a1, acharge)
+                    for l1 in range(nleads):
+                        hu, u = get_at_k1(-(Ek-E[c]+E[a1]), l1, b1a1, False)
+                        term += +Tba[l, c, b1]*fp*(hu + 1j*u)*Tba[l1, a1, b]
+                # 8th term
+                for b1 in statesdm[bcharge]:
+                    cb1 = si.get_ind_dm1(c, b1, bcharge)
+                    for a1, l1 in itertools.product(statesdm[acharge], range(nleads)):
+                        # print('8')
+                        hu, u = get_at_k1(-(Ek-E[c]+E[a1]), l1, cb1, False)
+                        term += +(hu + 1j*u)*fm*Tba[l, b1, a1]*Tba[l1, a1, b]
+                kern0[cb] = term
+
+        kern0 = np.dot(kern1_inv, kern0)
+        self.phi1k_delta[k, l, :] = kern0
+
+    def func_2vN(self, Ek, l, eta, hfk):
+        """
+        Linearly interpolate the value of hfk on Ek_grid at point Ek.
+
+        Parameters
+        ----------
+        Ek : float
+            Energy value (not necessarily a grid point).
+        l : int
+            Lead label.
+        eta : int
+            Integer describing (+/-1) if infinitesimal eta is positive or negative.
+        hfk : ndarray
+            Array containing Hilbert transform of Fermi function (or 1-Fermi).
+
+        Returns
+        -------
+        float
+            Interpolated value of hfk at Ek.
+        """
+        Ek_grid = self.Ek_grid_ext
+        if Ek < Ek_grid[0] or Ek > Ek_grid[-1]:
+            return 0
+        #
+        b_idx = int((Ek-Ek_grid[0])/(Ek_grid[1]-Ek_grid[0]))+1
+        if b_idx == len(Ek_grid):
+            b_idx -= 1
+        a_idx = b_idx - 1
+        b, a = Ek_grid[b_idx], Ek_grid[a_idx]
+        #
+        fb = hfk[l, b_idx]
+        fa = hfk[l, a_idx]
+        rez = (fb-fa)/(b-a)*Ek + (b*fa-a*fb)/(b-a)
+        return pi*rez if eta+1 else pi*rez.conjugate()
+
+    def get_at_k1(self, Ek, l, cb, conj):
+        """
+        Linearly interpolate the values of phi1k, hphi1k on Ek_grid at point Ek.
+
+        Parameters
+        ----------
+        Ek : float
+            Energy value (not necessarily a grid point).
+        l : int
+            Lead label.
+        cb : int
+            Index corresponding to Phi[1](k) matrix element.
+        conj : bool
+            If conj=True the term in the integral equation is conjugated.
+
+        Returns
+        -------
+        ndarray, ndarray
+            Interpolated values of phi1k and hphi1k at Ek.
+        """
+        Ek_grid = self.Ek_grid_ext
+        phi1k = self.phi1k_delta_old
+        hphi1k = self.hphi1k_delta
+
+        if Ek < Ek_grid[0] or Ek > Ek_grid[-1]:
+            return 0, 0
+        #
+        # b_idx = np.searchsorted(Ek_grid, Ek)
+        b_idx = int((Ek-Ek_grid[0])/(Ek_grid[1]-Ek_grid[0]))+1
+        if b_idx == len(Ek_grid):
+            b_idx -= 1
+        a_idx = b_idx - 1
+        b, a = Ek_grid[b_idx], Ek_grid[a_idx]
+        # print(a_idx, b_idx, a, Ek, b)
+        #
+        fb = phi1k[b_idx, l, cb]
+        fa = phi1k[a_idx, l, cb]
+        u = (fb-fa)/(b-a)*Ek + (b*fa-a*fb)/(b-a)
+        u = u.conjugate() if conj else u
+        #
+        fb = hphi1k[b_idx, l, cb]
+        fa = hphi1k[a_idx, l, cb]
+        hu = (fb-fa)/(b-a)*Ek + (b*fa-a*fb)/(b-a)
+        hu = hu.conjugate() if conj else hu
+        return pi*hu, pi*u

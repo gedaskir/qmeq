@@ -110,11 +110,13 @@ cdef class KernelHandler:
                     self.all_ba[ind, 2] = acharge
                     ind += 1
 
-    cpdef void set_kern(self, double_t [:, :] kern):
-        self.kern = kern
+    cpdef void set_kern(self, kern):
+        if self.no_conjugates:
+            self.kern = kern
 
-    cpdef void set_phi0(self, double_t [:] phi0):
-        self.phi0 = phi0
+    cpdef void set_phi0(self, phi0):
+        if self.no_conjugates:
+            self.phi0 = phi0
 
     cdef bool_t is_included(self, long_t b, long_t bp, long_t bcharge) nogil:
         cdef long_t bbp = self.get_ind_dm0(b, bp, bcharge)
