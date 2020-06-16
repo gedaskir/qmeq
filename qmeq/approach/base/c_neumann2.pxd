@@ -37,9 +37,9 @@ cdef class TermsCalculator2vN:
 
     cdef void retrieve_approach_variables(self)
 
-    cdef void phi1k_local(self, long_t k, long_t l)
+    cdef void phi1k_local(self, long_t k, long_t l, KernelHandler kh)
 
-    cdef void phi1k_iterate(self, long_t k, long_t l)
+    cdef void phi1k_iterate(self, long_t k, long_t l, KernelHandler kh)
 
     cdef complex_t func_2vN(self, double_t Ek, long_t l, int_t eta, complex_t [:, :] hfk)
 
