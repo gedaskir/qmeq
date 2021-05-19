@@ -1,4 +1,4 @@
-qmeq.specfunc package
+qmeq.wrappers package
 =====================
 
 Submodules
@@ -6,21 +6,20 @@ Submodules
 
 .. toctree::
 
-   qmeq.specfunc.specfunc
-   qmeq.specfunc.specfunc_elph
+   qmeq.wrappers.mytypes
 
 Cython submodules
 -----------------
 
 .. toctree::
 
-   qmeq.specfunc.c_specfunc
-   qmeq.specfunc.c_specfunc_elph
+    qmeq.wrappers.c_mytypes
+    qmeq.wrappers.c_lapack
 
 Module contents
 ---------------
 
-.. automodule:: qmeq.specfunc
+.. automodule:: qmeq.wrappers
     :members:
     :undoc-members:
     :show-inheritance:

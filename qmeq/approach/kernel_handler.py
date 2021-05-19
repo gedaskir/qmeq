@@ -1,10 +1,12 @@
+"""Module containing python functions, which generate second order RTD kernels."""
+
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 
 class KernelHandler(object):
-
+    """Class responsible for inserting matrix elements into the various matrices used."""
     def __init__(self, si):
         self.si = si
         self.ndm0 = si.ndm0
@@ -127,3 +129,148 @@ class KernelHandlerMatrixFree(KernelHandler):
                 norm += self.phi0[bb]
 
         return norm
+
+class KernelHandlerRTD(KernelHandler):
+    """Class used for inserting matrix elements into the matrices used in the RTD approach."""
+
+    def set_matrix_list(self):
+        self.mats = [self.Wdd, self.WE1, self.WE2, self.ReWdn, self.ImWdn, self.ReWnd, self.ImWnd, self.Lnn]
+
+    def add_matrix_element(self, fct, l, b, bp, bcharge, a, ap, acharge, mi):
+        """
+        Adds a value to the lead-resolved ndarray (kernel) given by index mi. The indices are set by the entries
+        :math:`|b><bp|` and :math:`|a><ap|` in the density matrix. Which matrix to add the value to is determined by
+        mi  as 0 = :math:`W_{dd}`, 1 = :math:`W_{E,1}`, 2 = :math:`W_{E,2}`, 3 = :math:`\Re(W_{dn}^{(1)})`,
+        4 =   :math:`\Im (W_{dn}^{(1)})`, 5 =  :math:`\Re (W_{nd}^{(1)})`, 6 =  :math:`\Im(W_{nd}^{(1)})`,
+        7 = :math:`L_{nn}`.
+
+        Parameters
+        ----------
+        fct : float
+           the value to be added
+        l : int
+           lead index
+        b : int
+            first index for state 1
+        bp : int
+            second index for state 1
+        bcharge : int
+            charge of state 1
+        a : int
+            first index for state 2
+        ap : int
+            second index for state 2
+        acharge : int
+            charge of state 2
+        mi : int
+            index for selecting which matrix to insert into
+        self.mats[mi] : ndarray
+            (Modifies) the matrix selected by mi
+        """
+
+
+        indx1 = self.si.get_ind_dm0(b, bp, bcharge)
+        indx2 = self.si.get_ind_dm0(a, ap, acharge)
+        if b != bp:
+            indx1 -= self.npauli
+            if b > bp:
+                indx1 += self.ndm0 - self.npauli
+        if a != ap:
+            indx2 -= self.npauli
+            if a > ap:
+                indx2 += self.ndm0 - self.npauli
+
+        mat = self.mats[mi]
+        mat[l, indx1, indx2] += fct
+
+    def set_matrix_element_dd(self, l, fctm, fctp, bb, aa, mi):
+        """
+        Adds a value to the lead-resolved kernel connecting :math:`|b><b|` to :math:`|a><a|`,
+        and uses the conservation law to add a second value to the diagonal (connecting :math:`|b><b|`
+        to itself).
+
+        Parameters
+        ----------
+        l : int
+            lead index
+        fctm : float
+            value to be added to the diagonal (tunneling out)
+        fctp : float
+            value to be added to the off-diagonal (tunneling in)
+        bb : int
+            index for the entry :math:`|b><b|`
+        aa :  int
+            index for the entry :math:`|a><a|`
+        mi : int
+            index for selecting which matrix to insert into
+        self.mats[mi] : ndarray
+            (Modifies) the matrix selected by mi
+        """
+        mat = self.mats[mi]
+        mat[l, bb, bb] += fctm
+        mat[l, bb, aa] += fctp
+
+    def add_element_2nd_order(self, r, fct, indx0, indx1, a3, charge3, a4, charge4):
+        """
+        Adds a value to the lead-resolved kernel for the diagonal density matrix. Uses symmetries
+        between second order diagrams in the RTD approach to add the value to four places in the matrix.
+
+
+        Parameters
+        ----------
+        r : int
+            lead index
+        fct : float
+            value to be added
+        indx0 : int
+            index for inital state
+        indx1 : int
+            index for intermidiate state 1
+        a3 : int
+            intermediate state 3 is given by :math:`|a3><a3|`
+        charge3 : int
+            charge of intermediate state 3
+        a4 : int
+            final state is given by :math:`|a4><a4|`
+        charge4 : int
+            charge of the final state
+        self.Wdd : ndarray
+            (Modifies) the lead-resolved kernel for the diagonal density matrix.
+
+        """
+        si = self.si
+        indx3 = si.get_ind_dm0(a3, a3, charge3)
+        indx4 = si.get_ind_dm0(a4, a4, charge4)
+
+        fct = 2 * fct
+        self.Wdd[r, indx4, indx0] += fct
+        # Flipping left-most vertex p3 = -p3
+        self.Wdd[r, indx3, indx0] += -fct
+        # Flipping right-most vertex p0 = -p0
+        self.Wdd[r, indx4, indx1] += fct
+        # Flipping left-most and right-most vertices p0 = -p0 and p3 = -p3
+        self.Wdd[r, indx3, indx1] += -fct
+
+
+    def add_element_Lnn(self, a1, b1, charge, fct):
+        """
+        Adds a value to the part of :math:`L_{N,+}` connecting an off-diagonal component of the density matrix to
+        itself.
+
+        Parameters
+        ----------
+        a1 : int
+            first part of the component :math:`|a1><b1|`
+        b1 :  int
+            second part of the component :math:`|a1><b1|`
+        charge : int
+            charge of the states a1 and b1
+        fct : float
+            the value to be added
+        self.Lnn : ndarray
+            (Modifies) the anti-commutator Liouvillian connecting non-diagonal elements
+        """
+        indx = self.si.get_ind_dm0(a1, b1, charge) - self.npauli
+        if a1 > b1:
+            indx += self.ndm0 - self.npauli
+        self.Lnn[indx, indx] += fct

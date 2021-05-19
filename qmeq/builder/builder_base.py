@@ -37,6 +37,7 @@ from ..approach.base.lindblad import ApproachLindblad as ApproachPyLindblad
 from ..approach.base.redfield import ApproachRedfield as ApproachPyRedfield
 from ..approach.base.neumann1 import Approach1vN as ApproachPy1vN
 from ..approach.base.neumann2 import Approach2vN as ApproachPy2vN
+from ..approach.base.RTD import ApproachPyRTD as ApproachPyRTD
 
 # Cython compiled modules
 
@@ -46,13 +47,15 @@ try:
     from ..approach.base.c_redfield import ApproachRedfield
     from ..approach.base.c_neumann1 import Approach1vN
     from ..approach.base.c_neumann2 import Approach2vN
-except ImportError:
+    from ..approach.base.c_RTD import ApproachRTD
+except ImportError as ie:
     print("WARNING: Cannot import Cython compiled modules for the approaches (builder_base.py).")
     ApproachPauli = ApproachPyPauli
     ApproachLindblad = ApproachPyLindblad
     ApproachRedfield = ApproachPyRedfield
     Approach1vN = ApproachPy1vN
     Approach2vN = ApproachPy2vN
+    ApproachRTD = ApproachPyRTD
 # -----------------------------------------------------------
 
 attribute_map = dict(
@@ -70,7 +73,7 @@ attribute_map = dict(
     # FunctionProperties
     kpnt='funcp', symq='appr', norm_row='appr', solmethod='appr',
     itype='appr', dqawc_limit='funcp',
-    mfreeq='appr', phi0_init='funcp',
+    mfreeq='appr', phi0_init='funcp', off_diag_corrections='funcp'
     )
 
 
@@ -96,7 +99,8 @@ class BuilderBase(object):
                  kerntype='Pauli', symq=True, norm_row=0, solmethod=None,
                  itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
                  mtype_qd=complex, mtype_leads=complex,
-                 symmetry=None, herm_hs=True, herm_c=False, m_less_n=True):
+                 symmetry=None, herm_hs=True, herm_c=False, m_less_n=True,
+                 off_diag_corrections=True):
 
         self._init_copy_data(locals())
         self._init_validate_data()
@@ -110,9 +114,9 @@ class BuilderBase(object):
 
     def _init_validate_data(self):
         data = self.data
-        data.itype = validate_itype(data.itype)
+        data.itype = validate_itype(data.itype, data.kerntype)
         data.kerntype = validate_kerntype(data.kerntype)
-        data.indexing = validate_indexing(data.indexing,
+        data.indexing, data.symmetry = validate_indexing(data.indexing,
                                           data.symmetry,
                                           data.kerntype)
 
@@ -134,7 +138,8 @@ class BuilderBase(object):
                                         itype=data.itype, dqawc_limit=data.dqawc_limit,
                                         mfreeq=data.mfreeq, phi0_init=data.phi0_init,
                                         mtype_qd=data.mtype_qd, mtype_leads=data.mtype_leads,
-                                        kpnt=data.kpnt, dband=data.dband)
+                                        kpnt=data.kpnt, dband=data.dband,
+                                        off_diag_corrections=data.off_diag_corrections)
 
         icn = self.Approach.indexing_class_name
         self.si = self.globals[icn](data.nsingle, data.indexing, data.symmetry)

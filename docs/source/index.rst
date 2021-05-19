@@ -12,8 +12,8 @@ Contents:
    Quantum dot Hamiltonian <qmeq.qdot.rst>
    Tunneling Hamiltonian <qmeq.leadstun.rst>
    Electron-phonon baths and coupling <qmeq.baths.rst>
-   Approach class for master equations <qmeq.aprclass.rst>
-   Approaches <approach/qmeq.approach.rst>
+   Approach class for master equations <approach/qmeq.approach.rst>
+   Kernel Handler class <approach/qmeq.approach.kernel_handler.rst>
    Special functions <specfunc/qmeq.specfunc.rst>
 
 

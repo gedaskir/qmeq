@@ -481,14 +481,14 @@ class StateIndexing(object):
             Possible value is 'spin'.
         """
         #
-        self.nsingle_sym = nsingle//2 if symmetry is 'spin' else nsingle
+        self.nsingle_sym = nsingle//2 if symmetry == 'spin' else nsingle
         self.nsingle = nsingle
         self.indexing = indexing
         self.symmetry = symmetry
         self.ncharge = nsingle+1
         self.nmany = 2**nsingle
         self.nleads = nleads
-        self.nleads_sym = nleads//2 if symmetry is 'spin' else nleads
+        self.nleads_sym = nleads//2 if symmetry == 'spin' else nleads
         self.nbaths = nbaths
         #
         self.szlst_lin = None

@@ -616,7 +616,7 @@ def make_hsingle_dict(qd, hsingle, add_zeros=False):
     else:
         return {}
     #
-    if si.symmetry is 'spin':
+    if si.symmetry == 'spin':
         hsingle_dict_spin = dict(hsingle_dict)
         for j0 in hsingle_dict:
             j1, j2 = j0
@@ -658,7 +658,7 @@ def make_coulomb_dict(qd, coulomb):
     else:
         return {}
     #
-    if si.symmetry is 'spin':
+    if si.symmetry == 'spin':
         coulomb_dict_spin = dict(coulomb_dict)
         nss = si.nsingle_sym
         herm_c, m_less_n = qd.herm_c, qd.m_less_n

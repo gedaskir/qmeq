@@ -8,6 +8,17 @@ Subpackages
 
     base/qmeq.approach.base
     elph/qmeq.approach.elph
+    qmeq.approach.aprclass
+    qmeq.approach.kernel_handler
+
+
+Cython submodules
+-----------------
+
+.. toctree::
+
+    qmeq.approach.c_aprclass
+    qmeq.approach.c_kernel_handler
 
 Module contents
 ---------------

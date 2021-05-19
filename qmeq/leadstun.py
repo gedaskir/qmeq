@@ -299,6 +299,28 @@ def make_tleads_dict(tleads, si, add_zeros=False):
     else:
         return tleads_dict
 
+def make_tleads_array(tleads, si, mtype=complex):
+    """Converts a dictionary containing matrix elements to a nleads x nsingle array.
+
+    Parameters
+    __________
+    tleads : dict
+        Contains single particle tunnel matrix elements
+    si : StateIndexing
+        StateIndexing or StateIndexingDM object.
+    mtype : type
+        Defines type of tleads matrix. For example, float, complex, etc.
+
+    Returns
+    -------
+    tleads_array: ndarray
+        Numpy array representing the single particle tunnel elements
+    """
+    tleads_array = np.zeros([si.nleads, si.nsingle], dtype=mtype)
+    for (lead, state) in tleads:
+        tleads_array[lead, state] = tleads[(lead, state)]
+
+    return tleads_array
 
 def make_array(lst_old, lst, si, npar=None, use_symmetry=True):
     """
@@ -368,7 +390,7 @@ def make_array_dlst(dlst_old, dlst, si, npar=None, use_symmetry=True):
         else:
             lst_arr = np.array(dlst, dtype=doublenp)
     #
-    if si.symmetry is 'spin' and use_symmetry:
+    if si.symmetry == 'spin' and use_symmetry:
         return np.concatenate((lst_arr, lst_arr))
     else:
         return lst_arr
@@ -407,10 +429,11 @@ class LeadsTunneling(object):
     def __init__(self, nleads, tleads, si, mulst, tlst, dlst, mtype=complex):
         """Initialization of the LeadsTunneling class."""
         si.nleads = nleads
-        si.nleads_sym = nleads//2 if si.symmetry is 'spin' else nleads
+        si.nleads_sym = nleads//2 if si.symmetry == 'spin' else nleads
         #
         self.si = si
         self.tleads = make_tleads_dict(tleads, si)
+        self.tleads_array = make_tleads_array(self.tleads, si)
         self.mulst = make_array(None, mulst, si)
         self.tlst = make_array(None, tlst, si)
         self.dlst = make_array_dlst(None, dlst, si)
@@ -452,6 +475,7 @@ class LeadsTunneling(object):
                         self.tleads[j0] += tleads[j0]
                     else:
                         self.tleads.update({j0: tleads[j0]})
+                self.tleads_array = make_tleads_array(self.tleads, self.si)
             self.Tba0 = construct_Tba(self, tleads, self.Tba0)
 
     def change(self, tleads=None, mulst=None, tlst=None, dlst=None):
@@ -525,7 +549,8 @@ class LeadsTunneling(object):
         """
         si = self.si
         si.nleads = nleads
-        si.nleads_sym = nleads//2 if si.symmetry is 'spin' else nleads
+        si.nleads_sym = nleads//2 if si.symmetry == 'spin' else nleads
         self.tleads = make_tleads_dict(tleads, si)
+        self.tleads_array = make_tleads_array(tleads, self.si)
         self.mtype = mtype
         self.Tba0 = construct_Tba(self, tleads)

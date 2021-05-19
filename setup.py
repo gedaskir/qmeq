@@ -30,6 +30,7 @@ def get_ext_modules():
                  'qmeq/approach/base/c_redfield.c',
                  'qmeq/approach/base/c_neumann1.c',
                  'qmeq/approach/base/c_neumann2.c',
+                 'qmeq/approach/base/c_RTD.c',
                  'qmeq/specfunc/c_specfunc.c',
                  # elph
                  'qmeq/approach/elph/c_pauli.c',
