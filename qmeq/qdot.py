@@ -792,7 +792,7 @@ class QuantumDot(object):
                 if j0 in self.coulomb:
                     self.coulomb[j0] += coulomb[j0]
                 else:
-                    self.hsingle.update({j0: coulomb[j0]})
+                    self.coulomb.update({j0: coulomb[j0]})
         #
         if self.si.indexing == 'sz':
             for charge in range(self.si.ncharge):
