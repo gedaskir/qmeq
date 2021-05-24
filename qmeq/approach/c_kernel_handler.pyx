@@ -272,7 +272,7 @@ cdef class KernelHandlerRTD(KernelHandler):
         self.nsingle = si.nsingle
 
     cdef void add_matrix_element(self, double_t fct, long_t l, long_t b, long_t bp, 
-                    long_t bcharge, long_t a, long_t ap, long_t acharge, int_t mi):
+                    long_t bcharge, long_t a, long_t ap, long_t acharge, int_t mi) nogil:
         cdef long_t indx1 = self.get_ind_dm0(b, bp, bcharge)
         cdef long_t indx2 = self.get_ind_dm0(a, ap, acharge)
         if b != bp:
@@ -293,10 +293,10 @@ cdef class KernelHandlerRTD(KernelHandler):
         elif mi == 6:
             self.ImWnd[indx1, indx2] += fct        
         elif mi == 7:
-            self.Lnn[indx1, indx2] += fct
+            self.Lnn[indx2] += fct
 
     cdef void set_matrix_element_dd(self, long_t l, double_t fctm, 
-                                double_t fctp, long_t bb, long_t aa, long_t mi):
+                        double_t fctp, long_t bb, long_t aa, long_t mi) nogil:
         if mi == 0:
             self.Wdd[l, bb, bb] += fctm
             self.Wdd[l, bb, aa] += fctp
@@ -307,19 +307,19 @@ cdef class KernelHandlerRTD(KernelHandler):
             self.WE2[l, bb, bb] += fctm
             self.WE2[l, bb, aa] += fctp
 
-    cdef void add_element_2nd_order(self, long_t l, double_t fct, long_t indx0, long_t indx1,
-                                    long_t a3, long_t charge3, long_t a4, long_t charge4):
+    cdef void add_element_2nd_order(self, long_t t_id, long_t l, double_t fct, long_t indx0, long_t indx1,
+                            long_t a3, long_t charge3, long_t a4, long_t charge4) nogil:
         cdef long_t indx3 = self.get_ind_dm0(a3, a3, charge3)
         cdef long_t indx4 = self.get_ind_dm0(a4, a4, charge4)
         fct = 2 * fct
 
-        self.Wdd[l, indx4, indx0] += fct
+        self.Wdd2[t_id, l, indx4 , indx0] += fct
         # Flipping left-most vertex p3 = -p3
-        self.Wdd[l, indx3, indx0] += -fct
+        self.Wdd2[t_id, l, indx3, indx0] += -fct
         # Flipping right-most vertex p0 = -p0
-        self.Wdd[l, indx4, indx1] += fct
+        self.Wdd2[t_id, l, indx4, indx1] += fct
         # Flipping left-most and right-most vertices p0 = -p0 and p3 = -p3
-        self.Wdd[l, indx3, indx1] += -fct
+        self.Wdd2[t_id, l, indx3, indx1] += -fct
 
     cdef void set_matrix_list(self):
         pass

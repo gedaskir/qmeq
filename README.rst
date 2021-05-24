@@ -13,10 +13,11 @@ now we have implemented the following first-order methods
 -  Redfield approach
 -  First order von Neumann (1vN) approach
 
-which can describe the effect of Coulomb blockade. QmeQ also has one
-second-order method
+which can describe the effect of Coulomb blockade. QmeQ also has two
+second-order methods
 
 -  Second order von Neumann (2vN) approach
+-  Real Time Diagrammatic approach
 
 which can additionally address cotunneling, pair tunneling, and
 broadening effects.

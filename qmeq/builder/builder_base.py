@@ -99,8 +99,7 @@ class BuilderBase(object):
                  kerntype='Pauli', symq=True, norm_row=0, solmethod=None,
                  itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
                  mtype_qd=complex, mtype_leads=complex,
-                 symmetry=None, herm_hs=True, herm_c=False, m_less_n=True,
-                 off_diag_corrections=True):
+                 symmetry=None, herm_hs=True, herm_c=False, m_less_n=True):
 
         self._init_copy_data(locals())
         self._init_validate_data()
@@ -138,8 +137,7 @@ class BuilderBase(object):
                                         itype=data.itype, dqawc_limit=data.dqawc_limit,
                                         mfreeq=data.mfreeq, phi0_init=data.phi0_init,
                                         mtype_qd=data.mtype_qd, mtype_leads=data.mtype_leads,
-                                        kpnt=data.kpnt, dband=data.dband,
-                                        off_diag_corrections=data.off_diag_corrections)
+                                        kpnt=data.kpnt, dband=data.dband)
 
         icn = self.Approach.indexing_class_name
         self.si = self.globals[icn](data.nsingle, data.indexing, data.symmetry)

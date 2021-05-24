@@ -106,7 +106,7 @@ class ApproachPyRTD(Approach):
         """ Generates all kernels including tunnel processes of orders :math:`t^2` and :math:`t^4`.
 
         The total kernel used to solve for :math:`\phi_0` is :math:`W =\sum_r W^r= W_{dd}^{(1)} + W_{dd}^{(2)}
-        + W_{dn}^{(1)} (L_{nn})^{-1} W_{nd}^{(1)}`. The last term is ignored if `OffDiagCorrections` is False.
+        + W_{dn}^{(1)} (L_{nn})^{-1} W_{nd}^{(1)}`. The last term is ignored if `off_diag_corrections` is False.
 
         Parameters
         ----------
@@ -193,10 +193,10 @@ class ApproachPyRTD(Approach):
     def generate_current(self):
         """ Calculates currents for the RTD approach.
 
-        Charge current for reservoir r is evaluated as :math:`I^r = i/2 \cdot Tr (L_{N_{dot}}^+ W^r \phi_0)`
+        Charge current for reservoir r is evaluated as :math:`I^r = 1/2 \cdot Tr (L_{N_{dot}}^+ W^r \phi_0)`
 
-        Energy current for reservoir r is evaluated as :math:`E^r = i/2\cdot Tr (L_H^+ W^r \phi_0) - i/2\cdot
-        Tr(W_{E,1}^r \phi_0) + i/2\cdot Tr(W_{E,2}^r \phi_0)`
+        Energy current for reservoir r is evaluated as :math:`E^r = 1/2\cdot Tr (L_H^+ W^r \phi_0) - 1/2\cdot
+        Tr(W_{E,1}^r \phi_0) + 1/2\cdot Tr(W_{E,2}^r \phi_0)`
 
         Heat current for reservoir r is evaluated as :math:`Q^r = E^r - \mu_r\cdot I^r`.
 

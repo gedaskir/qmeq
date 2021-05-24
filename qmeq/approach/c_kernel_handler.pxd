@@ -95,20 +95,24 @@ cdef class KernelHandlerRTD(KernelHandler):
     cdef long_t nsingle
 
     cdef double_t[:,:,:] Wdd
+    cdef double_t[:,:,:,:] Wdd2
     cdef double_t[:,:,:] WE1
     cdef double_t[:,:,:] WE2
     cdef double_t[:,:] ReWnd
     cdef double_t[:,:] ImWnd
     cdef double_t[:,:,:] ReWdn
     cdef double_t[:,:,:] ImWdn
-    cdef double_t[:,:] Lnn
+    cdef double_t[:] Lnn
     cdef double_t[:,:,:] LE
     cdef double_t[:,:,:] LN
 
-    cdef void add_matrix_element(self, double_t, long_t, long_t, long_t, long_t, long_t, long_t, long_t, int_t)
+    cdef void add_matrix_element(self, double_t, long_t, long_t, long_t,
+        long_t, long_t, long_t, long_t, int_t) nogil
 
-    cdef void set_matrix_element_dd(self, long_t, double_t, double_t, long_t, long_t, long_t)
+    cdef void set_matrix_element_dd(self, long_t, double_t, double_t, long_t, long_t,
+        long_t) nogil
 
-    cdef void add_element_2nd_order(self, long_t, double_t, long_t, long_t,long_t, long_t, long_t, long_t)
+    cdef void add_element_2nd_order(self, long_t, long_t, double_t, long_t, long_t, long_t,
+                             long_t, long_t, long_t) nogil
 
     cdef void set_matrix_list(self)
