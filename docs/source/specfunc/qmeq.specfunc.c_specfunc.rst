@@ -1,4 +1,4 @@
-qmeq.specfunc.c_specfunc module
+qmeq.specfunc.c\_specfunc module
 ================================
 
 .. automodule:: qmeq.specfunc.c_specfunc
