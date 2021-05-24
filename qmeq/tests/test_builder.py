@@ -5,7 +5,7 @@ import qmeq
 import itertools
 
 EPS = 1e-11
-CHECK_PY = True
+CHECK_PY = False
 PRNTQ = False
 SERIAL_TRIPLE_DOT = False
 
@@ -126,7 +126,7 @@ def save_Builder_double_dot_spinful(fname='data_builder.py'):
         attr = kerntype+str(itype)
         data = data+' '*4+'\''+attr+'current\': '+str(system.current.tolist())+',\n'
         data = data+' '*4+'\''+attr+'energy_current\': '+str(system.energy_current.tolist())
-        data = data + ('\n    }' if kerntype is 'pyLindblad' and itype is 2 else ',\n')
+        data = data + ('\n    }' if kerntype == 'pyLindblad' and itype == 2 else ',\n')
     #
     with open(fname, 'w') as f:
         f.write(data)

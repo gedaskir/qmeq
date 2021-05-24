@@ -121,7 +121,7 @@ def save_Builder_double_dot_spinful(fname='data_builder_elph.py'):
         attr = kerntype+str(itype)+str(itype_ph)
         data = data+' '*4+'\''+attr+'current\': '+str(system.current.tolist())+',\n'
         data = data+' '*4+'\''+attr+'energy_current\': '+str(system.energy_current.tolist())
-        data = data + ('\n    }' if kerntype is 'pyLindblad' and itype is 2 and itype_ph is 2 else ',\n' )
+        data = data + ('\n    }' if kerntype == 'pyLindblad' and itype == 2 and itype_ph == 2 else ',\n' )
     #
     with open(fname, 'w') as f:
         f.write(data)
