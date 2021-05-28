@@ -455,8 +455,8 @@ class ApproachPyRTD(Approach):
         b_and_R = self.Ozaki_poles_and_residues
 
         t_cutoff1 = 0.0
-        t_cutoff2 = 1e-10/max(tlst)
-        t_cutoff3 = 1e-20/max(tlst)
+        t_cutoff2 = 1e-10*max(tlst)
+        t_cutoff3 = 1e-20*max(tlst)
         indx0 = self.si.get_ind_dm0(a0, a0, charge)
         for r0, r1 in product(range(nleads), range(nleads)):
             T1, T2 = tlst[r0], tlst[r1]
