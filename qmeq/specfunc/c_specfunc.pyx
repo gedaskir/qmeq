@@ -357,7 +357,7 @@ cdef complex_t integralX(double_t p1, double_t eta1, double_t E1, double_t E2, d
 @cython.cdivision(True)
 cdef double_t D_integral_equal_T(double_t p1, double_t p2, double_t E1, double_t deltaE, double_t E2, 
                                                                       double_t Dp, double_t Dm) nogil:
-    cdef double_t E_MIN = 0.00001
+    cdef double_t E_MIN = 1e-10
     cdef double_t  ret = 0.0
 
     if fabs(E1 - E2) < E_MIN:
@@ -383,7 +383,7 @@ cdef double_t D_integral_equal_T(double_t p1, double_t p2, double_t E1, double_t
 @cython.cdivision(True)
 cdef double_t X_integral_equal_T(double_t p1, double_t p2, double_t E1, double_t deltaE, double_t E2, 
                                                                      double_t Dp, double_t Dm) nogil:
-    cdef double_t E_MIN = 0.00001
+    cdef double_t E_MIN = 1e-10
     cdef double_t ret = 0.0
 
     if fabs( deltaE - E1 - E2 ) < E_MIN:
@@ -411,7 +411,7 @@ cdef complex_t D_integral(double_t p1, double_t p2, double_t z1, double_t z2, do
     cdef complex_t temp_f1, temp_f2, ret, A, B, C
     cdef long_t i
 
-    E_MIN = 1e-5      
+    E_MIN = 1e-10
     BW = (fabs(Dp) + fabs(Dm))*0.5
     BWT = log(BW/(2*pi*T1))
     pi2T =  2*pi*T2
@@ -430,9 +430,9 @@ cdef complex_t D_integral(double_t p1, double_t p2, double_t z1, double_t z2, do
 
     temp_f1 *= 0 - 8*pi*T1*1j
 
-    if( fabs(z3-z1)>E_MIN ):
-        temp_f2 = ( digamma(0.5 - (z3+mu1)/(2*pi*T1)*1j ) - digamma(0.5 - (z1+mu1)/( 2*pi*T1 )*1j )) / (z3-z1)
-        temp_f2 = temp_f2*(-2*pi*1j)
+    if( fabs(z3/T1-z1/T1)>E_MIN ):
+        temp_f2 = ( digamma(0.5 - (z3+mu1)/(2*pi*T1)*1j ) - digamma(0.5 - (z1+mu1)/( 2*pi*T1 )*1j )) / (z3/T1-z1/T1)
+        temp_f2 = temp_f2*(-2*pi*1j)/T1
     else:
         temp_f2 = polygamma(0.5 -(z3+mu1)/(2*pi*T1)*1j , 1 ) * (-1.0/T1) 
     ret = 0.25*( p1*p2*temp_f1 - p1*temp_f2)

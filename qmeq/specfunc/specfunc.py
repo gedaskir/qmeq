@@ -545,7 +545,7 @@ def integralX(p1, eta1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R):
     double
         The integral value
     """
-    TMIN = 1e-5
+    TMIN = 1e-10
     if abs(T2-T1) < TMIN:
         lambda1 = (E1 - mu1) / T1
         lambda2 = (E2 - mu1 - eta1 * mu2) / T1
@@ -585,7 +585,7 @@ def _D_integral_equal_T(p1, p2, E1, deltaE, E2, Dp, Dm):
         The integral value
     """
     # See Appendix D of PRB. 78 235424 (2008)
-    E_MIN = 1e-5
+    E_MIN = 1e-10
 
     if np.abs(E1 - E2) < E_MIN:
         if np.abs(deltaE) < E_MIN:
@@ -642,7 +642,7 @@ def _X_integral_equal_T(p1, p2, E1, deltaE, E2, Dp, Dm):
         The integral value
     """
     # See Appendix D of PRB. 78 235424 (2008)
-    E_MIN = 1e-5
+    E_MIN = 1e-10
 
     if np.abs(deltaE - E1 - E2) < E_MIN:
         if np.abs(deltaE) < E_MIN:
@@ -704,7 +704,7 @@ def _D_integral(p1, p2, z1, z2, z3, T1, T2, mu1, mu2, Dp, Dm, b_and_R):
     """
 
     PI = np.pi
-    E_MIN = 1e-5
+    E_MIN = 1e-10
     D = (np.abs(Dp) + np.abs(Dm)) * 0.5
 
     temp_f1 = 0 + 0j
@@ -721,10 +721,10 @@ def _D_integral(p1, p2, z1, z2, z3, T1, T2, mu1, mu2, Dp, Dm, b_and_R):
         temp_f1 += A * 1.0 / B * 1.0 / C * b_and_R[i, 1]
     temp_f1 *= - 8 * PI * T1 * 1j
 
-    if (abs(z3 - z1) > E_MIN):
+    if (abs(z3/T1 - z1/T1) > E_MIN):
         temp_f2 = (digamma(0.5 - (z3 + mu1) / (2 * PI * T1) * 1j) - digamma(0.5 - (z1 + mu1) / (2 * PI * T1) * 1j)) / (
-                    z3 - z1)
-        temp_f2 = temp_f2 * (-2 * PI * 1j)
+                    z3/T1 - z1/T1)
+        temp_f2 = temp_f2 * (-2 * PI * 1j)/T1
     else:
         temp_f2 = polygamma(0.5 - (z3 + mu1) / (2 * PI * T1) * 1j, 1) * (-1.0 / T1)
 

@@ -465,7 +465,7 @@ cdef class ApproachRTD(Approach):
         cdef long_t nleads, acharge, bcharge, ccharge, dcharge, acount, bcount, ccount, dcount
         cdef long_t indx0, indx1, r0, r1, a1p, a2p, a2m, a3p, a3m, i, j, k, t_id
         cdef long_t [:, :] statesdm
-        cdef double_t T1, T2, mu1, mu2, D, temp, E1, E2, E3, t_cutoff
+        cdef double_t T1, T2, mu1, mu2, D, temp, E1, E2, E3, t_cutoff1, t_cutoff2, t_cutoff3, maxTemp
         cdef double_t[:] E, mulst, tlst
         cdef double_t[:,:] b_and_R, dlst 
         cdef complex_t t, t1, t2D, t2X, tempD, tempX
@@ -482,7 +482,16 @@ cdef class ApproachRTD(Approach):
         tlst = self._tlst
         b_and_R = self.Ozaki_poles_and_residues
         nleads = kh.nleads
-        t_cutoff = 1e-5
+
+        maxTemp = 0.0
+        for i in range(nleads):
+            if tlst[i] > maxTemp:
+                maxTemp = tlst[i]
+
+        t_cutoff1 = 0.0
+        t_cutoff2 = 1e-10*maxTemp
+        t_cutoff3 = 1e-20*maxTemp
+
         statesdm = kh.statesdm
 
         acharge = charge-1
@@ -505,7 +514,7 @@ cdef class ApproachRTD(Approach):
                 for i in range(ccount):                    
                     a1p = statesdm[ccharge, i]
                     t = Tba[r0, a0, a1p]
-                    if cabs(t) < t_cutoff:
+                    if cabs(t) == t_cutoff1:
                         continue
                     indx1 = kh.get_ind_dm0(a1p, a1p, ccharge)
                     E1 = E[a1p] - E[a0]
@@ -514,7 +523,7 @@ cdef class ApproachRTD(Approach):
                     for j in range(dcount):
                         a2p = statesdm[dcharge, j]
                         t1 = t * Tba[r1, a1p, a2p]
-                        if cabs(t1) < t_cutoff:
+                        if cabs(t1) <= t_cutoff2:
                             continue
                         E2 = E[a2p] - E[a0]
                         #p2 = 1
@@ -523,10 +532,10 @@ cdef class ApproachRTD(Approach):
                             t2D = t1 * Tba[r1, a3p, a2p].conjugate() * Tba[r0, a0, a3p].conjugate()
                             t2X = t1 * Tba[r0, a3p, a2p].conjugate() * Tba[r1, a0, a3p].conjugate()
                             E3 = E[a3p] - E[a0]
-                            if cabs(t2D) > t_cutoff:
+                            if cabs(t2D) > t_cutoff3:
                                 tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a3p, ccharge, a0, bcharge)
-                            if cabs(t2X) > t_cutoff:
+                            if cabs(t2X) > t_cutoff3:
                                 tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a3p, ccharge, a0, bcharge)
                         #p2 = -1
@@ -535,16 +544,18 @@ cdef class ApproachRTD(Approach):
                             t2D = t1 * Tba[r1, a0, a3m].conjugate() * Tba[r0, a3m, a2p].conjugate()
                             t2X = t1 * Tba[r0, a0, a3m].conjugate() * Tba[r1, a3m, a2p].conjugate()
                             E3 = E[a2p] - E[a3m]
-                            if cabs(t2D) > t_cutoff:
+                            if cabs(t2D) > t_cutoff3:
                                 tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a2p, dcharge, a3m, ccharge)
-                            if cabs(t2X) > t_cutoff:
+                            if cabs(t2X) > t_cutoff3:
                                 tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a2p, dcharge, a3m, ccharge)
                     #p1 = -1
                     for j in range(acount):
                         a2m = statesdm[acharge, j]
                         t1 = t * Tba[r1, a2m, a0]
+                        if cabs(t1) <= t_cutoff2:
+                            continue
                         E2 = E[a1p] - E[a2m]
                         #p2 = 1
                         for k in range(bcount):
@@ -552,10 +563,10 @@ cdef class ApproachRTD(Approach):
                             t2D = t1 * Tba[r1, a3p, a1p].conjugate() * Tba[r0, a2m, a3p].conjugate()
                             t2X = t1 * Tba[r0, a3p, a1p].conjugate() * Tba[r1, a2m, a3p].conjugate()
                             E3 = E[a3p] - E[a2m]
-                            if cabs(t2D) > t_cutoff:
+                            if cabs(t2D) > t_cutoff3:
                                 tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a3p, bcharge, a2m, acharge)
-                            if cabs(t2X) > t_cutoff:
+                            if cabs(t2X) > t_cutoff3:
                                 tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a3p, bcharge, a2m, acharge)
                         #p2 = -1
@@ -564,10 +575,10 @@ cdef class ApproachRTD(Approach):
                             t2D = t1 * Tba[r1, a2m, a3m].conjugate() * Tba[r0, a3m, a1p].conjugate()
                             t2X = t1 * Tba[r0, a2m, a3m].conjugate() * Tba[r1, a3m, a1p].conjugate()
                             E3 = E[a1p] - E[a3m]
-                            if cabs(t2D) > t_cutoff:
+                            if cabs(t2D) > t_cutoff3:
                                 tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a1p, ccharge, a3m, bcharge)
-                            if cabs(t2X) > t_cutoff:
+                            if cabs(t2X) > t_cutoff3:
                                 tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a1p, ccharge, a3m, bcharge)
                     #eta1 = -1
@@ -575,19 +586,21 @@ cdef class ApproachRTD(Approach):
                         a2p = statesdm[bcharge, j]
                         E2 = E[a2p] - E[a0]
                         t1 = t * Tba[r1, a2p, a1p].conjugate()
+                        if cabs(t1) <= t_cutoff2:
+                            continue
                         #p2 = 1
                         for k in range(ccount):
                             a3p = statesdm[ccharge, k]
                             t2D = t1 * Tba[r1, a2p, a3p] * Tba[r0, a0, a3p].conjugate()
                             E3 = E[a3p] - E[a0]
-                            if cabs(t2D) > t_cutoff:
+                            if cabs(t2D) > t_cutoff3:
                                 tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a3p, ccharge, a0, bcharge)
                         for k in range(acount):
                             a3p = statesdm[acharge, k]
                             t2X = t1 * Tba[r0, a3p, a2p].conjugate() * Tba[r1, a3p, a0]
                             E3 = E[a3p] - E[a0]
-                            if cabs(t2X) > t_cutoff:
+                            if cabs(t2X) > t_cutoff3:
                                 tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a3p, acharge, a0, bcharge)
                         #p2 = -1
@@ -595,14 +608,14 @@ cdef class ApproachRTD(Approach):
                             a3m = statesdm[acharge, k]
                             t2D = t1 * Tba[r1, a3m, a0] * Tba[r0, a3m, a2p].conjugate()
                             E3 = E[a2p] - E[a3m]
-                            if cabs(t2D) > t_cutoff:
+                            if cabs(t2D) > t_cutoff3:
                                 tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a2p, bcharge, a3m, acharge)
                         for k in range(ccount):
                             a3m = statesdm[ccharge, k]
                             t2X = t1 * Tba[r0, a0, a3m].conjugate() * Tba[r1, a2p, a3m]
                             E3 = E[a2p] - E[a3m]
-                            if cabs(t2X) > t_cutoff:
+                            if cabs(t2X) > t_cutoff3:
                                 tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a2p, bcharge, a3m, ccharge)
                     #p1 = -1
@@ -610,19 +623,21 @@ cdef class ApproachRTD(Approach):
                         a2m = statesdm[ccharge, j]
                         E2 = E[a1p] - E[a2m]
                         t1 = t * Tba[r1, a0, a2m].conjugate()
+                        if cabs(t1) <= t_cutoff2:
+                            continue
                         #p2 = 1
                         for k in range(dcount):
                             a3p = statesdm[dcharge, k]
                             t2D = t1 * Tba[r1, a1p , a3p] * Tba[r0, a2m,  a3p].conjugate()
                             E3 = E[a3p] - E[a2m]
-                            if cabs(t2D) > t_cutoff:
+                            if cabs(t2D) > t_cutoff3:
                                 tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a3p, dcharge, a2m, ccharge)
                         for k in range(bcount):
                             a3p = statesdm[bcharge, k]
                             t2X = t1 * Tba[r0, a3p, a1p].conjugate() * Tba[r1, a3p, a2m]
                             E3 = E[a3p] - E[a2m]
-                            if cabs(t2X) > t_cutoff:
+                            if cabs(t2X) > t_cutoff3:
                                 tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a3p, bcharge, a2m, ccharge)
                         #p2 = -1
@@ -630,14 +645,14 @@ cdef class ApproachRTD(Approach):
                             a3m = statesdm[bcharge, k]
                             t2D = t1 * Tba[r1, a3m, a2m] * Tba[r0, a3m, a1p].conjugate()
                             E3 = E[a1p] - E[a3m]
-                            if cabs(t2D) > t_cutoff:
+                            if cabs(t2D) > t_cutoff3:
                                 tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a1p, ccharge, a3m, bcharge)
                         for k in range(dcount):
                             a3m = statesdm[dcharge, k]
                             t2X = t1 * Tba[r0, a2m, a3m].conjugate() * Tba[r1, a1p, a3m]
                             E3 = E[a1p] - E[a3m]
-                            if cabs(t2X) > t_cutoff:
+                            if cabs(t2X) > t_cutoff3:
                                 tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a1p, ccharge, a3m, dcharge)
 

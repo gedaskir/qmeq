@@ -454,7 +454,9 @@ class ApproachPyRTD(Approach):
         nleads = self.si.nleads
         b_and_R = self.Ozaki_poles_and_residues
 
-        t_cutoff = 1e-5
+        t_cutoff1 = 0.0
+        t_cutoff2 = 1e-10/max(tlst)
+        t_cutoff3 = 1e-20/max(tlst)
         indx0 = self.si.get_ind_dm0(a0, a0, charge)
         for r0, r1 in product(range(nleads), range(nleads)):
             T1, T2 = tlst[r0], tlst[r1]
@@ -463,7 +465,7 @@ class ApproachPyRTD(Approach):
             #N1 = (N0, N0 + 1), a1- = a0
             for a1p in statesdm[charge+1]:
                 t = Tba[r0, a0, a1p]
-                if abs(t) < t_cutoff:
+                if abs(t) == t_cutoff1:
                     continue
                 indx1 = self.si.get_ind_dm0(a1p, a1p, charge + 1)
                 E1 = E[a1p] - E[a0]
@@ -473,7 +475,7 @@ class ApproachPyRTD(Approach):
                 for a2p in statesdm[charge+2]:
                     #p2 = 1
                     t1 = t * Tba[r1, a1p, a2p]
-                    if abs(t1) < t_cutoff:
+                    if abs(t1) < t_cutoff2:
                         continue
                     E2 = E[a2p] - E[a0]
                     #3 = (N0, N0 + 1 ), a3- = a2-
@@ -482,10 +484,10 @@ class ApproachPyRTD(Approach):
                         t2D = t1 * Tba[r1, a3p, a2p].conj() * Tba[r0, a0, a3p].conj()
                         t2X = t1 * Tba[r0, a3p, a2p].conj() * Tba[r1, a0, a3p].conj()
                         E3 = E[a3p] - E[a0]
-                        if abs(t2D) > t_cutoff:
+                        if abs(t2D) > t_cutoff3:
                             tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a3p, charge + 1, a0, charge)
-                        if abs(t2X) > t_cutoff:
+                        if abs(t2X) > t_cutoff3:
                             tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a3p, charge + 1, a0, charge)
                     #p2 = -1
@@ -495,16 +497,18 @@ class ApproachPyRTD(Approach):
                         t2D = t1 * Tba[r1, a0, a3m].conj() * Tba[r0, a3m, a2p].conj()
                         t2X = t1 * Tba[r0, a0, a3m].conj() * Tba[r1, a3m, a2p].conj()
                         E3 = E[a2p] - E[a3m]
-                        if abs(t2D) > t_cutoff:
+                        if abs(t2D) > t_cutoff3:
                             tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a2p, charge + 2, a3m, charge + 1)
-                        if abs(t2X) > t_cutoff:
+                        if abs(t2X) > t_cutoff3:
                             tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a2p, charge + 2, a3m, charge+1)
                 #p1 = -1
                 #N2 = ( N0 - 1, N0 + 1 ), a2+ = a1+
                 for a2m in statesdm[charge-1]:
                     t1 = t * Tba[r1, a2m, a0]
+                    if abs(t1) < t_cutoff2:
+                        continue
                     E2 = E[a1p] - E[a2m]
                     #p2 = 1
                     #N3 = ( N0 - 1 , N0 ), a3- = a2-
@@ -513,10 +517,10 @@ class ApproachPyRTD(Approach):
                         t2D = t1 * Tba[r1, a3p, a1p].conj() * Tba[r0, a2m, a3p].conj()
                         t2X = t1 * Tba[r0, a3p, a1p].conj() * Tba[r1, a2m, a3p].conj()
                         E3 = E[a3p] - E[a2m]
-                        if abs(t2D) > t_cutoff:
+                        if abs(t2D) > t_cutoff3:
                             tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a3p, charge, a2m, charge - 1)
-                        if abs(t2X) > t_cutoff:
+                        if abs(t2X) > t_cutoff3:
                             tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a3p, charge, a2m, charge-1)
                     #p2 = -1
@@ -526,10 +530,10 @@ class ApproachPyRTD(Approach):
                         t2D = t1 * Tba[r1, a2m, a3m].conj() * Tba[r0, a3m, a1p].conj()
                         t2X = t1 * Tba[r0, a2m, a3m].conj() * Tba[r1, a3m, a1p].conj()
                         E3 = E[a1p] - E[a3m]
-                        if abs(t2D) > t_cutoff:
+                        if abs(t2D) > t_cutoff3:
                             tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a1p, charge + 1, a3m, charge)
-                        if abs(t2X) > t_cutoff:
+                        if abs(t2X) > t_cutoff3:
                             tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a1p, charge + 1, a3m, charge)
                 #eta1 = -1
@@ -538,13 +542,15 @@ class ApproachPyRTD(Approach):
                 for a2p in statesdm[charge]:
                     E2 = E[a2p] - E[a0]
                     t1 = t * Tba[r1, a2p, a1p].conj()
+                    if abs(t1) < t_cutoff2:
+                        continue
                     #p2 = 1
                     #N3 = ( N0, N0 +1), a3- = a0
                     for a3p in statesdm[charge+1]:
                         #charge4 = charge, a4 = a0
                         t2D = t1 * Tba[r1, a2p, a3p] * Tba[r0, a0, a3p].conj()
                         E3 = E[a3p] - E[a0]
-                        if abs(t2D) > t_cutoff:
+                        if abs(t2D) > t_cutoff3:
                             tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a3p, charge + 1, a0, charge)
                     #N3 = (N0, N0-1), a3- = a0
@@ -552,7 +558,7 @@ class ApproachPyRTD(Approach):
                         #charge4 = charge, a4 = a0
                         t2X = t1 * Tba[r0, a3p, a2p].conj() * Tba[r1, a3p, a0]
                         E3 = E[a3p] - E[a0]
-                        if abs(t2X) > t_cutoff:
+                        if abs(t2X) > t_cutoff3:
                             tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a3p, charge - 1, a0, charge)
                     #p2 = -1
@@ -561,7 +567,7 @@ class ApproachPyRTD(Approach):
                         #charge4 = charge - 1, a4 = a3m
                         t2D = t1 * Tba[r1, a3m, a0] * Tba[r0, a3m, a2p].conj()
                         E3 = E[a2p] - E[a3m]
-                        if abs(t2D) > t_cutoff:
+                        if abs(t2D) > t_cutoff3:
                             tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a2p, charge, a3m, charge - 1)
                     #N3 = (N0 + 1, N0)
@@ -569,7 +575,7 @@ class ApproachPyRTD(Approach):
                         #charge4 = charge + 1, a4 = a3m
                         t2X = t1 * Tba[r0, a0, a3m].conj() * Tba[r1, a2p, a3m]
                         E3 = E[a2p] - E[a3m]
-                        if abs(t2X) > t_cutoff:
+                        if abs(t2X) > t_cutoff3:
                             tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a2p, charge, a3m, charge + 1)
                 #p1 = -1
@@ -583,7 +589,7 @@ class ApproachPyRTD(Approach):
                         #charge4 = charge + 1, a4 = a2m
                         t2D = t1 * Tba[r1, a1p, a3p] * Tba[r0, a2m,  a3p].conj()
                         E3 = E[a3p] - E[a2m]
-                        if abs(t2D) > t_cutoff:
+                        if abs(t2D) > t_cutoff3:
                             tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a3p, charge + 2, a2m, charge + 1)
                     #N3 = ( N0 + 1, N0 )
@@ -591,7 +597,7 @@ class ApproachPyRTD(Approach):
                         #charge4 = charge + 1, a4 = a2m
                         t2X = t1 * Tba[r0, a3p, a1p].conj() * Tba[r1, a3p, a2m]
                         E3 = E[a3p] - E[a2m]
-                        if abs(t2X) > t_cutoff:
+                        if abs(t2X) > t_cutoff3:
                             tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a3p, charge, a2m, charge + 1)
                     #p2 = -1
@@ -600,7 +606,7 @@ class ApproachPyRTD(Approach):
                         #charge4 = charge, a4 = a3m
                         t2D = t1 * Tba[r1, a3m, a2m] * Tba[r0, a3m, a1p].conj()
                         E3 = E[a1p] - E[a3m]
-                        if abs(t2D) > t_cutoff:
+                        if abs(t2D) > t_cutoff3:
                             tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a1p, charge + 1, a3m, charge)
                     #N3 = ( N0 + 2, N0 + 1 ), a3+ = a2+
@@ -608,7 +614,7 @@ class ApproachPyRTD(Approach):
                         #charge4 = charge + 2, a4 = a3m
                         t2X = t1 * Tba[r0, a2m, a3m].conj() * Tba[r1, a1p, a3m]
                         E3 = E[a1p] - E[a3m]
-                        if abs(t2X) > t_cutoff:
+                        if abs(t2X) > t_cutoff3:
                             tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a1p, charge + 1, a3m, charge + 2)
 
