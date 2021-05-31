@@ -1,9 +1,5 @@
 """Module containing various special functions, cython implementation."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import numpy as np
 from scipy.integrate import quad
 from scipy.linalg import eigh_tridiagonal
@@ -121,7 +117,7 @@ cdef double_t bose(double_t x, double_t sign=1) nogil:
 
 @cython.cdivision(True)
 cdef double_t phi(double_t x, double_t Dp, double_t Dm, double_t sign=1) nogil:
-    """ Calculates the phi function in Leijnse & Wegevijs 2008. Assumes Dm 
+    """ Calculates the phi function in Leijnse & Wegevijs 2008. Assumes Dm
         and Dp are rescaled with temperature."""
     cdef complex_t Z = 0.5 + x/(2*pi)*1j
     cdef double_t ret = sign*(-digamma(Z).real + log(0.5*(fabs(Dp)+fabs(Dm))/(2.0*pi)))
@@ -131,7 +127,7 @@ cdef double_t phi(double_t x, double_t Dp, double_t Dm, double_t sign=1) nogil:
 @cython.cdivision(True)
 cdef double_t diff_phi(double_t x, double_t sign=1) nogil:
     """Calculates the derivative of the phi function."""
-    cdef complex_t Z = 0.5 + x/(2.0*pi)*1j    
+    cdef complex_t Z = 0.5 + x/(2.0*pi)*1j
     cdef double_t ret = sign* 1.0/(2.0*pi)*polygamma(Z, 1).imag
     return ret
 
@@ -231,13 +227,13 @@ cdef complex_t digamma(complex_t z) nogil:
         return polygamma(z, 0)
     else:
         ret = 0.0+0.0j
-        
+
     if x<8:
         n = 8 - <int>(x)
         for v in range(0, n):
             ret -= 1/(z + v)
         z += n
-    
+
     t = 1/z
     ret -= t/2
     t = t/z
@@ -262,7 +258,7 @@ cdef complex_t polygamma( complex_t U, long_t K ) nogil:
     cdef complex_t hh1, hh2, hh3, V, H, R, P
     cdef double X, A, B, T, Y
     cdef long_t i, K1
- 
+
     X = U.real
     A = fabs( X )
     H = 0 + 0j
@@ -322,7 +318,7 @@ cdef complex_t polygamma( complex_t U, long_t K ) nogil:
 
 
 @cython.cdivision(True)
-cdef complex_t integralD(double_t p1, double_t eta1, double_t E1, double_t E2, double_t E3, double_t T1, 
+cdef complex_t integralD(double_t p1, double_t eta1, double_t E1, double_t E2, double_t E3, double_t T1,
             double_t T2, double_t mu1, double_t mu2, double_t D, double_t[:,:] b_and_R) nogil:
     cdef complex_t ret
     cdef double_t lambda1, lambda2, lambda3
@@ -333,13 +329,13 @@ cdef complex_t integralD(double_t p1, double_t eta1, double_t E1, double_t E2, d
         ret = D_integral_equal_T(p1, 1, lambda3, lambda2,  lambda1, D/2/T1, D/2/T1)
         return ret*pi/T1
     else:
-        ret = D_integral(1, p1, -E1, -E2, -E3, T1, T2, mu1, eta1*mu2, D/2, D/2, b_and_R)        
+        ret = D_integral(1, p1, -E1, -E2, -E3, T1, T2, mu1, eta1*mu2, D/2, D/2, b_and_R)
         return -1j*ret
 
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cdef complex_t integralX(double_t p1, double_t eta1, double_t E1, double_t E2, double_t E3, double_t T1, 
+cdef complex_t integralX(double_t p1, double_t eta1, double_t E1, double_t E2, double_t E3, double_t T1,
             double_t T2, double_t mu1, double_t mu2, double_t D, double_t[:,:] b_and_R) nogil:
     cdef complex_t ret
     cdef double_t lambda1, lambda2, lambda3
@@ -355,7 +351,7 @@ cdef complex_t integralX(double_t p1, double_t eta1, double_t E1, double_t E2, d
 
 
 @cython.cdivision(True)
-cdef double_t D_integral_equal_T(double_t p1, double_t p2, double_t E1, double_t deltaE, double_t E2, 
+cdef double_t D_integral_equal_T(double_t p1, double_t p2, double_t E1, double_t deltaE, double_t E2,
                                                                       double_t Dp, double_t Dm) nogil:
     cdef double_t E_MIN = 1e-10
     cdef double_t  ret = 0.0
@@ -365,8 +361,8 @@ cdef double_t D_integral_equal_T(double_t p1, double_t p2, double_t E1, double_t
             ret = ( p1*p2*( -diff2_phi(E1) + diff_fermi(E1)*phi(-E1,Dp,Dm) - diff_phi(-E1)*fermi_func(E1)
                     - 0.5*diff_phi(E1)) + 0.5*p2*diff_phi(E1) )
         else:
-            ret = ( p1*p2*( -fermi_func(E1)*diff_phi(deltaE - E1) - bose(deltaE)*diff_phi(deltaE - E1) 
-                + diff_fermi(E1)*phi(deltaE - E1,Dp,Dm) - (bose(deltaE) + 0.5)*diff_phi(E1)) + 
+            ret = ( p1*p2*( -fermi_func(E1)*diff_phi(deltaE - E1) - bose(deltaE)*diff_phi(deltaE - E1)
+                + diff_fermi(E1)*phi(deltaE - E1,Dp,Dm) - (bose(deltaE) + 0.5)*diff_phi(E1)) +
                 0.5*p2*diff_phi(E1) )
     else:
         if fabs(deltaE) < E_MIN:
@@ -375,29 +371,29 @@ cdef double_t D_integral_equal_T(double_t p1, double_t p2, double_t E1, double_t
 
         else:
             ret = ( 1.0/(E1 - E2)*(p1*p2*((fermi_func(E1) + bose(deltaE))*phi(deltaE - E1, Dp, Dm) -
-                    ( fermi_func(E2) + bose(deltaE))*phi(deltaE - E2, Dp, Dm) 
+                    ( fermi_func(E2) + bose(deltaE))*phi(deltaE - E2, Dp, Dm)
                     - (bose(deltaE) + 0.5)*delta_phi(E1, E2, Dp, Dm)) + 0.5*p2*delta_phi(E1, E2, Dp, Dm)) )
     return ret
 
 
 @cython.cdivision(True)
-cdef double_t X_integral_equal_T(double_t p1, double_t p2, double_t E1, double_t deltaE, double_t E2, 
+cdef double_t X_integral_equal_T(double_t p1, double_t p2, double_t E1, double_t deltaE, double_t E2,
                                                                      double_t Dp, double_t Dm) nogil:
     cdef double_t E_MIN = 1e-10
     cdef double_t ret = 0.0
 
     if fabs( deltaE - E1 - E2 ) < E_MIN:
         if fabs( deltaE ) < E_MIN:
-            ret = ( diff2_phi(E1) + fermi_func(E1)*diff_phi(-E1) + diff_phi(E1)*fermi_func(-E1) ) 
+            ret = ( diff2_phi(E1) + fermi_func(E1)*diff_phi(-E1) + diff_phi(E1)*fermi_func(-E1) )
         else:
-            ret = ( (fermi_func(E1) + bose( E1 + E2))*diff_phi(E2) + diff_phi(E1)*(fermi_func(E2) 
+            ret = ( (fermi_func(E1) + bose( E1 + E2))*diff_phi(E2) + diff_phi(E1)*(fermi_func(E2)
                 + bose(E1 + E2)) )
     else:
         if fabs( deltaE ) < E_MIN:
             ret = ( -1.0/(E1 + E2)*(fermi_func(E1)*delta_phi(-E1, E2, Dp, Dm) + fermi_func(E2)*
                     delta_phi(-E2, E1, Dp, Dm) - (diff_phi( E1) + diff_phi(E2))) )
         else:
-            ret = ( 1.0/(deltaE - E1 - E2)*((fermi_func(E1) + bose(deltaE))*delta_phi(deltaE - E1, E2, Dp, Dm) 
+            ret = ( 1.0/(deltaE - E1 - E2)*((fermi_func(E1) + bose(deltaE))*delta_phi(deltaE - E1, E2, Dp, Dm)
                     + (fermi_func(E2) + bose(deltaE))*delta_phi(deltaE - E2, E1, Dp, Dm)) )
 
     return p1*p2*ret
@@ -425,7 +421,7 @@ cdef complex_t D_integral(double_t p1, double_t p2, double_t z1, double_t z2, do
         x = T1/val
         A = BWT+0j - digamma(0.5+x/(pi2T) -(z2+mu1+mu2)/(pi2T)*1j)
         B = x - (z3+mu1)*1j
-        C = x - (z1+mu1)*1j 
+        C = x - (z1+mu1)*1j
         temp_f1 +=  A * 1.0/B * 1.0/C * b_and_R[i, 1]
 
     temp_f1 *= 0 - 8*pi*T1*1j
@@ -434,14 +430,14 @@ cdef complex_t D_integral(double_t p1, double_t p2, double_t z1, double_t z2, do
         temp_f2 = ( digamma(0.5 - (z3+mu1)/(2*pi*T1)*1j ) - digamma(0.5 - (z1+mu1)/( 2*pi*T1 )*1j )) / (z3/T1-z1/T1)
         temp_f2 = temp_f2*(-2*pi*1j)/T1
     else:
-        temp_f2 = polygamma(0.5 -(z3+mu1)/(2*pi*T1)*1j , 1 ) * (-1.0/T1) 
+        temp_f2 = polygamma(0.5 -(z3+mu1)/(2*pi*T1)*1j , 1 ) * (-1.0/T1)
     ret = 0.25*( p1*p2*temp_f1 - p1*temp_f2)
     return ret
 
 
 @cython.cdivision(True)
 @cython.boundscheck(False)
-cdef complex_t X_integral(double_t p1, double_t p2, double_t z1, double_t z2, double_t z3, double_t T1, double_t T2, 
+cdef complex_t X_integral(double_t p1, double_t p2, double_t z1, double_t z2, double_t z3, double_t T1, double_t T2,
                     double_t mu1, double_t mu2, double_t Dp, double_t Dm, double_t[:,:] b_and_R) nogil:
     cdef double_t pi2T, x, val
     cdef complex_t ret, A, B, C, D
@@ -484,7 +480,7 @@ cdef double_t[:,:] BW_Ozaki(double_t BW):
 cdef double_t[:,:] Ozaki(long_t N):
     cdef long_t n, i, count
     cdef double_t t, r, val
-    cdef double_t[:] B, b 
+    cdef double_t[:] B, b
     cdef double_t[:,:] b_and_R, v
 
     B = np.zeros(N-1, dtype=doublenp)
@@ -571,12 +567,12 @@ def c_digamma(complex_t z):
     return digamma(z)
 
 
-def c_integralD(double p1, double eta1, double z1, double z2, double z3, double T1, double T2, 
+def c_integralD(double p1, double eta1, double z1, double z2, double z3, double T1, double T2,
                     double mu1, double mu2, double D, double_t[:,:] b_and_R):
     return integralD(p1, eta1, z1, z2, z3, T1, T2, mu1, mu2, D, b_and_R)
 
 
-def c_integralX(double p1, double eta1, double z1, double z2, double z3, double T1, double T2, 
+def c_integralX(double p1, double eta1, double z1, double z2, double z3, double T1, double T2,
                     double mu1, double mu2, double D, double_t[:,:] b_and_R):
     return integralX(p1, eta1, z1, z2, z3, T1, T2, mu1, mu2, D, b_and_R)
 

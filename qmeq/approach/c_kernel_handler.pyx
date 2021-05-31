@@ -8,9 +8,6 @@
 
 # Python imports
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 import numpy as np
 
 from ..wrappers.mytypes import longnp
@@ -271,7 +268,7 @@ cdef class KernelHandlerRTD(KernelHandler):
         KernelHandler.__init__(self, si, no_coherences)
         self.nsingle = si.nsingle
 
-    cdef void add_matrix_element(self, double_t fct, long_t l, long_t b, long_t bp, 
+    cdef void add_matrix_element(self, double_t fct, long_t l, long_t b, long_t bp,
                     long_t bcharge, long_t a, long_t ap, long_t acharge, int_t mi) nogil:
         cdef long_t indx1 = self.get_ind_dm0(b, bp, bcharge)
         cdef long_t indx2 = self.get_ind_dm0(a, ap, acharge)
@@ -291,11 +288,11 @@ cdef class KernelHandlerRTD(KernelHandler):
         elif mi == 5:
             self.ReWnd[indx1, indx2] += fct
         elif mi == 6:
-            self.ImWnd[indx1, indx2] += fct        
+            self.ImWnd[indx1, indx2] += fct
         elif mi == 7:
             self.Lnn[indx2] += fct
 
-    cdef void set_matrix_element_dd(self, long_t l, double_t fctm, 
+    cdef void set_matrix_element_dd(self, long_t l, double_t fctm,
                         double_t fctp, long_t bb, long_t aa, long_t mi) nogil:
         if mi == 0:
             self.Wdd[l, bb, bb] += fctm

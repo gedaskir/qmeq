@@ -1,9 +1,5 @@
 """Module containing python functions, which generate second order RTD kernels."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 
 class KernelHandler(object):
     """Class responsible for inserting matrix elements into the various matrices used."""

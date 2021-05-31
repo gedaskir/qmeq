@@ -11,9 +11,6 @@
 
 # Python imports
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 import numpy as np
 
 from ...approach.base.RTD import ApproachPyRTD as ApproachPyRTD
@@ -26,7 +23,7 @@ from ...wrappers.mytypes import complexnp
 #from cython.parallel cimport prange
 #from cython.parallel cimport parallel
 from libc.math cimport fabs
-from ...specfunc.c_specfunc cimport phi 
+from ...specfunc.c_specfunc cimport phi
 from ...specfunc.c_specfunc cimport integralD
 from ...specfunc.c_specfunc cimport integralX
 from ...specfunc.c_specfunc cimport fermi_func
@@ -79,7 +76,7 @@ cdef class ApproachRTD(Approach):
         cdef KernelHandlerRTD kh = self._kernel_handler
 
         cdef long_t nleads = kh.nleads
-        cdef long_t ndm1 = kh.ndm1        
+        cdef long_t ndm1 = kh.ndm1
         cdef long_t kern_size = self.get_kern_size()
         cdef long_t kern_size2
 
@@ -88,7 +85,7 @@ cdef class ApproachRTD(Approach):
         self.Wdd2 = np.zeros((self.nbr_Wdd2_copies, nleads, kern_size, kern_size), dtype=self.dtype, order='F')
         self.WE1 = np.zeros((nleads, kern_size, kern_size), dtype=self.dtype, order='F')
         self.WE2 = np.zeros((nleads, kern_size, kern_size), dtype=self.dtype, order='F')
-        
+
         self.generate_LN()
 
         if self.funcp.off_diag_corrections:
@@ -143,7 +140,7 @@ cdef class ApproachRTD(Approach):
 
 
     cdef void clean_arrays(self):
-        
+
         if not self._mfreeq:
             self._kern[::1] = 0.0
             self._bvec[::1] = 0.0
@@ -178,7 +175,7 @@ cdef class ApproachRTD(Approach):
         for i in range(1, kh.nleads):
             if tlst[i] != tlst[0]:
                 self.set_Ozaki_params()
-                break    
+                break
 
         # Calcualte Wdd^2 first to be able to resuse memory (Wdd1 & Wdd1 write to the same memory).
         #for i in prange(kern_size, nogil=True): #For parallel
@@ -206,7 +203,7 @@ cdef class ApproachRTD(Approach):
         self.kern[:kern_size, :kern_size] += np.sum(self._Wdd, 0)
 
         #Loop over non-diagonal states and build kernels
-        if off_diag_corrections:        
+        if off_diag_corrections:
             #for bcharge in prange(ncharge, nogil=True): #For parallel
             for bcharge in range(ncharge):
                 bcount = kh.statesdm_count[bcharge]
@@ -234,21 +231,21 @@ cdef class ApproachRTD(Approach):
         self._Wdd += Wcorr
         cdef long_t kern_size = self.get_kern_size()
         self.kern[:kern_size, :kern_size] += np.sum(Wcorr, 0)
-        
+
 
     cdef void generate_LN(self):
         cdef KernelHandlerRTD kh = self._kernel_handler
-        cdef double_t[:] charge_lst = np.zeros(kh.npauli, doublenp) 
-        cdef long_t i, charge 
+        cdef double_t[:] charge_lst = np.zeros(kh.npauli, doublenp)
+        cdef long_t i, charge
 
         for i in range(kh.npauli):
-            charge = kh.all_bbp[i, 2]                
+            charge = kh.all_bbp[i, 2]
             charge_lst[i] = 2 * float(charge)
 
         self.LN = charge_lst
 
-    
-    cpdef void generate_current(self):        
+
+    cpdef void generate_current(self):
         cdef long_t i,l, nleads
         cdef double_t[:] Ea, LE, mulst, current, energy_current, heat_current
         cdef KernelHandlerRTD kh = self._kernel_handler
@@ -260,7 +257,7 @@ cdef class ApproachRTD(Approach):
         nleads = kh.nleads
         Ea = self._Ea
         LE = np.zeros(kh.npauli, dtype=doublenp)
-        
+
         for i in range(kh.npauli):
             LE[i] = 2.0 * Ea[i]
 
@@ -271,7 +268,7 @@ cdef class ApproachRTD(Approach):
             energy_current[l] += 0.5 * np.sum(np.dot(kh.WE2.base[l, :, :], self.phi0))
             heat_current[l] = energy_current[l] - current[l] * mulst[l]
 
-        
+
     cpdef void generate_fct(self):
         cdef int_t itype
         cdef long_t c, b, bcharge, cb, l, nleads
@@ -279,7 +276,7 @@ cdef class ApproachRTD(Approach):
         cdef double_t[:] E, mulst, tlst, rez
         cdef double_t[:,:] dlst
         cdef double_t [:,:,:] paulifct
-        cdef complex_t[:,:,:] Tba 
+        cdef complex_t[:,:,:] Tba
         cdef KernelHandlerRTD kh = self._kernel_handler
 
         E = self._Ea
@@ -332,7 +329,7 @@ cdef class ApproachRTD(Approach):
                 fctp = paulifct[l, ba, 0]
                 kh.set_matrix_element_dd(l, fctm, fctp, bb, aa, 0)
 
-        for i in range(ccount):            
+        for i in range(ccount):
             c = statesdm[ccharge, i]
             cc = kh.get_ind_dm0(c, c, ccharge)
             cb = kh.get_ind_dm1(c, b, bcharge)
@@ -428,7 +425,7 @@ cdef class ApproachRTD(Approach):
         ccount = kh.statesdm_count[ccharge] if ccharge <= kh.ncharge else 0
 
         bb = kh.get_ind_dm0(b, b, bcharge)
-        for i in range(acount):            
+        for i in range(acount):
             a = statesdm[acharge, i]
             aa = kh.get_ind_dm0(a, a, acharge)
             for l in range(nleads):
@@ -467,7 +464,7 @@ cdef class ApproachRTD(Approach):
         cdef long_t [:, :] statesdm
         cdef double_t T1, T2, mu1, mu2, D, temp, E1, E2, E3, t_cutoff1, t_cutoff2, t_cutoff3, maxTemp
         cdef double_t[:] E, mulst, tlst
-        cdef double_t[:,:] b_and_R, dlst 
+        cdef double_t[:,:] b_and_R, dlst
         cdef complex_t t, t1, t2D, t2X, tempD, tempX
         cdef complex_t[:,:,:] Tba
 
@@ -504,14 +501,14 @@ cdef class ApproachRTD(Approach):
         dcount = kh.statesdm_count[dcharge] if dcharge <= kh.ncharge else 0
 
         indx0 = kh.get_ind_dm0(a0, a0, charge)
-        for r0 in range(nleads):            
+        for r0 in range(nleads):
             T1 = tlst[r0]
             mu1 = mulst[r0]
             for r1 in range(nleads):
                 T2 = tlst[r1]
                 mu2 = mulst[r1]
                 D = fabs(dlst[r0, 1]) + fabs(dlst[r0, 0])
-                for i in range(ccount):                    
+                for i in range(ccount):
                     a1p = statesdm[ccharge, i]
                     t = Tba[r0, a0, a1p]
                     if cabs(t) == t_cutoff1:
@@ -571,7 +568,7 @@ cdef class ApproachRTD(Approach):
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a3p, bcharge, a2m, acharge)
                         #p2 = -1
                         for k in range(bcount):
-                            a3m = statesdm[bcharge, k]                    
+                            a3m = statesdm[bcharge, k]
                             t2D = t1 * Tba[r1, a2m, a3m].conjugate() * Tba[r0, a3m, a1p].conjugate()
                             t2X = t1 * Tba[r0, a2m, a3m].conjugate() * Tba[r1, a3m, a1p].conjugate()
                             E3 = E[a1p] - E[a3m]
@@ -673,14 +670,14 @@ cdef class ApproachRTD(Approach):
         dlst = self._dlst
         PI = pi
         statesdm = kh.statesdm
-        nleads = kh.nleads    
+        nleads = kh.nleads
 
         acharge = charge - 1
         bcharge = charge
         ccharge = charge + 1
         acount = kh.statesdm_count[acharge] if acharge >= 0 else 0
         bcount = kh.statesdm_count[bcharge]
-        ccount = kh.statesdm_count[ccharge] if ccharge <= kh.ncharge else 0     
+        ccount = kh.statesdm_count[ccharge] if ccharge <= kh.ncharge else 0
 
         # final state in higher charge state
         if charge != kh.ncharge - 1:
@@ -787,14 +784,14 @@ cdef class ApproachRTD(Approach):
         dlst = self._dlst
         PI = pi
         statesdm = kh.statesdm
-        nleads = kh.nleads    
+        nleads = kh.nleads
 
         acharge = charge - 1
         bcharge = charge
         ccharge = charge + 1
         acount = kh.statesdm_count[acharge] if acharge >= 0 else 0
         bcount = kh.statesdm_count[bcharge]
-        ccount = kh.statesdm_count[ccharge] if ccharge <= kh.ncharge else 0    
+        ccount = kh.statesdm_count[ccharge] if ccharge <= kh.ncharge else 0
 
         if charge != kh.ncharge - 1:
             # Loop over final state, adding electron to the QD
@@ -802,7 +799,7 @@ cdef class ApproachRTD(Approach):
                 a2 = statesdm[ccharge, i]
                 E2 = E[a2] - E[a1]
                 for j in range(ccount):
-                    b2 = statesdm[ccharge, j]    
+                    b2 = statesdm[ccharge, j]
                     if a2 == b2:  # Final state must be off-diagonal
                         continue
                     E1 = E[b2] - E[a1]

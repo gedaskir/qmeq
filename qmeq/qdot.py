@@ -1,9 +1,5 @@
 """Module for constructing many-body quantum dot Hamiltonian and diagonalising it."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import numpy as np
 
 from .indexing import empty_szlst

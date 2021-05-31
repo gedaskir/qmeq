@@ -1,8 +1,5 @@
 """Module containing RTD Approach."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 from itertools import product
 
 import numpy as np

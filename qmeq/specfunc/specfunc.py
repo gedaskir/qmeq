@@ -1,9 +1,5 @@
 """Module containing various special functions."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 from functools import lru_cache
 
 import numpy as np

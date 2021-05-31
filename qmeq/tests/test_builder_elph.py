@@ -1,6 +1,3 @@
-from __future__ import division
-from __future__ import print_function
-
 from numpy import sqrt, exp, pi
 from numpy.linalg import norm
 import itertools

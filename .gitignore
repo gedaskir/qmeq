@@ -22,6 +22,7 @@ qmeq/approach/base/c_lindblad.c
 qmeq/approach/base/c_redfield.c
 qmeq/approach/base/c_neumann1.c
 qmeq/approach/base/c_neumann2.c
+qmeq/approach/base/c_RTD.c
 qmeq/approach/base/_complex_redfield.py
 qmeq/approach/base/_complex_neumann1.py
 qmeq/approach/elph/c_pauli.c
