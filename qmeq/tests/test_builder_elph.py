@@ -146,7 +146,7 @@ def test_Builder_elph_double_dot_spinful():
             setattr(calcs, attr, system)
 
             if PRNTQ:
-                print(kerntype, itype)
+                print('kerntype - ', kerntype, 'itype - ', itype, 'repetition - ', i)
                 print('current')
                 print(system.current)
                 print( data[attr+'current'] )

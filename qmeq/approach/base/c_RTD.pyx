@@ -20,8 +20,8 @@ from ...wrappers.mytypes import doublenp
 from ...wrappers.mytypes import complexnp
 
 # Cython imports
-#from cython.parallel cimport prange
-#from cython.parallel cimport parallel
+from cython.parallel cimport prange
+from cython.parallel cimport parallel
 from libc.math cimport fabs
 from ...specfunc.c_specfunc cimport phi
 from ...specfunc.c_specfunc cimport integralD
@@ -34,7 +34,7 @@ from ...specfunc.c_specfunc cimport pi
 from ...specfunc.c_specfunc cimport cabs
 from ...specfunc.c_specfunc cimport diag_matrix_multiply
 
-#cimport openmp
+cimport openmp
 cimport numpy as np
 cimport cython
 
@@ -53,10 +53,8 @@ cdef class ApproachRTD(Approach):
         Approach.__init__(self, *args)
         self.BW_Ozaki_expansion = 0
         self.Ozaki_poles_and_residues = np.zeros((2,2), doublenp)
-        #For parallel
-        #self.nbr_Wdd2_copies = min(self.si.npauli, openmp.omp_get_max_threads())
-        self.nbr_Wdd2_copies = 1
-
+        # For parallel
+        self.nbr_Wdd2_copies = min(self.si.npauli, openmp.omp_get_max_threads())
 
     cpdef long_t get_kern_size(self):
         return self._kernel_handler.npauli
@@ -178,8 +176,7 @@ cdef class ApproachRTD(Approach):
                 break
 
         # Calcualte Wdd^2 first to be able to resuse memory (Wdd1 & Wdd1 write to the same memory).
-        #for i in prange(kern_size, nogil=True): #For parallel
-        for i in range(kern_size):
+        for i in prange(kern_size, nogil=True):
             b = kh.all_bbp[i, 0]
             bcharge = kh.all_bbp[i, 2]
             self.generate_matrix_element_2nd_order(b, bcharge, kh)
@@ -188,9 +185,8 @@ cdef class ApproachRTD(Approach):
             self._Wdd2[0,...] += self._Wdd2[i,...]
 
 
-        #Loop over diagonal states and build kernels
-        #for i in prange(kern_size, nogil=True): #For parallel
-        for i in range(kern_size):
+        # Loop over diagonal states and build kernels
+        for i in prange(kern_size, nogil=True):
             b = kh.all_bbp[i, 0]
             bcharge = kh.all_bbp[i, 2]
             self.generate_row_1st_order_kernel(b, bcharge, kh)
@@ -202,10 +198,9 @@ cdef class ApproachRTD(Approach):
 
         self.kern[:kern_size, :kern_size] += np.sum(self._Wdd, 0)
 
-        #Loop over non-diagonal states and build kernels
+        # Loop over non-diagonal states and build kernels
         if off_diag_corrections:
-            #for bcharge in prange(ncharge, nogil=True): #For parallel
-            for bcharge in range(ncharge):
+            for bcharge in prange(ncharge, nogil=True):
                 bcount = kh.statesdm_count[bcharge]
                 for i in range(bcount):
                     b = statesdm[bcharge, i]
@@ -468,9 +463,8 @@ cdef class ApproachRTD(Approach):
         cdef complex_t t, t1, t2D, t2X, tempD, tempX
         cdef complex_t[:,:,:] Tba
 
-        #For parallel
-        #t_id = openmp.omp_get_thread_num()
-        t_id = 0
+        # For parallel
+        t_id = openmp.omp_get_thread_num()
 
         E = self._Ea
         Tba = self._Tba
