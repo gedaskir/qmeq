@@ -53,6 +53,8 @@ cdef class ApproachRTD(Approach):
         Approach.__init__(self, *args)
         self.BW_Ozaki_expansion = 0
         self.Ozaki_poles_and_residues = np.zeros((2,2), doublenp)
+        self.ImGamma = False
+        self.printed_warning_ImGamma = False
         # For parallel
         self.nbr_Wdd2_copies = min(self.si.npauli, openmp.omp_get_max_threads())
 
@@ -138,6 +140,7 @@ cdef class ApproachRTD(Approach):
 
 
     cdef void clean_arrays(self):
+        self.ImGamma = False
 
         if not self._mfreeq:
             self._kern[::1] = 0.0
@@ -170,10 +173,13 @@ cdef class ApproachRTD(Approach):
         cdef double_t[:] tlst = self._tlst
         cdef bool_t off_diag_corrections = self.funcp.off_diag_corrections
 
-        for i in range(1, kh.nleads):
-            if tlst[i] != tlst[0]:
-                self.set_Ozaki_params()
-                break
+        if np.any(abs(self.leads.Tba.imag)>0):
+            self.set_Ozaki_params()
+        else:
+            for i in range(1, kh.nleads):
+                if tlst[i] != tlst[0]:
+                    self.set_Ozaki_params()
+                    break
 
         # Calcualte Wdd^2 first to be able to resuse memory (Wdd1 & Wdd1 write to the same memory).
         for i in prange(kern_size, nogil=True):
@@ -263,6 +269,15 @@ cdef class ApproachRTD(Approach):
             energy_current[l] += 0.5 * np.sum(np.dot(kh.WE2.base[l, :, :], self.phi0))
             heat_current[l] = energy_current[l] - current[l] * mulst[l]
 
+        if self.ImGamma:
+            self.energy_current.fill(np.nan)
+            self.heat_current.fill(np.nan)
+            if not self.printed_warning_ImGamma:
+                print('Warning! Complex matrix elements detected, which are not supported ' +
+                      'when calculating the energy current.')
+                self.printed_warning_ImGamma = True
+
+
 
     cpdef void generate_fct(self):
         cdef int_t itype
@@ -337,7 +352,7 @@ cdef class ApproachRTD(Approach):
     cdef void generate_row_1st_energy_kernel(self, long_t b, long_t bcharge, KernelHandlerRTD kh) nogil:
         cdef long_t i, a, aa, l, lp, n1, c, cc, acount, ccount, acharge, ccharge, nleads, nsingle
         cdef long_t [:, :] statesdm
-        cdef double_t mu, Tr, dE, temp, PI
+        cdef double_t mu, Tr, dE, temp, PI, maxTemp, t_cutoff
         cdef double_t [:] E, mulst, tlst
         cdef double_t [:, :] dlst
         cdef complex_t gamma
@@ -354,6 +369,12 @@ cdef class ApproachRTD(Approach):
         statesdm = kh.statesdm
         nsingle = kh.nsingle
         PI = pi
+
+        maxTemp = 0.0
+        for i in range(nleads):
+            if tlst[i] > maxTemp:
+                maxTemp = tlst[i]
+        t_cutoff = 1e-15*maxTemp*maxTemp
 
         acharge = bcharge-1
         ccharge = bcharge+1
@@ -371,8 +392,12 @@ cdef class ApproachRTD(Approach):
                     if lp == l: continue
                     for n1 in range(nsingle):
                         gamma += Tba[l, a, b] * Tba[lp, a, b].conjugate() * tleads_array[l, n1] * tleads_array[lp, n1].conjugate()
+                
+                if fabs(gamma.imag) > t_cutoff:
+                    self.ImGamma = True
+
                 temp = gamma.real * phi((dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
-                temp += gamma.real * phi(-(dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
+                temp += gamma.real * phi(-(dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)            
                 temp *= PI
                 kh.set_matrix_element_dd(l, temp, temp, bb, aa, 1)
 
@@ -386,6 +411,10 @@ cdef class ApproachRTD(Approach):
                     if lp == l: continue
                     for n1 in range(nsingle):
                         gamma += Tba[l, b, c] * Tba[lp, b, c].conjugate() * tleads_array[l, n1] * tleads_array[lp, n1].conjugate()
+
+                if fabs(gamma.imag) > t_cutoff:
+                    self.ImGamma = True
+
                 temp = gamma.real * phi((dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
                 temp += gamma.real * phi(-(dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
                 temp *= PI
@@ -396,7 +425,7 @@ cdef class ApproachRTD(Approach):
 
         cdef long_t i, a, aa, l, lp, n1, c, cc, acount, ccount, acharge, ccharge, nleads, nsingle
         cdef long_t [:, :] statesdm
-        cdef double_t mu, Tr, dE, temp, PI
+        cdef double_t mu, Tr, dE, temp, PI, maxTemp, t_cutoff
         cdef double_t [:] E, mulst, tlst
         cdef double_t [:, :] dlst
         cdef complex_t gamma
@@ -414,6 +443,12 @@ cdef class ApproachRTD(Approach):
         nsingle = kh.nsingle
         PI = pi
 
+        maxTemp = 0.0
+        for i in range(nleads):
+            if tlst[i] > maxTemp:
+                maxTemp = tlst[i]
+        t_cutoff = 1e-20*maxTemp*maxTemp
+
         acharge = bcharge-1
         ccharge = bcharge+1
         acount = kh.statesdm_count[acharge] if acharge >= 0 else 0
@@ -430,9 +465,11 @@ cdef class ApproachRTD(Approach):
                         mu, Tr, gamma = mulst[lp], tlst[lp], 0.0 + 0.0j
                         for n1 in range(nsingle):
                             gamma += Tba[l, a, b] * Tba[lp, a, b].conjugate() * tleads_array[l, n1] * tleads_array[lp, n1].conjugate()
-                        dE = E[b] - E[a]
+                        dE = E[b] - E[a]                        
                         temp += gamma.real * phi((dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
                         temp += gamma.real * phi(-(dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
+                        if fabs(gamma.imag) > t_cutoff:
+                            self.ImGamma = True
                 temp *= PI
                 kh.set_matrix_element_dd(l, temp, temp, bb, aa, 2)
 
@@ -449,6 +486,9 @@ cdef class ApproachRTD(Approach):
                         dE = E[c] - E[b]
                         temp += gamma.real * phi((dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
                         temp += gamma.real * phi(-(dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
+                        if fabs(gamma.imag) > t_cutoff:
+                            self.ImGamma = True
+
                 temp *= PI
                 kh.set_matrix_element_dd(l, temp, temp, bb, cc, 2)
 
@@ -462,6 +502,7 @@ cdef class ApproachRTD(Approach):
         cdef double_t[:,:] b_and_R, dlst
         cdef complex_t t, t1, t2D, t2X, tempD, tempX
         cdef complex_t[:,:,:] Tba
+        cdef bint ImGamma
 
         # For parallel
         t_id = openmp.omp_get_thread_num()
@@ -481,7 +522,7 @@ cdef class ApproachRTD(Approach):
 
         t_cutoff1 = 0.0
         t_cutoff2 = 1e-10*maxTemp
-        t_cutoff3 = 1e-20*maxTemp
+        t_cutoff3 = 1e-20*maxTemp*maxTemp
 
         statesdm = kh.statesdm
 
@@ -524,10 +565,12 @@ cdef class ApproachRTD(Approach):
                             t2X = t1 * Tba[r0, a3p, a2p].conjugate() * Tba[r1, a0, a3p].conjugate()
                             E3 = E[a3p] - E[a0]
                             if cabs(t2D) > t_cutoff3:
-                                tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2D.imag) > t_cutoff3
+                                tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a3p, ccharge, a0, bcharge)
                             if cabs(t2X) > t_cutoff3:
-                                tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2X.imag) > t_cutoff3
+                                tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a3p, ccharge, a0, bcharge)
                         #p2 = -1
                         for k in range(ccount):
@@ -536,10 +579,12 @@ cdef class ApproachRTD(Approach):
                             t2X = t1 * Tba[r0, a0, a3m].conjugate() * Tba[r1, a3m, a2p].conjugate()
                             E3 = E[a2p] - E[a3m]
                             if cabs(t2D) > t_cutoff3:
-                                tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2D.imag) > t_cutoff3
+                                tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a2p, dcharge, a3m, ccharge)
                             if cabs(t2X) > t_cutoff3:
-                                tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2X.imag) > t_cutoff3
+                                tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a2p, dcharge, a3m, ccharge)
                     #p1 = -1
                     for j in range(acount):
@@ -555,10 +600,12 @@ cdef class ApproachRTD(Approach):
                             t2X = t1 * Tba[r0, a3p, a1p].conjugate() * Tba[r1, a2m, a3p].conjugate()
                             E3 = E[a3p] - E[a2m]
                             if cabs(t2D) > t_cutoff3:
-                                tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2D.imag) > t_cutoff3
+                                tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a3p, bcharge, a2m, acharge)
                             if cabs(t2X) > t_cutoff3:
-                                tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2X.imag) > t_cutoff3
+                                tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a3p, bcharge, a2m, acharge)
                         #p2 = -1
                         for k in range(bcount):
@@ -567,10 +614,12 @@ cdef class ApproachRTD(Approach):
                             t2X = t1 * Tba[r0, a2m, a3m].conjugate() * Tba[r1, a3m, a1p].conjugate()
                             E3 = E[a1p] - E[a3m]
                             if cabs(t2D) > t_cutoff3:
-                                tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2D.imag) > t_cutoff3
+                                tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a1p, ccharge, a3m, bcharge)
                             if cabs(t2X) > t_cutoff3:
-                                tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2X.imag) > t_cutoff3
+                                tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a1p, ccharge, a3m, bcharge)
                     #eta1 = -1
                     for j in range(bcount):
@@ -585,14 +634,16 @@ cdef class ApproachRTD(Approach):
                             t2D = t1 * Tba[r1, a2p, a3p] * Tba[r0, a0, a3p].conjugate()
                             E3 = E[a3p] - E[a0]
                             if cabs(t2D) > t_cutoff3:
-                                tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2D.imag) > t_cutoff3
+                                tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a3p, ccharge, a0, bcharge)
                         for k in range(acount):
                             a3p = statesdm[acharge, k]
                             t2X = t1 * Tba[r0, a3p, a2p].conjugate() * Tba[r1, a3p, a0]
                             E3 = E[a3p] - E[a0]
                             if cabs(t2X) > t_cutoff3:
-                                tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2X.imag) > t_cutoff3
+                                tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a3p, acharge, a0, bcharge)
                         #p2 = -1
                         for k in range(acount):
@@ -600,14 +651,16 @@ cdef class ApproachRTD(Approach):
                             t2D = t1 * Tba[r1, a3m, a0] * Tba[r0, a3m, a2p].conjugate()
                             E3 = E[a2p] - E[a3m]
                             if cabs(t2D) > t_cutoff3:
-                                tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2D.imag) > t_cutoff3
+                                tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a2p, bcharge, a3m, acharge)
                         for k in range(ccount):
                             a3m = statesdm[ccharge, k]
                             t2X = t1 * Tba[r0, a0, a3m].conjugate() * Tba[r1, a2p, a3m]
                             E3 = E[a2p] - E[a3m]
                             if cabs(t2X) > t_cutoff3:
-                                tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2X.imag) > t_cutoff3
+                                tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a2p, bcharge, a3m, ccharge)
                     #p1 = -1
                     for j in range(ccount):
@@ -622,14 +675,16 @@ cdef class ApproachRTD(Approach):
                             t2D = t1 * Tba[r1, a1p , a3p] * Tba[r0, a2m,  a3p].conjugate()
                             E3 = E[a3p] - E[a2m]
                             if cabs(t2D) > t_cutoff3:
-                                tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2D.imag) > t_cutoff3
+                                tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a3p, dcharge, a2m, ccharge)
                         for k in range(bcount):
                             a3p = statesdm[bcharge, k]
                             t2X = t1 * Tba[r0, a3p, a1p].conjugate() * Tba[r1, a3p, a2m]
                             E3 = E[a3p] - E[a2m]
                             if cabs(t2X) > t_cutoff3:
-                                tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2X.imag) > t_cutoff3
+                                tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a3p, bcharge, a2m, ccharge)
                         #p2 = -1
                         for k in range(bcount):
@@ -637,14 +692,16 @@ cdef class ApproachRTD(Approach):
                             t2D = t1 * Tba[r1, a3m, a2m] * Tba[r0, a3m, a1p].conjugate()
                             E3 = E[a1p] - E[a3m]
                             if cabs(t2D) > t_cutoff3:
-                                tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2D.imag) > t_cutoff3
+                                tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a1p, ccharge, a3m, bcharge)
                         for k in range(dcount):
                             a3m = statesdm[dcharge, k]
                             t2X = t1 * Tba[r0, a2m, a3m].conjugate() * Tba[r1, a1p, a3m]
                             E3 = E[a1p] - E[a3m]
                             if cabs(t2X) > t_cutoff3:
-                                tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                                ImGamma = fabs(t2X.imag) > t_cutoff3
+                                tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
                                 kh.add_element_2nd_order(t_id, r1, tempX.real, indx0, indx1, a1p, ccharge, a3m, dcharge)
 
 

@@ -319,10 +319,10 @@ cdef complex_t polygamma( complex_t U, long_t K ) nogil:
 
 @cython.cdivision(True)
 cdef complex_t integralD(double_t p1, double_t eta1, double_t E1, double_t E2, double_t E3, double_t T1,
-            double_t T2, double_t mu1, double_t mu2, double_t D, double_t[:,:] b_and_R) nogil:
+            double_t T2, double_t mu1, double_t mu2, double_t D, double_t[:,:] b_and_R, bint ImGamma) nogil:
     cdef complex_t ret
     cdef double_t lambda1, lambda2, lambda3
-    if fabs(T2-T1) < TMIN:
+    if fabs(T2-T1) < TMIN and not ImGamma:
         lambda1 = (E1 - mu1) / T1
         lambda2 = (E2 - mu1 - eta1 * mu2) / T1
         lambda3 = (E3 - mu1) /T1
@@ -336,10 +336,10 @@ cdef complex_t integralD(double_t p1, double_t eta1, double_t E1, double_t E2, d
 @cython.cdivision(True)
 @cython.boundscheck(False)
 cdef complex_t integralX(double_t p1, double_t eta1, double_t E1, double_t E2, double_t E3, double_t T1,
-            double_t T2, double_t mu1, double_t mu2, double_t D, double_t[:,:] b_and_R) nogil:
+            double_t T2, double_t mu1, double_t mu2, double_t D, double_t[:,:] b_and_R, bint ImGamma) nogil:
     cdef complex_t ret
     cdef double_t lambda1, lambda2, lambda3
-    if fabs(T2-T1) < TMIN:
+    if fabs(T2-T1) < TMIN and not ImGamma:
         lambda1 = (E1 - mu1) / T1
         lambda2 = (E2 - mu1 - eta1 * mu2) / T1
         lambda3 = (E3 - eta1*mu2) /T1
@@ -568,13 +568,13 @@ def c_digamma(complex_t z):
 
 
 def c_integralD(double p1, double eta1, double z1, double z2, double z3, double T1, double T2,
-                    double mu1, double mu2, double D, double_t[:,:] b_and_R):
-    return integralD(p1, eta1, z1, z2, z3, T1, T2, mu1, mu2, D, b_and_R)
+                    double mu1, double mu2, double D, double_t[:,:] b_and_R, bint ImGamma):
+    return integralD(p1, eta1, z1, z2, z3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
 
 
 def c_integralX(double p1, double eta1, double z1, double z2, double z3, double T1, double T2,
-                    double mu1, double mu2, double D, double_t[:,:] b_and_R):
-    return integralX(p1, eta1, z1, z2, z3, T1, T2, mu1, mu2, D, b_and_R)
+                    double mu1, double mu2, double D, double_t[:,:] b_and_R, bint ImGamma):
+    return integralX(p1, eta1, z1, z2, z3, T1, T2, mu1, mu2, D, b_and_R, ImGamma)
 
 
 def c_Ozaki(int_t N):

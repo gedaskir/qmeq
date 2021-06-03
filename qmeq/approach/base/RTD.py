@@ -26,6 +26,8 @@ class ApproachPyRTD(Approach):
         self.BW_Ozaki_expansion = 0
         self.Ozaki_poles_and_residues = None
         self.off_diag_corrections = self.funcp.off_diag_corrections
+        self.ImGamma = False
+        self.printed_warning_ImGamma = False
 
     def get_kern_size(self):
         return self.si.npauli
@@ -84,6 +86,7 @@ class ApproachPyRTD(Approach):
 
     def clean_arrays(self):
         Approach.clean_arrays(self)
+        self.ImGamma = False
         self.paulifct.fill(0.0)
 
         self.Wdd.fill(0.0)
@@ -118,7 +121,7 @@ class ApproachPyRTD(Approach):
         ncharge, statesdm = si.ncharge, si.statesdm
         self.off_diag_corrections = self.funcp.off_diag_corrections
 
-        if not np.all(np.isclose(self.leads.tlst, self.leads.tlst[0])):
+        if (not np.all(np.isclose(self.leads.tlst, self.leads.tlst[0]))) or np.any(abs(self.leads.Tba.imag)>0):
             self.set_Ozaki_params()
 
         for bcharge in range(ncharge):
@@ -224,6 +227,14 @@ class ApproachPyRTD(Approach):
         self.energy_current = energy_current
         self.heat_current = energy_current - current * self.leads.mulst
 
+        if self.ImGamma:
+            self.energy_current.fill(np.nan)
+            self.heat_current.fill(np.nan)
+            if not self.printed_warning_ImGamma:
+                print('Warning! Complex matrix elements detected, which are not supported ' +
+                      'when calculating the energy current.')
+                self.printed_warning_ImGamma = True
+
     def generate_fct(self):
         """
         Make factors used for generating the first order diagonal kernel :math:`W_{dd}^{(1)}`.
@@ -294,16 +305,13 @@ class ApproachPyRTD(Approach):
          is obtained from a diagram of the form
          :math:`L_{T,r}^+  L_{T, r_2}^-  (z-L_{dot} - L_r )^{-1}  L_T  (z-L_{dot} - L_r )^{-1} L_T \phi_0`,
          when contracting the first and third, as well as second and fourth, reservoir superoperators. Assumes
-         that the wide-band limit is valid.
-
+         that the wide-band limit is valid and that all products of tunnel matrix elements are real.
          Parameters
          ----------
          b : int
             the row (state)
-
          charge : int
             the charge of state b
-
          self.W2E_1 : ndarray
              (Modifies) The second order kernel used for evaluating the energy current. This Kernel
              has npauli * npauli entries.
@@ -315,6 +323,8 @@ class ApproachPyRTD(Approach):
 
         acharge = bcharge-1
         ccharge = bcharge+1
+        maxTemp = max(tlst)
+        t_cutoff = 1e-15 * maxTemp ** 2
 
         bb = si.get_ind_dm0(b, b, bcharge)
         for a in statesdm[acharge]:
@@ -326,6 +336,8 @@ class ApproachPyRTD(Approach):
                     if lp == l: continue
                     for n1 in range(nsingle):
                         gamma += Tba[l, a, b] * Tba[lp, a, b].conj() * tleads[l, n1] * tleads[lp, n1].conj()
+                if abs(gamma.imag) > t_cutoff:
+                    self.ImGamma = True
                 temp = gamma.real * phi((dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
                 temp += gamma.real * phi(-(dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
                 temp *= np.pi
@@ -340,6 +352,8 @@ class ApproachPyRTD(Approach):
                     if lp == l: continue
                     for n1 in range(nsingle):
                         gamma += Tba[l, b, c] * Tba[lp, b, c].conj() * tleads[l, n1] * tleads[lp, n1].conj()
+                if abs(gamma.imag) > t_cutoff:
+                    self.ImGamma = True
                 temp = gamma.real * phi((dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
                 temp += gamma.real * phi(-(dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
                 temp *= np.pi
@@ -350,20 +364,16 @@ class ApproachPyRTD(Approach):
         This kernel is obatined from a diagram of the form
         :math:`L_{T,r}^+  L_{T, r_2}^-  (z-L_{dot} - L_r )^{-1}  L_T  (z-L_{dot} - L_r )^{-1} L_T \phi_0`,
         when contracting the first and fourth, as well as second and third, reservoir superoperators. Assumes
-        that the wide-band limit is valid.
-
+        that the wide-band limit is valid and that all products of tunnel matrix elements are real.
         Parameters
         ----------
         b : int
             the row (state)
-
         charge : int
             the charge of state b
-
         self.W2E_2 : ndarray
             (Modifies) The second order kernel used for evaluating the energy current. This Kernel
             has npauli * npauli entries.
-
         """
         (E, si, Tba, tleads, mulst, tlst, dlst) = (self.qd.Ea, self.si, self.leads.Tba, self.leads.tleads_array,
                                                    self.leads.mulst, self.leads.tlst, self.leads.dlst)
@@ -372,6 +382,8 @@ class ApproachPyRTD(Approach):
 
         acharge = bcharge - 1
         ccharge = bcharge + 1
+        maxTemp = max(tlst)
+        t_cutoff = 1e-15*maxTemp**2
 
         bb = si.get_ind_dm0(b, b, bcharge)
         for a in statesdm[acharge]:
@@ -383,6 +395,8 @@ class ApproachPyRTD(Approach):
                         mu, Tr, gamma = mulst[lp], tlst[lp], 0.0
                         for n1 in range(nsingle):
                             gamma += Tba[l, a, b] * Tba[lp, a, b].conj() * tleads[l, n1] * tleads[lp, n1].conj()
+                        if abs(gamma.imag) > t_cutoff:
+                            self.ImGamma = True
                         dE = E[b] - E[a]
                         temp += gamma.real * phi((dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
                         temp += gamma.real * phi(-(dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
@@ -398,6 +412,8 @@ class ApproachPyRTD(Approach):
                         mu, Tr, gamma = mulst[lp], tlst[lp], 0.0
                         for n1 in range(nsingle):
                             gamma += Tba[l, b, c] * Tba[lp, b, c].conj() * tleads[l, n1] * tleads[lp, n1].conj()
+                        if abs(gamma.imag) > t_cutoff:
+                            self.ImGamma = True
                         dE = E[c] - E[b]
                         temp += gamma.real * phi((dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
                         temp += gamma.real * phi(-(dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
@@ -453,7 +469,7 @@ class ApproachPyRTD(Approach):
 
         t_cutoff1 = 0.0
         t_cutoff2 = 1e-10*max(tlst)
-        t_cutoff3 = 1e-20*max(tlst)
+        t_cutoff3 = 1e-20*max(tlst)**2
         indx0 = self.si.get_ind_dm0(a0, a0, charge)
         for r0, r1 in product(range(nleads), range(nleads)):
             T1, T2 = tlst[r0], tlst[r1]
@@ -482,10 +498,10 @@ class ApproachPyRTD(Approach):
                         t2X = t1 * Tba[r0, a3p, a2p].conj() * Tba[r1, a0, a3p].conj()
                         E3 = E[a3p] - E[a0]
                         if abs(t2D) > t_cutoff3:
-                            tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2D.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a3p, charge + 1, a0, charge)
                         if abs(t2X) > t_cutoff3:
-                            tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2X.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a3p, charge + 1, a0, charge)
                     #p2 = -1
                     #N3 = ( N0 +1, N0 + 2)
@@ -495,10 +511,10 @@ class ApproachPyRTD(Approach):
                         t2X = t1 * Tba[r0, a0, a3m].conj() * Tba[r1, a3m, a2p].conj()
                         E3 = E[a2p] - E[a3m]
                         if abs(t2D) > t_cutoff3:
-                            tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempD = t2D * integralD(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2D.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a2p, charge + 2, a3m, charge + 1)
                         if abs(t2X) > t_cutoff3:
-                            tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempX = -t2X * integralX(1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2X.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a2p, charge + 2, a3m, charge+1)
                 #p1 = -1
                 #N2 = ( N0 - 1, N0 + 1 ), a2+ = a1+
@@ -515,10 +531,10 @@ class ApproachPyRTD(Approach):
                         t2X = t1 * Tba[r0, a3p, a1p].conj() * Tba[r1, a2m, a3p].conj()
                         E3 = E[a3p] - E[a2m]
                         if abs(t2D) > t_cutoff3:
-                            tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2D.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a3p, charge, a2m, charge - 1)
                         if abs(t2X) > t_cutoff3:
-                            tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2X.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a3p, charge, a2m, charge-1)
                     #p2 = -1
                     #N3 = ( N0 , N0 + 1), a3+ = a2+
@@ -528,10 +544,10 @@ class ApproachPyRTD(Approach):
                         t2X = t1 * Tba[r0, a2m, a3m].conj() * Tba[r1, a3m, a1p].conj()
                         E3 = E[a1p] - E[a3m]
                         if abs(t2D) > t_cutoff3:
-                            tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempD = t2D * integralD(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2D.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a1p, charge + 1, a3m, charge)
                         if abs(t2X) > t_cutoff3:
-                            tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempX = -t2X * integralX(-1, 1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2X.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a1p, charge + 1, a3m, charge)
                 #eta1 = -1
                 #p1 = 1
@@ -548,7 +564,7 @@ class ApproachPyRTD(Approach):
                         t2D = t1 * Tba[r1, a2p, a3p] * Tba[r0, a0, a3p].conj()
                         E3 = E[a3p] - E[a0]
                         if abs(t2D) > t_cutoff3:
-                            tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2D.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a3p, charge + 1, a0, charge)
                     #N3 = (N0, N0-1), a3- = a0
                     for a3p in statesdm[charge-1]:
@@ -556,7 +572,7 @@ class ApproachPyRTD(Approach):
                         t2X = t1 * Tba[r0, a3p, a2p].conj() * Tba[r1, a3p, a0]
                         E3 = E[a3p] - E[a0]
                         if abs(t2X) > t_cutoff3:
-                            tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2X.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a3p, charge - 1, a0, charge)
                     #p2 = -1
                     #N3 = ( N0-1, N0 ), a3+ = a2+
@@ -565,7 +581,7 @@ class ApproachPyRTD(Approach):
                         t2D = t1 * Tba[r1, a3m, a0] * Tba[r0, a3m, a2p].conj()
                         E3 = E[a2p] - E[a3m]
                         if abs(t2D) > t_cutoff3:
-                            tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempD = t2D * integralD(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2D.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a2p, charge, a3m, charge - 1)
                     #N3 = (N0 + 1, N0)
                     for a3m in statesdm[charge+1]:
@@ -573,7 +589,7 @@ class ApproachPyRTD(Approach):
                         t2X = t1 * Tba[r0, a0, a3m].conj() * Tba[r1, a2p, a3m]
                         E3 = E[a2p] - E[a3m]
                         if abs(t2X) > t_cutoff3:
-                            tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempX = -t2X * integralX(1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2X.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a2p, charge, a3m, charge + 1)
                 #p1 = -1
                 #N2 = ( N0 + 1  , N0 + 1), a2+ = a1+
@@ -587,7 +603,7 @@ class ApproachPyRTD(Approach):
                         t2D = t1 * Tba[r1, a1p, a3p] * Tba[r0, a2m,  a3p].conj()
                         E3 = E[a3p] - E[a2m]
                         if abs(t2D) > t_cutoff3:
-                            tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2D.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a3p, charge + 2, a2m, charge + 1)
                     #N3 = ( N0 + 1, N0 )
                     for a3p in statesdm[charge]:
@@ -595,7 +611,7 @@ class ApproachPyRTD(Approach):
                         t2X = t1 * Tba[r0, a3p, a1p].conj() * Tba[r1, a3p, a2m]
                         E3 = E[a3p] - E[a2m]
                         if abs(t2X) > t_cutoff3:
-                            tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2X.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a3p, charge, a2m, charge + 1)
                     #p2 = -1
                     #N3 = ( N0, N0+1), a3+ = a2+
@@ -604,7 +620,7 @@ class ApproachPyRTD(Approach):
                         t2D = t1 * Tba[r1, a3m, a2m] * Tba[r0, a3m, a1p].conj()
                         E3 = E[a1p] - E[a3m]
                         if abs(t2D) > t_cutoff3:
-                            tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempD = t2D * integralD(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2D.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r0, tempD.real, indx0, indx1, a1p, charge + 1, a3m, charge)
                     #N3 = ( N0 + 2, N0 + 1 ), a3+ = a2+
                     for a3m in statesdm[charge+2]:
@@ -612,7 +628,7 @@ class ApproachPyRTD(Approach):
                         t2X = t1 * Tba[r0, a2m, a3m].conj() * Tba[r1, a1p, a3m]
                         E3 = E[a1p] - E[a3m]
                         if abs(t2X) > t_cutoff3:
-                            tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R)
+                            tempX = -t2X * integralX(-1, -1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, abs(t2X.imag)>t_cutoff3)
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a1p, charge + 1, a3m, charge + 2)
 
     def generate_col_nondiag_kern_1st_order_dn(self, a1, b1, charge):

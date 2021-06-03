@@ -129,44 +129,44 @@ def test_X_integral():
     b_and_R = BW_Ozaki(BW)
     for f in [integralX, c_integralX]:
         print(f.__name__)
-        temp = f(1, 1, 10, 0, -15, 10, 20, -4, 2, BW, b_and_R) -(-0.08253203115377988+0.007904048913053564j)
+        temp = f(1, 1, 10, 0, -15, 10, 20, -4, 2, BW, b_and_R, False) -(-0.08253203115377988+0.007904048913053564j)
         assert abs(temp.real) < EPS
         assert abs(temp.imag) < EPS
-        temp = f(1, 1, 15, 0, 15, 10, 20, -4, 2, BW, b_and_R) - (-0.0684892140474174+0.03968851698180709j)
+        temp = f(1, 1, 15, 0, 15, 10, 20, -4, 2, BW, b_and_R, False) - (-0.0684892140474174+0.03968851698180709j)
         assert abs(temp.real) < EPS
         assert abs(temp.imag) < EPS
-        temp = f(-1, -1, 0, 100, 5, 10, 20, 0, 0, BW, b_and_R) - (0.06109101805561376-0.03673158282336319j)
+        temp = f(-1, -1, 0, 100, 5, 10, 20, 0, 0, BW, b_and_R, False) - (0.06109101805561376-0.03673158282336319j)
         assert abs(temp.real) < EPS
         assert abs(temp.imag) < EPS
 
-        assert abs(f(1, 1, 50, 1, 67, 10, 10, 0, 0, 10*BW, b_and_R) - -0.010434716600846468) < EPS
-        assert abs(f(-1, 1, 50, 1, 67,10, 10, 0, 0, 10*BW, b_and_R) - 0.010434716600846468) < EPS
-        assert abs(f(1, 1, 50, 1, 50, 10, 10, 0, 0, 10*BW,b_and_R) - -0.014316911535272273) < EPS
-        assert abs(f(-1, 1, 50, 1, 50, 10, 10, 0, 9, 10*BW, b_and_R) - 0.022032067555540023) < EPS
-        assert abs(f(1, 1, 50, 0, 50, 10, 10, 0, 0, 10*BW, b_and_R) - -0.01471930410595051) < EPS
-        assert abs(f(-1, 1, 50, 0, 50, 10, 10, 0, 0, 10*BW, b_and_R) - 0.01471930410595051) < EPS
-        assert abs(f(1, 1, 500, 0, 670, 10, 10, 0, 0, 10*BW, b_and_R) - -9.387941233923406e-05) < EPS
-        assert abs(f(-1, 1, 500, 0, 670, 10, 10, 50, -6, 10*BW, b_and_R) - 0.00042552097225860233) < EPS
+        assert abs(f(1, 1, 50, 1, 67, 10, 10, 0, 0, 10*BW, b_and_R, False) - -0.010434716600846468) < EPS
+        assert abs(f(-1, 1, 50, 1, 67,10, 10, 0, 0, 10*BW, b_and_R, False) - 0.010434716600846468) < EPS
+        assert abs(f(1, 1, 50, 1, 50, 10, 10, 0, 0, 10*BW,b_and_R, False) - -0.014316911535272273) < EPS
+        assert abs(f(-1, 1, 50, 1, 50, 10, 10, 0, 9, 10*BW, b_and_R, False) - 0.022032067555540023) < EPS
+        assert abs(f(1, 1, 50, 0, 50, 10, 10, 0, 0, 10*BW, b_and_R, False) - -0.01471930410595051) < EPS
+        assert abs(f(-1, 1, 50, 0, 50, 10, 10, 0, 0, 10*BW, b_and_R, False) - 0.01471930410595051) < EPS
+        assert abs(f(1, 1, 500, 0, 670, 10, 10, 0, 0, 10*BW, b_and_R, False) - -9.387941233923406e-05) < EPS
+        assert abs(f(-1, 1, 500, 0, 670, 10, 10, 50, -6, 10*BW, b_and_R, False) - 0.00042552097225860233) < EPS
 
 def test_D_integrals():
     BW = 2e5
     b_and_R = BW_Ozaki(BW)
     for f in [integralD, c_integralD]:
-        temp = f(1, 1, 10, 0, -15, 10, 20, -4, 2, BW, b_and_R) -(-0.5720195468017749-0.0661761480679941j)
+        temp = f(1, 1, 10, 0, -15, 10, 20, -4, 2, BW, b_and_R, False) -(-0.5720195468017749-0.0661761480679941j)
         assert abs(temp.real) < EPS
         assert abs(temp.imag) < EPS
-        temp = f(1, 1, 15, 0, 15, 10, 20, -4, 2, BW, b_and_R) - (-0.34799468862372424+0.32194353953897303j)
+        temp = f(1, 1, 15, 0, 15, 10, 20, -4, 2, BW, b_and_R, False) - (-0.34799468862372424+0.32194353953897303j)
         assert abs(temp.real) < EPS
         assert abs(temp.imag) < EPS
-        temp = f(-1, -1, 0, 100, 5, 10, 20, 0, 0, BW, b_and_R) - (0.5431481709725874-0.28340078060897006j)
+        temp = f(-1, -1, 0, 100, 5, 10, 20, 0, 0, BW, b_and_R, False) - (0.5431481709725874-0.28340078060897006j)
         assert abs(temp.real) < EPS
         assert abs(temp.imag) < EPS
 
-        assert abs(f(1, 1, 50, 1, 67, 10, 10, 0, 0, 10*BW, b_and_R) - -0.022669451594648456) < EPS
-        assert abs(f(-1, 1, 50, 1, 67,10, 10, 0, 0, 10*BW, b_and_R) - -0.038816547604131724) < EPS
-        assert abs(f(1, 1, 50, 1, 50, 10, 10, 0, 0, 10*BW, b_and_R) - -0.03833737405481647) < EPS
-        assert abs(f(-1, 1, 50, 1, 50, 10, 10, 0, 9, 10*BW, b_and_R) - -0.030799301800540173) < EPS
-        assert abs(f(1, 1, 50, 0, 50, 10, 10, 0, 0, 10*BW, b_and_R) - -0.03881982276789282) < EPS
-        assert abs(f(-1, 1, 50, 0, 50, 10, 10, 0, 0, 10*BW, b_and_R) - -0.03477669776185972) < EPS
-        assert abs(f(1, 1, 500, 0, 670, 10, 10, 0, 0, 10*BW, b_and_R) - -9.406521280339516e-05) < EPS
-        assert abs(f(-1, 1, 500, 0, 670, 10, 10, 50, -6, 10*BW, b_and_R) - -0.005465272683842759) < EPS
+        assert abs(f(1, 1, 50, 1, 67, 10, 10, 0, 0, 10*BW, b_and_R, False) - -0.022669451594648456) < EPS
+        assert abs(f(-1, 1, 50, 1, 67,10, 10, 0, 0, 10*BW, b_and_R, False) - -0.038816547604131724) < EPS
+        assert abs(f(1, 1, 50, 1, 50, 10, 10, 0, 0, 10*BW, b_and_R, False) - -0.03833737405481647) < EPS
+        assert abs(f(-1, 1, 50, 1, 50, 10, 10, 0, 9, 10*BW, b_and_R, False) - -0.030799301800540173) < EPS
+        assert abs(f(1, 1, 50, 0, 50, 10, 10, 0, 0, 10*BW, b_and_R, False) - -0.03881982276789282) < EPS
+        assert abs(f(-1, 1, 50, 0, 50, 10, 10, 0, 0, 10*BW, b_and_R, False) - -0.03477669776185972) < EPS
+        assert abs(f(1, 1, 500, 0, 670, 10, 10, 0, 0, 10*BW, b_and_R, False) - -9.406521280339516e-05) < EPS
+        assert abs(f(-1, 1, 500, 0, 670, 10, 10, 50, -6, 10*BW, b_and_R, False) - -0.005465272683842759) < EPS

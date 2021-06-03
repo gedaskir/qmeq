@@ -456,7 +456,7 @@ def polygamma(U, K):
     return H
 
 
-def integralD(p1, eta1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R):
+def integralD(p1, eta1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma):
     """ Evaluates the 'direct' integral in the RTD approach. Picks the appropriate way
     of evaluating the integral based on the temperatures. Assumes that the wide band limits is valid.
 
@@ -494,7 +494,7 @@ def integralD(p1, eta1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R):
         The integral value
     """
     TMIN = 1e-5
-    if abs(T2-T1) < TMIN:
+    if abs(T2-T1) < TMIN and not ImGamma:
         lambda1 = (E1 - mu1) / T1
         lambda2 = (E2 - mu1 - eta1 * mu2) / T1
         lambda3 = (E3 - mu1) /T1
@@ -504,7 +504,7 @@ def integralD(p1, eta1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R):
         ret = _D_integral(1, p1, -E1, -E2, -E3, T1, T2, mu1, eta1*mu2, D/2, D/2, b_and_R)
         return -1j*ret
 
-def integralX(p1, eta1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R):
+def integralX(p1, eta1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R, ImGamma):
     """ Evaluates the 'exchange' integral in the RTD approach. Picks the appropriate way
     of evaluating the integral based on the temperatures. Assumes that the wide band limit is valid.
 
@@ -541,8 +541,9 @@ def integralX(p1, eta1, E1, E2, E3, T1, T2, mu1, mu2, D, b_and_R):
     double
         The integral value
     """
+
     TMIN = 1e-10
-    if abs(T2-T1) < TMIN:
+    if abs(T2-T1) < TMIN and not ImGamma:
         lambda1 = (E1 - mu1) / T1
         lambda2 = (E2 - mu1 - eta1 * mu2) / T1
         lambda3 = (E3 - eta1*mu2) / T1

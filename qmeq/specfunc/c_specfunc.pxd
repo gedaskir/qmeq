@@ -26,8 +26,8 @@ cdef double_t diff_phi(double_t, double_t sign=*) nogil
 cdef double_t diff2_phi(double_t, double_t sign=*) nogil
 cdef double_t delta_phi(double_t, double_t, double_t, double_t, double_t sign=*) nogil
 cdef complex_t integralD(double_t, double_t, double_t, double_t, double_t, double_t, 
-            double_t, double_t, double_t, double_t, double_t[:,:]) nogil
+            double_t, double_t, double_t, double_t, double_t[:,:], bint) nogil
 cdef complex_t integralX(double_t, double_t, double_t, double_t, double_t, double_t, 
-            double_t, double_t, double_t, double_t, double_t[:,:]) nogil
+            double_t, double_t, double_t, double_t, double_t[:,:], bint) nogil
 cdef double_t[:,:] BW_Ozaki(double_t BW)
 cdef void diag_matrix_multiply(double_t[:], double_t[:,:])

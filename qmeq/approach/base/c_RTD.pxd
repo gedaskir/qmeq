@@ -17,6 +17,8 @@ cdef class ApproachRTD(Approach):
     cdef complex_t [:,:] _tleads_array
     cdef double_t BW_Ozaki_expansion
     cdef bool_t OffDiagCorrections
+    cdef bool_t ImGamma
+    cdef bool_t printed_warning_ImGamma
     cdef long_t nbr_Wdd2_copies
 
     cpdef long_t get_kern_size(self)
