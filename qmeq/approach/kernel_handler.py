@@ -18,6 +18,22 @@ class KernelHandler(object):
         self.phi0 = phi0
 
     def is_included(self, b, bp, bcharge):
+        """ Checks if the density matrix entry :math:`|b><bp|` is included in the calculations.
+
+        Parameters
+        ----------
+        b : int
+            first state
+        bp : int
+            second state
+        bcharge : int
+            charge of the states b and bp
+
+        Returns
+        -------
+        bool
+            true if it's included
+        """
         bbp = self.si.get_ind_dm0(b, bp, bcharge)
         if bbp == -1:
             return False
@@ -25,6 +41,22 @@ class KernelHandler(object):
         return True
 
     def is_unique(self, b, bp, bcharge):
+        """ Check if the entry :math:`|b><bp|` is unique.
+
+        Parameters
+        ----------
+        b  : int
+            first state
+        bp : int
+            second state
+        bcharge : int
+            charge of the states b and bp
+
+        Returns
+        -------
+        bool
+            true if unique
+        """
         bbp_bool = self.si.get_ind_dm0(b, bp, bcharge, maptype=2)
         return bbp_bool
 
@@ -38,6 +70,27 @@ class KernelHandler(object):
             self.kern[bbpi, bbp] = self.kern[bbpi, bbp] - energy
 
     def set_matrix_element(self, fct, b, bp, bcharge, a, ap, acharge):
+        """ Adds a complex value to the matrix element connecting :math:`|a><ap|` and :math:`|b><bp|` in the kernel.
+
+        Parameters
+        ----------
+        fct : complex
+            value to be added
+        b : int
+            first state of :math:`|b><bp|`
+        bp : int
+            second state of :math:`|b><bp|`
+        bcharge : int
+            charge of states b and bp
+        a : int
+            first state of :math:`|a><ap|`
+        ap : int
+            second state of :math:`|a><ap|`
+        acharge : int
+            charge of the states a and ap
+        self.kern : ndarray
+            (modifies) the kernel
+        """
         bbp = self.si.get_ind_dm0(b, bp, bcharge)
         bbpi = self.ndm0 + bbp - self.npauli
         bbpi_bool = True if bbpi >= self.ndm0 else False
@@ -58,10 +111,43 @@ class KernelHandler(object):
             self.kern[bbpi, aap] += -fct_real
 
     def set_matrix_element_pauli(self, fctm, fctp, bb, aa):
+        """ Adds a real value (fctp) to the the matrix element connecting the states
+        bb and aa in the Pauli kernel. In addition, adds another another real value (fctm)
+        to the diagonal kern[bb, bb].
+
+        Parameters
+        ----------
+        fctm : double
+            value to be added to kern[bb, aa]
+        fctp : double
+            value to be added to kern[bb, bb]
+        bb : int
+            first state/index
+        aa : int
+            second state/index
+        self.kern : ndarray
+            (modifies) the kernel
+        """
         self.kern[bb, bb] += fctm
         self.kern[bb, aa] += fctp
 
     def get_phi0_element(self, b, bp, bcharge):
+        """ Gets the entry of the density matrix given by :math:`|b><bp|`.
+
+        Parameters
+        ----------
+        b : int
+            first state
+        bp : int
+            second state
+        bcharge : int
+            charge of the states b and bp
+
+        Returns
+        -------
+        complex
+            the value :math:`<b|\phi_0|bp>`
+        """
         bbp = self.si.get_ind_dm0(b, bp, bcharge)
         if bbp == -1:
             return 0.0
@@ -78,6 +164,8 @@ class KernelHandler(object):
         return phi0_real + 1j*phi0_imag
 
 class KernelHandlerMatrixFree(KernelHandler):
+    """Class used for inserting matrix elements into vectors when using the matrix free
+        solution method."""
 
     def __init__(self, si):
         KernelHandler.__init__(self, si)
@@ -100,6 +188,28 @@ class KernelHandlerMatrixFree(KernelHandler):
         self.dphi0_dt[bbpi] -= dphi0_dt_bbp.imag
 
     def set_matrix_element(self, fct, b, bp, bcharge, a, ap, acharge):
+        """ Adds a contribution to :math:`d\phi_o /dt` that stems from the matrix element
+        connecting :math:`|b><bp|` and :math:`|a><ap|` in the full off-diagonal in the kernel.
+
+        Parameters
+        ----------
+        fct : complex
+            value to be added
+        b : int
+            first state of :math:`|b><bp|`
+        bp : int
+            second state of :math:`|b><bp|`
+        bcharge : int
+            charge for the states b and bp
+        a : int
+            first state of :math:`|a><ap|`
+        ap : int
+            second state of :math:`|a><ap|`
+        acharge : int
+            charge of the states a and ap
+        self.dphi0_dt : ndarray
+            (modifies) time derivative of the density matrix
+        """
         bbp = self.si.get_ind_dm0(b, bp, bcharge)
         bbpi = self.ndm0 + bbp - self.npauli
         bbpi_bool = True if bbpi >= self.ndm0 else False
@@ -113,6 +223,22 @@ class KernelHandlerMatrixFree(KernelHandler):
             self.dphi0_dt[bbpi] -= dphi0_dt_bbp.imag
 
     def set_matrix_element_pauli(self, fctm, fctp, bb, aa):
+        """ Adds a contribution to :math:`d\phi_o /dt` that stems from the matrix element
+        connecting :math:`|b><b|` and :math:`|a><a|` in the Pauli kernel.
+
+        Parameters
+        ----------
+        fctm : double
+            value from the diagonal of the kernel kern[bb, bb]
+        fctp : double
+            value from the off-diagonal of the kernel kern[bb, aa]
+        b : int
+            first state
+        a : int
+            second state
+        self.dphi0_dt : ndarray
+            (modifies) time derivative of the density matrix
+        """
         self.dphi0_dt[bb] += fctm*self.phi0[bb] + fctp*self.phi0[aa]
 
     def get_phi0_norm(self):

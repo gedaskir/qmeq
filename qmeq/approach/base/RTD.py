@@ -306,6 +306,7 @@ class ApproachPyRTD(Approach):
          :math:`L_{T,r}^+  L_{T, r_2}^-  (z-L_{dot} - L_r )^{-1}  L_T  (z-L_{dot} - L_r )^{-1} L_T \phi_0`,
          when contracting the first and third, as well as second and fourth, reservoir superoperators. Assumes
          that the wide-band limit is valid and that all products of tunnel matrix elements are real.
+
          Parameters
          ----------
          b : int
@@ -365,6 +366,7 @@ class ApproachPyRTD(Approach):
         :math:`L_{T,r}^+  L_{T, r_2}^-  (z-L_{dot} - L_r )^{-1}  L_T  (z-L_{dot} - L_r )^{-1} L_T \phi_0`,
         when contracting the first and fourth, as well as second and third, reservoir superoperators. Assumes
         that the wide-band limit is valid and that all products of tunnel matrix elements are real.
+
         Parameters
         ----------
         b : int
