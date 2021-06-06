@@ -2,12 +2,7 @@ import os
 import sys
 import numpy as np
 
-try:
-    from setuptools import setup, Extension
-    # print('installing with setuptools')
-except ImportError:
-    from distutils.core import setup, Extension
-    # print('installing with distutils')
+from setuptools import setup, Extension
 
 
 def get_ext_modules():
