@@ -273,7 +273,7 @@ cdef class ApproachRTD(Approach):
             self.energy_current.fill(np.nan)
             self.heat_current.fill(np.nan)
             if not self.printed_warning_ImGamma:
-                print('Warning! Complex matrix elements detected, which are not supported ' +
+                print('Warning! Complex matrix elements detected, which are not supported for the RTD approach ' +
                       'when calculating the energy current.')
                 self.printed_warning_ImGamma = True
 
@@ -545,7 +545,7 @@ cdef class ApproachRTD(Approach):
                 D = fabs(dlst[r0, 1]) + fabs(dlst[r0, 0])
                 for i in range(ccount):
                     a1p = statesdm[ccharge, i]
-                    t = Tba[r0, a0, a1p]
+                    t = Tba[r0, a1p, a0]
                     if cabs(t) == t_cutoff1:
                         continue
                     indx1 = kh.get_ind_dm0(a1p, a1p, ccharge)
@@ -554,15 +554,15 @@ cdef class ApproachRTD(Approach):
                     #p1 = 1
                     for j in range(dcount):
                         a2p = statesdm[dcharge, j]
-                        t1 = t * Tba[r1, a1p, a2p]
+                        t1 = t * Tba[r1, a2p, a1p]
                         if cabs(t1) <= t_cutoff2:
                             continue
                         E2 = E[a2p] - E[a0]
                         #p2 = 1
                         for k in range(ccount):
                             a3p = statesdm[ccharge, k]
-                            t2D = t1 * Tba[r1, a3p, a2p].conjugate() * Tba[r0, a0, a3p].conjugate()
-                            t2X = t1 * Tba[r0, a3p, a2p].conjugate() * Tba[r1, a0, a3p].conjugate()
+                            t2D = t1 * Tba[r1, a2p, a3p].conjugate() * Tba[r0, a3p, a0].conjugate()
+                            t2X = t1 * Tba[r0, a2p, a3p].conjugate() * Tba[r1, a3p, a0].conjugate()
                             E3 = E[a3p] - E[a0]
                             if cabs(t2D) > t_cutoff3:
                                 ImGamma = fabs(t2D.imag) > t_cutoff3
@@ -575,8 +575,8 @@ cdef class ApproachRTD(Approach):
                         #p2 = -1
                         for k in range(ccount):
                             a3m = statesdm[ccharge, k]
-                            t2D = t1 * Tba[r1, a0, a3m].conjugate() * Tba[r0, a3m, a2p].conjugate()
-                            t2X = t1 * Tba[r0, a0, a3m].conjugate() * Tba[r1, a3m, a2p].conjugate()
+                            t2D = t1 * Tba[r1, a3m, a0].conjugate() * Tba[r0, a2p, a3m].conjugate()
+                            t2X = t1 * Tba[r0, a3m, a0].conjugate() * Tba[r1, a2p, a3m].conjugate()
                             E3 = E[a2p] - E[a3m]
                             if cabs(t2D) > t_cutoff3:
                                 ImGamma = fabs(t2D.imag) > t_cutoff3
@@ -589,15 +589,15 @@ cdef class ApproachRTD(Approach):
                     #p1 = -1
                     for j in range(acount):
                         a2m = statesdm[acharge, j]
-                        t1 = t * Tba[r1, a2m, a0]
+                        t1 = t * Tba[r1, a0, a2m]
                         if cabs(t1) <= t_cutoff2:
                             continue
                         E2 = E[a1p] - E[a2m]
                         #p2 = 1
                         for k in range(bcount):
                             a3p = statesdm[bcharge, k]
-                            t2D = t1 * Tba[r1, a3p, a1p].conjugate() * Tba[r0, a2m, a3p].conjugate()
-                            t2X = t1 * Tba[r0, a3p, a1p].conjugate() * Tba[r1, a2m, a3p].conjugate()
+                            t2D = t1 * Tba[r1, a1p, a3p].conjugate() * Tba[r0, a3p, a2m].conjugate()
+                            t2X = t1 * Tba[r0, a1p, a3p].conjugate() * Tba[r1, a3p, a2m].conjugate()
                             E3 = E[a3p] - E[a2m]
                             if cabs(t2D) > t_cutoff3:
                                 ImGamma = fabs(t2D.imag) > t_cutoff3
@@ -610,8 +610,8 @@ cdef class ApproachRTD(Approach):
                         #p2 = -1
                         for k in range(bcount):
                             a3m = statesdm[bcharge, k]
-                            t2D = t1 * Tba[r1, a2m, a3m].conjugate() * Tba[r0, a3m, a1p].conjugate()
-                            t2X = t1 * Tba[r0, a2m, a3m].conjugate() * Tba[r1, a3m, a1p].conjugate()
+                            t2D = t1 * Tba[r1, a3m, a2m].conjugate() * Tba[r0, a1p, a3m].conjugate()
+                            t2X = t1 * Tba[r0, a3m, a2m].conjugate() * Tba[r1, a1p, a3m].conjugate()
                             E3 = E[a1p] - E[a3m]
                             if cabs(t2D) > t_cutoff3:
                                 ImGamma = fabs(t2D.imag) > t_cutoff3
@@ -625,13 +625,13 @@ cdef class ApproachRTD(Approach):
                     for j in range(bcount):
                         a2p = statesdm[bcharge, j]
                         E2 = E[a2p] - E[a0]
-                        t1 = t * Tba[r1, a2p, a1p].conjugate()
+                        t1 = t * Tba[r1, a1p, a2p].conjugate()
                         if cabs(t1) <= t_cutoff2:
                             continue
                         #p2 = 1
                         for k in range(ccount):
                             a3p = statesdm[ccharge, k]
-                            t2D = t1 * Tba[r1, a2p, a3p] * Tba[r0, a0, a3p].conjugate()
+                            t2D = t1 * Tba[r1, a3p, a2p] * Tba[r0, a3p, a0].conjugate()
                             E3 = E[a3p] - E[a0]
                             if cabs(t2D) > t_cutoff3:
                                 ImGamma = fabs(t2D.imag) > t_cutoff3
@@ -639,7 +639,7 @@ cdef class ApproachRTD(Approach):
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a3p, ccharge, a0, bcharge)
                         for k in range(acount):
                             a3p = statesdm[acharge, k]
-                            t2X = t1 * Tba[r0, a3p, a2p].conjugate() * Tba[r1, a3p, a0]
+                            t2X = t1 * Tba[r0, a2p, a3p].conjugate() * Tba[r1, a0, a3p]
                             E3 = E[a3p] - E[a0]
                             if cabs(t2X) > t_cutoff3:
                                 ImGamma = fabs(t2X.imag) > t_cutoff3
@@ -648,7 +648,7 @@ cdef class ApproachRTD(Approach):
                         #p2 = -1
                         for k in range(acount):
                             a3m = statesdm[acharge, k]
-                            t2D = t1 * Tba[r1, a3m, a0] * Tba[r0, a3m, a2p].conjugate()
+                            t2D = t1 * Tba[r1, a0, a3m] * Tba[r0, a2p, a3m].conjugate()
                             E3 = E[a2p] - E[a3m]
                             if cabs(t2D) > t_cutoff3:
                                 ImGamma = fabs(t2D.imag) > t_cutoff3
@@ -656,7 +656,7 @@ cdef class ApproachRTD(Approach):
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a2p, bcharge, a3m, acharge)
                         for k in range(ccount):
                             a3m = statesdm[ccharge, k]
-                            t2X = t1 * Tba[r0, a0, a3m].conjugate() * Tba[r1, a2p, a3m]
+                            t2X = t1 * Tba[r0, a3m, a0].conjugate() * Tba[r1, a3m, a2p]
                             E3 = E[a2p] - E[a3m]
                             if cabs(t2X) > t_cutoff3:
                                 ImGamma = fabs(t2X.imag) > t_cutoff3
@@ -666,13 +666,13 @@ cdef class ApproachRTD(Approach):
                     for j in range(ccount):
                         a2m = statesdm[ccharge, j]
                         E2 = E[a1p] - E[a2m]
-                        t1 = t * Tba[r1, a0, a2m].conjugate()
+                        t1 = t * Tba[r1, a2m, a0].conjugate()
                         if cabs(t1) <= t_cutoff2:
                             continue
                         #p2 = 1
                         for k in range(dcount):
                             a3p = statesdm[dcharge, k]
-                            t2D = t1 * Tba[r1, a1p , a3p] * Tba[r0, a2m,  a3p].conjugate()
+                            t2D = t1 * Tba[r1, a3p , a1p] * Tba[r0, a3p, a2m].conjugate()
                             E3 = E[a3p] - E[a2m]
                             if cabs(t2D) > t_cutoff3:
                                 ImGamma = fabs(t2D.imag) > t_cutoff3
@@ -680,7 +680,7 @@ cdef class ApproachRTD(Approach):
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a3p, dcharge, a2m, ccharge)
                         for k in range(bcount):
                             a3p = statesdm[bcharge, k]
-                            t2X = t1 * Tba[r0, a3p, a1p].conjugate() * Tba[r1, a3p, a2m]
+                            t2X = t1 * Tba[r0, a1p, a3p].conjugate() * Tba[r1, a2m, a3p]
                             E3 = E[a3p] - E[a2m]
                             if cabs(t2X) > t_cutoff3:
                                 ImGamma = fabs(t2X.imag) > t_cutoff3
@@ -689,7 +689,7 @@ cdef class ApproachRTD(Approach):
                         #p2 = -1
                         for k in range(bcount):
                             a3m = statesdm[bcharge, k]
-                            t2D = t1 * Tba[r1, a3m, a2m] * Tba[r0, a3m, a1p].conjugate()
+                            t2D = t1 * Tba[r1, a2m, a3m] * Tba[r0, a1p, a3m].conjugate()
                             E3 = E[a1p] - E[a3m]
                             if cabs(t2D) > t_cutoff3:
                                 ImGamma = fabs(t2D.imag) > t_cutoff3
@@ -697,7 +697,7 @@ cdef class ApproachRTD(Approach):
                                 kh.add_element_2nd_order(t_id, r0, tempD.real, indx0, indx1, a1p, ccharge, a3m, bcharge)
                         for k in range(dcount):
                             a3m = statesdm[dcharge, k]
-                            t2X = t1 * Tba[r0, a2m, a3m].conjugate() * Tba[r1, a1p, a3m]
+                            t2X = t1 * Tba[r0, a3m, a2m].conjugate() * Tba[r1, a3m, a1p]
                             E3 = E[a1p] - E[a3m]
                             if cabs(t2X) > t_cutoff3:
                                 ImGamma = fabs(t2X.imag) > t_cutoff3
@@ -738,7 +738,7 @@ cdef class ApproachRTD(Approach):
                 E1 = E[a2] - E[a1]
                 E2 = E[a2] - E[b1]
                 for l in range(nleads):
-                    t2 = Tba[l, a1, a2] * Tba[l, b1, a2].conjugate()
+                    t2 = Tba[l, a2, a1] * Tba[l, a2, b1].conjugate()
                     f = fermi_func((E1 - mulst[l]) / tlst[l]) + fermi_func((E2 - mulst[l]) / tlst[l])
                     phi0 = delta_phi((E1 - mulst[l]) / tlst[l], (E2 - mulst[l]) / tlst[l],
                                      dlst[l, 0] / tlst[l], dlst[l, 1] / tlst[l])
@@ -754,7 +754,7 @@ cdef class ApproachRTD(Approach):
                 E1 = E[b1] - E[a2]
                 E2 = E[a1] - E[a2]
                 for l in range(nleads):
-                    t2 = Tba[l, a2, b1] * Tba[l, a2, a1].conjugate()
+                    t2 = Tba[l, b1, a2] * Tba[l, a1, a2].conjugate()
                     f = fermi_func(-(E1 - mulst[l]) / tlst[l]) + fermi_func(-(E2 - mulst[l]) / tlst[l])
                     phi0 = delta_phi((E1 - mulst[l]) / tlst[l], (E2 - mulst[l]) / tlst[l],
                                      dlst[l, 0] / tlst[l], dlst[l, 1] / tlst[l], sign=-1)
@@ -772,7 +772,7 @@ cdef class ApproachRTD(Approach):
                     if b1 == a2:  # vertices on upper prop -> state on lower prop cannot change
                         E1 = E[c] - E[a2]
                         for l in range(nleads):
-                            t2 = Tba[l, a1, c] * Tba[l, a2, c].conjugate()
+                            t2 = Tba[l, c, a1] * Tba[l, c, a2].conjugate()
                             f = fermi_func((E1 - mulst[l]) / tlst[l])
                             phi0 = phi((E1 - mulst[l]) / tlst[l], dlst[l, 0] / tlst[l],
                                        dlst[l, 1] / tlst[l], sign=1)
@@ -783,7 +783,7 @@ cdef class ApproachRTD(Approach):
                     if a1 == a2:  # vertices on lower prop -> state on upper prop cannot change
                         E1 = E[c] - E[a2]
                         for l in range(nleads):
-                            t2 = Tba[l, a2, c] * Tba[l, b1, c].conjugate()
+                            t2 = Tba[l, c, a2] * Tba[l, c, b1].conjugate()
                             f = fermi_func((E1 - mulst[l]) / tlst[l])
                             phi0 = phi((E1 - mulst[l]) / tlst[l], dlst[l, 0] / tlst[l],
                                        dlst[l, 1] / tlst[l], sign=1)
@@ -798,7 +798,7 @@ cdef class ApproachRTD(Approach):
                     if b1 == a2:  # vertices on upper prop -> state on lower prop cannot change
                         E1 = E[a2] - E[c]
                         for l in range(nleads):
-                            t2 = Tba[l, c, a2] * Tba[l, c, a1].conjugate()
+                            t2 = Tba[l, a2, c] * Tba[l, a1, c].conjugate()
                             f = fermi_func(-(E1 - mulst[l]) / tlst[l])
                             phi0 = phi((E1 - mulst[l]) / tlst[l], dlst[l, 0] / tlst[l],
                                        dlst[l, 1] / tlst[l], sign=-1)
@@ -809,7 +809,7 @@ cdef class ApproachRTD(Approach):
                     if a1 == a2:  # vertices on lower prop -> state on upper prop cannot change
                         E1 = E[a2] - E[c]
                         for l in range(nleads):
-                            t2 = Tba[l, c, b1] * Tba[l, c, a2].conjugate()
+                            t2 = Tba[l, b1, c] * Tba[l, a2, c].conjugate()
                             f = fermi_func(-(E1 - mulst[l]) / tlst[l])
                             phi0 = phi((E1 - mulst[l]) / tlst[l], dlst[l, 0] / tlst[l],
                                        dlst[l, 1] / tlst[l], sign=-1)
@@ -855,7 +855,7 @@ cdef class ApproachRTD(Approach):
                         continue
                     E1 = E[b2] - E[a1]
                     for l in range(nleads):
-                        t2 = Tba[l, a1, a2] * Tba[l, a1, b2].conjugate()
+                        t2 = Tba[l, a2, a1] * Tba[l, b2, a1].conjugate()
                         f = fermi_func((E1 - mulst[l]) / tlst[l]) + fermi_func((E2 - mulst[l]) / tlst[l])
                         phi0 = delta_phi((E1 - mulst[l]) / tlst[l], (E2 - mulst[l]) / tlst[l],
                                          dlst[l, 0] / tlst[l], dlst[l, 1] / tlst[l])
@@ -874,7 +874,7 @@ cdef class ApproachRTD(Approach):
                         continue
                     E2 = E[a1] - E[b2]
                     for l in range(nleads):
-                        t2 = Tba[l, b2, a1] * Tba[l, a2, a1].conjugate()
+                        t2 = Tba[l, a1, b2] * Tba[l, a1, a2].conjugate()
                         f = fermi_func(-(E1 - mulst[l]) / tlst[l]) + fermi_func(-(E2 - mulst[l]) / tlst[l])
                         phi0 = delta_phi((E1 - mulst[l]) / tlst[l], (E2 - mulst[l]) / tlst[l],
                                          dlst[l, 0] / tlst[l], dlst[l, 1] / tlst[l], sign=-1)
@@ -896,7 +896,7 @@ cdef class ApproachRTD(Approach):
                         if a1 == b2:
                             E1 = E[c] - E[b2]
                             for l in range(nleads):
-                                t2 = Tba[l, a1, c] * Tba[l, a2, c].conjugate()
+                                t2 = Tba[l, c, a1] * Tba[l, c, a2].conjugate()
                                 f = fermi_func((E1 - mulst[l]) / tlst[l])
                                 phi0 = phi((E1 - mulst[l]) / tlst[l], dlst[l, 0] / tlst[l], dlst[l, 1] / tlst[l])
                                 temp1 = - PI * t2.real * f - t2.imag * phi0
@@ -906,7 +906,7 @@ cdef class ApproachRTD(Approach):
                         if a1 == a2:
                             E1 = E[c] - E[a2]
                             for l in range(nleads):
-                                t2 = Tba[l, b2, c] * Tba[l, a1, c].conjugate()
+                                t2 = Tba[l, c, b2] * Tba[l, c, a1].conjugate()
                                 f = fermi_func((E1 - mulst[l]) / tlst[l])
                                 phi0 = phi((E1 - mulst[l]) / tlst[l], dlst[l, 0] / tlst[l], dlst[l, 1] / tlst[l])
                                 temp1 = - PI * t2.real * f + t2.imag * phi0
@@ -920,7 +920,7 @@ cdef class ApproachRTD(Approach):
                         if a1 == b2:
                             E1 = E[b2] - E[c]
                             for l in range(nleads):
-                                t2 = Tba[l, c, a2] * Tba[l, c, a1].conjugate()
+                                t2 = Tba[l, a2, c] * Tba[l, a1, c].conjugate()
                                 f = fermi_func(-(E1 - mulst[l]) / tlst[l])
                                 phi0 = phi((E1 - mulst[l])/tlst[l], dlst[l, 0] / tlst[l], dlst[l, 1] / tlst[l], sign=-1)
                                 temp1 = - PI * t2.real * f + t2.imag * phi0
@@ -930,7 +930,7 @@ cdef class ApproachRTD(Approach):
                         if a1 == a2:
                             E1 = E[a2] - E[c]
                             for l in range(nleads):
-                                t2 = Tba[l, c, a1] * Tba[l, c, b2].conjugate()
+                                t2 = Tba[l, a1, c] * Tba[l, b2, c].conjugate()
                                 f = fermi_func(-(E1 - mulst[l]) / tlst[l])
                                 phi0 = phi((E1 - mulst[l])/tlst[l], dlst[l, 0] / tlst[l], dlst[l, 1] / tlst[l], sign=-1)
                                 temp1 = - PI * t2.real * f - t2.imag * phi0
