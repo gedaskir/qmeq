@@ -28,6 +28,7 @@ class ApproachPyRTD(Approach):
         self.off_diag_corrections = self.funcp.off_diag_corrections
         self.ImGamma = False
         self.printed_warning_ImGamma = False
+        self.nsingle_warning_printed = False
 
     def get_kern_size(self):
         return self.si.npauli
@@ -235,6 +236,14 @@ class ApproachPyRTD(Approach):
                       'when calculating the energy current.')
                 self.printed_warning_ImGamma = True
 
+        if self.si.nsingle == 0:
+            if not self.nsingle_warning_printed:
+                print('Warning! No single particle tunneling amplitudes (tleads) detected. Corrections to the energy ' +
+                      'current in the RTD approach uses tleads. Please specify BuilderManyBody.tleads_array and ' +
+                      'BuilderManyBody.nsingle, if possible.\n\nThe correction terms can be neglected if no single' +
+                      ' particle state is connected to more than one lead.')
+                self.nsingle_warning_printed = True
+
     def generate_fct(self):
         """
         Make factors used for generating the first order diagonal kernel :math:`W_{dd}^{(1)}`.
@@ -337,10 +346,13 @@ class ApproachPyRTD(Approach):
                     if lp == l: continue
                     for n1 in range(nsingle):
                         gamma += Tba[l, a, b] * Tba[lp, a, b].conj() * tleads[l, n1] * tleads[lp, n1].conj()
-                if abs(gamma.imag) > t_cutoff:
-                    self.ImGamma = True
                 temp = gamma.real * phi((dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
                 temp += gamma.real * phi(-(dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
+                if abs(gamma.imag) > t_cutoff:
+                    self.ImGamma = True
+                    #temp += gamma.imag * fermi_func((dE - mu) / Tr)*np.pi
+                    #temp += gamma.imag * fermi_func(-(dE - mu) / Tr) * np.pi
+
                 temp *= np.pi
                 kh.set_matrix_element_dd(l, temp, temp, bb, aa, 1)
 
@@ -353,10 +365,13 @@ class ApproachPyRTD(Approach):
                     if lp == l: continue
                     for n1 in range(nsingle):
                         gamma += Tba[l, b, c] * Tba[lp, b, c].conj() * tleads[l, n1] * tleads[lp, n1].conj()
-                if abs(gamma.imag) > t_cutoff:
-                    self.ImGamma = True
                 temp = gamma.real * phi((dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
                 temp += gamma.real * phi(-(dE - mu) / Tr, dlst[l, 0] / Tr, dlst[l, 1] / Tr)
+                if abs(gamma.imag) > t_cutoff:
+                    self.ImGamma = True
+                    #temp += gamma.imag * fermi_func((dE - mu) / Tr) * np.pi
+                    #temp += gamma.imag * fermi_func(-(dE - mu) / Tr) * np.pi
+
                 temp *= np.pi
                 kh.set_matrix_element_dd(l, temp, temp, bb, cc, 1)
 
@@ -402,6 +417,10 @@ class ApproachPyRTD(Approach):
                         dE = E[b] - E[a]
                         temp += gamma.real * phi((dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
                         temp += gamma.real * phi(-(dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
+                        if abs(gamma.imag) > t_cutoff:
+                            self.ImGamma = True
+                            #temp += gamma.imag * fermi_func((dE - mu) / Tr) * np.pi
+                            #temp += gamma.imag * fermi_func(-(dE - mu) / Tr) * np.pi
                 temp *= np.pi
                 kh.set_matrix_element_dd(l, temp, temp, bb, aa, 2)
 
@@ -414,11 +433,13 @@ class ApproachPyRTD(Approach):
                         mu, Tr, gamma = mulst[lp], tlst[lp], 0.0
                         for n1 in range(nsingle):
                             gamma += Tba[l, b, c] * Tba[lp, b, c].conj() * tleads[l, n1] * tleads[lp, n1].conj()
-                        if abs(gamma.imag) > t_cutoff:
-                            self.ImGamma = True
                         dE = E[c] - E[b]
                         temp += gamma.real * phi((dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
                         temp += gamma.real * phi(-(dE - mu) / Tr, dlst[lp, 0] / Tr, dlst[lp, 1] / Tr)
+                        if abs(gamma.imag) > t_cutoff:
+                            self.ImGamma = True
+                            #temp += gamma.imag * fermi_func((dE - mu) / Tr) * np.pi
+                            #temp += gamma.imag * fermi_func(-(dE - mu) / Tr) * np.pi
                 temp *= np.pi
                 kh.set_matrix_element_dd(l, temp, temp, bb, cc, 2)
 

@@ -19,6 +19,7 @@ cdef class ApproachRTD(Approach):
     cdef bool_t OffDiagCorrections
     cdef bool_t ImGamma
     cdef bool_t printed_warning_ImGamma
+    cdef bool_t nsingle_warning_printed
     cdef long_t nbr_Wdd2_copies
 
     cpdef long_t get_kern_size(self)

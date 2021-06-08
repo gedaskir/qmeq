@@ -55,6 +55,7 @@ cdef class ApproachRTD(Approach):
         self.Ozaki_poles_and_residues = np.zeros((2,2), doublenp)
         self.ImGamma = False
         self.printed_warning_ImGamma = False
+        self.nsingle_warning_printed = False
         # For parallel
         self.nbr_Wdd2_copies = min(self.si.npauli, openmp.omp_get_max_threads())
 
@@ -277,7 +278,13 @@ cdef class ApproachRTD(Approach):
                       'when calculating the energy current.')
                 self.printed_warning_ImGamma = True
 
-
+        if self.si.nsingle == 0:
+            if not self.nsingle_warning_printed:
+                print('Warning! No single particle tunneling amplitudes (tleads) detected. Corrections to the energy ' +
+                      'current in the RTD approach uses tleads. Please specify BuilderManyBody.tleads_array and ' +
+                      'BuilderManyBody.nsingle, if possible.\n\nThe correction terms can be neglected if no single' +
+                      ' particle state is connected to more than one lead.')
+                self.nsingle_warning_printed = True
 
     cpdef void generate_fct(self):
         cdef int_t itype
@@ -447,7 +454,7 @@ cdef class ApproachRTD(Approach):
         for i in range(nleads):
             if tlst[i] > maxTemp:
                 maxTemp = tlst[i]
-        t_cutoff = 1e-20*maxTemp*maxTemp
+        t_cutoff = 1e-15*maxTemp*maxTemp
 
         acharge = bcharge-1
         ccharge = bcharge+1

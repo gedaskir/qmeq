@@ -61,7 +61,7 @@ attribute_map = dict(
     hsingle='qd', coulomb='qd', Ea='qd',
     # LeadsTunneling
     tleads='leads', mulst='leads', tlst='leads', dlst='leads',
-    Tba='leads',
+    Tba='leads', tleads_array='leads',
     # Approach
     solve='appr', current='appr', energy_current='appr',
     heat_current='appr', phi0='appr', phi1='appr', niter='appr',
