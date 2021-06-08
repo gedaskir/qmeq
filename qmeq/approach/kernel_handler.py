@@ -132,7 +132,7 @@ class KernelHandler(object):
         self.kern[bb, aa] += fctp
 
     def get_phi0_element(self, b, bp, bcharge):
-        """ Gets the entry of the density matrix given by :math:`|b><bp|`.
+        r""" Gets the entry of the density matrix given by :math:`|b><bp|`.
 
         Parameters
         ----------
@@ -188,7 +188,7 @@ class KernelHandlerMatrixFree(KernelHandler):
         self.dphi0_dt[bbpi] -= dphi0_dt_bbp.imag
 
     def set_matrix_element(self, fct, b, bp, bcharge, a, ap, acharge):
-        """ Adds a contribution to :math:`d\phi_o /dt` that stems from the matrix element
+        r""" Adds a contribution to :math:`d\phi_o /dt` that stems from the matrix element
         connecting :math:`|b><bp|` and :math:`|a><ap|` in the full off-diagonal in the kernel.
 
         Parameters
@@ -223,7 +223,7 @@ class KernelHandlerMatrixFree(KernelHandler):
             self.dphi0_dt[bbpi] -= dphi0_dt_bbp.imag
 
     def set_matrix_element_pauli(self, fctm, fctp, bb, aa):
-        """ Adds a contribution to :math:`d\phi_o /dt` that stems from the matrix element
+        r""" Adds a contribution to :math:`d\phi_o /dt` that stems from the matrix element
         connecting :math:`|b><b|` and :math:`|a><a|` in the Pauli kernel.
 
         Parameters
@@ -259,7 +259,7 @@ class KernelHandlerRTD(KernelHandler):
         self.mats = [self.Wdd, self.WE1, self.WE2, self.ReWdn, self.ImWdn, self.ReWnd, self.ImWnd, self.Lnn]
 
     def add_matrix_element(self, fct, l, b, bp, bcharge, a, ap, acharge, mi):
-        """
+        r"""
         Adds a value to the lead-resolved ndarray (kernel) given by index mi. The indices are set by the entries
         :math:`|b><bp|` and :math:`|a><ap|` in the density matrix. Which matrix to add the value to is determined by
         mi  as 0 = :math:`W_{dd}`, 1 = :math:`W_{E,1}`, 2 = :math:`W_{E,2}`, 3 = :math:`\Re(W_{dn}^{(1)})`,

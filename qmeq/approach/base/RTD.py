@@ -103,7 +103,7 @@ class ApproachPyRTD(Approach):
             self.Lnn.fill(0.0)
 
     def generate_kern(self):
-        """ Generates all kernels including tunnel processes of orders :math:`t^2` and :math:`t^4`.
+        r""" Generates all kernels including tunnel processes of orders :math:`t^2` and :math:`t^4`.
 
         The total kernel used to solve for :math:`\phi_0` is :math:`W =\sum_r W^r= W_{dd}^{(1)} + W_{dd}^{(2)}
         + W_{dn}^{(1)} (L_{nn})^{-1} W_{nd}^{(1)}`. The last term is ignored if `off_diag_corrections` is False.
@@ -191,7 +191,7 @@ class ApproachPyRTD(Approach):
         self.LN = np.array(charge_lst)
 
     def generate_current(self):
-        """ Calculates currents for the RTD approach.
+        r""" Calculates currents for the RTD approach.
 
         Charge current for reservoir r is evaluated as :math:`I^r = 1/2 \cdot Tr (L_{N_{dot}}^+ W^r \phi_0)`
 
@@ -301,7 +301,7 @@ class ApproachPyRTD(Approach):
                 kh.set_matrix_element_dd(l, fctm, fctp, bb, cc, 0)
 
     def generate_row_1st_energy_kernel(self, b, bcharge):
-        """ Generates a row of the first kernel for the barrier part of the energy current :math:`W_{E,1}`. This kernel
+        r""" Generates a row of the first kernel for the barrier part of the energy current :math:`W_{E,1}`. This kernel
          is obtained from a diagram of the form
          :math:`L_{T,r}^+  L_{T, r_2}^-  (z-L_{dot} - L_r )^{-1}  L_T  (z-L_{dot} - L_r )^{-1} L_T \phi_0`,
          when contracting the first and third, as well as second and fourth, reservoir superoperators. Assumes
@@ -361,7 +361,7 @@ class ApproachPyRTD(Approach):
                 kh.set_matrix_element_dd(l, temp, temp, bb, cc, 1)
 
     def generate_row_2nd_energy_kernel(self, b, bcharge):
-        """ Generates a row in the second kernel for the barrier part of the energy current :math:`W_{E,2}`.
+        r""" Generates a row in the second kernel for the barrier part of the energy current :math:`W_{E,2}`.
         This kernel is obatined from a diagram of the form
         :math:`L_{T,r}^+  L_{T, r_2}^-  (z-L_{dot} - L_r )^{-1}  L_T  (z-L_{dot} - L_r )^{-1} L_T \phi_0`,
         when contracting the first and fourth, as well as second and third, reservoir superoperators. Assumes
@@ -634,7 +634,7 @@ class ApproachPyRTD(Approach):
                             kh.add_element_2nd_order(r1, tempX.real, indx0, indx1, a1p, charge + 1, a3m, charge + 2)
 
     def generate_col_nondiag_kern_1st_order_dn(self, a1, b1, charge):
-        """ Calculates a column in :math:`W_{dn}^{(1)}`, the part of the full first order off-diagonal kernel
+        r""" Calculates a column in :math:`W_{dn}^{(1)}`, the part of the full first order off-diagonal kernel
         connecting diagonal :math:`|a2><a2|` and non-diagonal :math:`|a1><b1|` entries of the density matrix.
         Separates the real and imaginary parts into two matrices. Assumes that the wide band limit is valid.
 
@@ -748,7 +748,7 @@ class ApproachPyRTD(Approach):
                             kh.add_matrix_element(temp2, l, a2, a2, charge, a1, b1, charge, 4)
 
     def generate_col_nondiag_kern_1st_order_nd(self, a1, charge):
-        """ Calculates a column in :math:`W_{nd}^{(1)}`, the part of the full first order off-diagonal kernel
+        r""" Calculates a column in :math:`W_{nd}^{(1)}`, the part of the full first order off-diagonal kernel
         connecting non-diagonal :math:`|a2><b2|` and diagonal :math:`|a1><a1|` entries of the density matrix.
         Separates the real and imaginary parts into two matrices. Assumes that the wide band limit is valid.
 

@@ -13,14 +13,17 @@ now we have implemented the following first-order methods
 * Redfield approach
 * First order von Neumann (1vN) approach
 
-which can describe the effect of Coulomb blockade. QmeQ also has two
-second-order methods
+which can describe the effect of Coulomb blockade. Additionally, there is a
+possibility to model electron-phonon interaction inside a quantum dot using
+the first-order approaches. QmeQ also has two second-order methods
 
 * Second order von Neumann (2vN) approach
-* Real Time Diagrammatic approach
+* Real Time Diagrammatic (RTD) approach
 
-which can additionally address cotunneling, pair tunneling, and
-broadening effects.
+2vN and RTD approaches can address the effects of cotunneling and pair tunneling.
+Additionally, the 2vN approach can describe broadening of quantum dot states.
+The advantage of RTD approach is that it requires a lot less memory and
+computation time resources.
 
 Physics disclaimer
 ------------------
