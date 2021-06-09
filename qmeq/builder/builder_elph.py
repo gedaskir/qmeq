@@ -1,10 +1,5 @@
 """Module containing Builder_elph and Builder_many_body_elph classes."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-
 from .builder_base import BuilderBase
 from .builder_base import attribute_map
 from .builder_base import BuilderManyBody
@@ -17,11 +12,11 @@ from .validation import validate_itype_ph
 # -----------------------------------------------------------
 # Python modules
 
-from ..approach.elph.pauli import ApproachPyPauli
-from ..approach.elph.lindblad import ApproachPyLindblad
-from ..approach.elph.neumann1 import ApproachPy1vN
-from ..approach.elph.redfield import ApproachPyRedfield
-from ..approach.base.neumann2 import ApproachPy2vN
+from ..approach.elph.pauli import ApproachPauli as ApproachPyPauli
+from ..approach.elph.lindblad import ApproachLindblad as ApproachPyLindblad
+from ..approach.elph.neumann1 import Approach1vN as ApproachPy1vN
+from ..approach.elph.redfield import ApproachRedfield as ApproachPyRedfield
+from ..approach.base.neumann2 import Approach2vN as ApproachPy2vN
 
 # Cython compiled modules
 
@@ -145,7 +140,7 @@ class BuilderElPh(BuilderBase):
         self.si_elph.set_statesdm(self.si.statesdm)
 
     def remove_fock_states(self, lin_state_indices):
-        Builder_base.remove_fock_states(self, lin_state_indices)
+        BuilderBase.remove_fock_states(self, lin_state_indices)
         self.baths._init_coupling()
         self.si_elph.remove_fock_states(lin_state_indices)
 

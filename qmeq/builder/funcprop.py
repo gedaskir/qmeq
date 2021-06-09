@@ -52,12 +52,16 @@ class FunctionProperties(object):
         Multiplication factor used in neumann2py.get_grid_ext(sys), when determining emin and emax.
     suppress_err : bool
         Determines whether to print the warning when the inversion of the kernel failed.
+    off_diag_corrections: bool
+        Determines wether to include first oder off-diagonal corrections to the kernel in the
+        RTD approach.
     """
 
     def __init__(self,
                  kerntype='2vN', symq=True, norm_row=0, solmethod=None,
                  itype=0, dqawc_limit=10000, mfreeq=False, phi0_init=None,
-                 mtype_qd=float, mtype_leads=complex, kpnt=None, dband=None):
+                 mtype_qd=float, mtype_leads=complex, kpnt=None, dband=None,
+                 off_diag_corrections=True):
         self.kerntype = kerntype
         self.symq = symq
         self.norm_row = norm_row
@@ -85,13 +89,21 @@ class FunctionProperties(object):
         #
         self.suppress_err = False
         self.suppress_wrn = [False]
+        #
+        self.off_diag_corrections = off_diag_corrections
 
     def print_error(self, exept):
         if not self.suppress_err:
-            print(str(exept))
-            print("WARNING: Could not invert the kernel. " +
-                  "All the transport channels may be outside the bandwidth. " +
-                  "This warning will not be shown again.")
+            print("WARNING: Could not solve the linear set of equations.\n" +
+                  "  Error from the solver: " + str(exept) + "\n"
+                  "  The reasons for such a failure can be various:\n" +
+                  "  1. Some of the transport channels may be outside the bandwidth D of the leads.\n" +
+                  "     In this case removing some of the states with the method [remove_states()] will help.\n" +
+                  "  2. Replacement of one of the equations with the normalisation condition.\n" +
+                  "     In this case try to use different [norm_row]\n"+
+                  "     or solve the linear system using [symq=False] and the solution method [solmethod='lsqr'].\n"
+                  "  This warning will not be shown again.\n"
+                  "  To check if the solution succeeded check the property [success].")
             self.suppress_err = True
 
     def print_warning(self, i, message):

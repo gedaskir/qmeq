@@ -1,9 +1,5 @@
 """Module for constructing many-body quantum dot Hamiltonian and diagonalising it."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import numpy as np
 
 from .indexing import empty_szlst
@@ -616,7 +612,7 @@ def make_hsingle_dict(qd, hsingle, add_zeros=False):
     else:
         return {}
     #
-    if si.symmetry is 'spin':
+    if si.symmetry == 'spin':
         hsingle_dict_spin = dict(hsingle_dict)
         for j0 in hsingle_dict:
             j1, j2 = j0
@@ -658,7 +654,7 @@ def make_coulomb_dict(qd, coulomb):
     else:
         return {}
     #
-    if si.symmetry is 'spin':
+    if si.symmetry == 'spin':
         coulomb_dict_spin = dict(coulomb_dict)
         nss = si.nsingle_sym
         herm_c, m_less_n = qd.herm_c, qd.m_less_n
@@ -940,4 +936,4 @@ class QuantumDot(object):
 
     def set_Ea(self):
         """Sets the many-body eigenstates using construct_Ea_manybody()."""
-        self.Ea = construct_Ea_manybody(self.valslst, self.si)
+        self.Ea[:] = construct_Ea_manybody(self.valslst, self.si)

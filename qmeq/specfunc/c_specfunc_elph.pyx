@@ -1,13 +1,10 @@
 """Module containing various special functions, cython implementation."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 import numpy as np
 from scipy.integrate import quad
 
-from qmeq.mytypes import doublenp
-from qmeq.mytypes import complexnp
+from ..wrappers.mytypes import doublenp
+from ..wrappers.mytypes import complexnp
 
 cimport numpy as np
 cimport cython
@@ -33,8 +30,8 @@ cdef class FuncBose:
 @cython.boundscheck(False)
 cdef class FuncPauliElPh:
 
-    def __init__(self, np.ndarray[double_t, ndim=1] tlst,
-                       np.ndarray[double_t, ndim=2] dlst,
+    def __init__(self, double_t [:] tlst,
+                       double_t [:, :] dlst,
                        bath_func,
                        double_t eps):
         self.tlst, self.dlst = tlst, dlst
@@ -68,8 +65,8 @@ cdef class FuncPauliElPh:
 @cython.boundscheck(False)
 cdef class Func1vNElPh:
 
-    def __init__(self, np.ndarray[double_t, ndim=1] tlst,
-                       np.ndarray[double_t, ndim=2] dlst,
+    def __init__(self, double_t [:] tlst,
+                       double_t [:, :] dlst,
                        int_t itype,
                        long_t limit,
                        bath_func,

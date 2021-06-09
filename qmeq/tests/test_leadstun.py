@@ -159,7 +159,7 @@ def test_LeadsTunneling():
     assert leads.dlst.tolist() == [[2,2], [-dband,dband], [-dband,dband], [4,4]]
     #
     Tba_tmp = np.array(leads.Tba)
-    leads.Tba = None
+    leads.Tba.fill(0.0)
     leads.use_Tba0()
     assert norm(leads.Tba - Tba_tmp) < EPS
 
@@ -231,6 +231,6 @@ def test_LeadsTunneling_spin():
     assert leads.dlst.tolist() == [[2,2], [4,4], [2,2], [4,4]]
     #
     Tba_tmp = np.array(leads.Tba)
-    leads.Tba = None
+    leads.Tba.fill(0.0)
     leads.use_Tba0()
     assert norm(leads.Tba - Tba_tmp) < EPS

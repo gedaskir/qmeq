@@ -1,9 +1,5 @@
 """Module for indexing many-body states using Lin tables."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import itertools
 
 import numpy as np
@@ -13,8 +9,8 @@ except ImportError:
     # For backwards compatibility with older versions of SciPy
     from scipy.misc import factorial
 
-from .mytypes import boolnp
-from .mytypes import longnp
+from .wrappers.mytypes import boolnp
+from .wrappers.mytypes import longnp
 
 
 def binarylist_to_integer(lst):
@@ -466,7 +462,7 @@ class StateIndexing(object):
         print_state() and print_all_states()
     """
 
-    def __init__(self, nsingle, indexing='Lin', symmetry=None, nleads=0):
+    def __init__(self, nsingle, indexing='Lin', symmetry=None, nleads=0, nbaths=0):
         """
         Initialization of the StateIndexing class
 
@@ -481,14 +477,15 @@ class StateIndexing(object):
             Possible value is 'spin'.
         """
         #
-        self.nsingle_sym = nsingle//2 if symmetry is 'spin' else nsingle
+        self.nsingle_sym = nsingle//2 if symmetry == 'spin' else nsingle
         self.nsingle = nsingle
         self.indexing = indexing
         self.symmetry = symmetry
         self.ncharge = nsingle+1
         self.nmany = 2**nsingle
         self.nleads = nleads
-        self.nleads_sym = nleads//2 if symmetry is 'spin' else nleads
+        self.nleads_sym = nleads//2 if symmetry == 'spin' else nleads
+        self.nbaths = nbaths
         #
         self.szlst_lin = None
         self.szlst = None
@@ -527,6 +524,8 @@ class StateIndexing(object):
         self.states_order = list(range(self.nmany))
         self.removed_fock_states = None
         self.nmany_ = self.nmany
+
+        self.states_changed = True
 
     def get_state(self, ind, linq=False, strq=False):
         """
@@ -664,6 +663,8 @@ class StateIndexing(object):
 
         self.qn_ind, self.ind_qn = make_quantum_numbers(self)
 
+        self.states_changed = True
+
 
 class StateIndexingPauli(StateIndexing):
     """
@@ -723,6 +724,8 @@ class StateIndexingPauli(StateIndexing):
         for j1 in range(self.ncharge):
             self.npauli_ += len(statesdm[j1])
         self.set_dictdm()
+
+        self.states_changed = True
 
     def set_dictdm(self):
         """
@@ -900,6 +903,8 @@ class StateIndexingDM(StateIndexing):
             if j1 < self.ncharge-1:
                 self.ndm1_ += len(statesdm[j1])*len(statesdm[j1+1])
         self.set_dictdm()
+
+        self.states_changed = True
 
     def set_dictdm(self):
         """
@@ -1101,6 +1106,8 @@ class StateIndexingDMc(StateIndexing):
                 self.ndm1_ += len(statesdm[j1])*len(statesdm[j1+1])
         self.set_dictdm()
 
+        self.states_changed = True
+
     def set_dictdm(self):
         """
         Makes dictdm, shiftlst0, and shiftlst1 necessary for density-matrix element indexing.
@@ -1132,6 +1139,7 @@ class StateIndexingDMc(StateIndexing):
         #
         self.mapdm0 = np.ones(self.ndm0_, dtype=longnp)*(-1)
         self.booldm0 = np.zeros(self.ndm0_, dtype=boolnp)
+        self.conjdm0 = None
         self.inddm0 = {}
         counter = 0
         # Diagonal density matrix elements

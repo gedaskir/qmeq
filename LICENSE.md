@@ -1,4 +1,9 @@
-Copyright (c) 2016 and later, Gediminas Kiršanskas, Andreas Wacker, and others.
+Copyright (c) 2016 and later,
+  Martin Josefsson,
+  Gediminas Kiršanskas,
+  Martin Leijnse,
+  Andreas Wacker,
+  and others.
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without

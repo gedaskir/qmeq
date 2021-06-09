@@ -11,6 +11,7 @@ Submodules
    qmeq.approach.base.neumann2
    qmeq.approach.base.pauli
    qmeq.approach.base.redfield
+   qmeq.approach.base.RTD
 
 Cython submodules
 -----------------
@@ -22,6 +23,7 @@ Cython submodules
    qmeq.approach.base.c_neumann2
    qmeq.approach.base.c_pauli
    qmeq.approach.base.c_redfield
+   qmeq.approach.base.c_RTD
 
 Module contents
 ---------------

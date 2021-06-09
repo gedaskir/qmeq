@@ -1,6 +1,5 @@
 """Module for defining electron-phonon coupling."""
 
-from __future__ import division
 import numpy as np
 import itertools
 
@@ -25,7 +24,7 @@ def elph_construct_Vbbp(baths, velph, Vbbp_=None):
         velph[(bath, i, j)] = Vij, where i, j are the state labels.
     Vbbp_ : None or ndarray
         nbaths by nmany by nmany numpy array containing old values of Vbbp.
-        The values in velph are added to Vbbp\_.
+        The values in velph are added to Vbbp_.
 
     Returns
     -------
@@ -104,7 +103,7 @@ def elph_rotate_Vbbp(Vbbp0, vecslst, si, indexing=None, mtype=complex):
             szrng = szrange(charge, si.nsingle)
             for sz in szrng:
                 szind = sz_to_ind(sz, charge, si.nsingle)
-                if si.szlst[charge][szind] == []:
+                if not si.szlst[charge][szind]:
                     continue
                 i1 = si.szlst[charge][szind][0]
                 i2 = si.szlst[charge][szind][-1] + 1
@@ -121,7 +120,7 @@ def elph_rotate_Vbbp(Vbbp0, vecslst, si, indexing=None, mtype=complex):
                 Vbbp[l, i1:i2][:, i1:i2] = np.dot(vecslst1.conj().T, np.dot(Vbbp0[l, i1:i2][:, i1:i2], vecslst1))
     elif indexingp == 'charge':
         for l, charge in itertools.product(range(si.nbaths), range(si.ncharge)):
-            if si.chargelst[charge] == []:
+            if not si.chargelst[charge]:
                 continue
             i1 = si.chargelst[charge][0]
             i2 = si.chargelst[charge][-1] + 1
@@ -217,13 +216,11 @@ class PhononBaths(object):
         self.dlst_ph = make_array_dlst(None, dlst_ph, si, nbaths, False)
         self.bath_func = bath_func
         self.mtype = mtype
-        self.Vbbp0 = elph_construct_Vbbp(self, self.velph)
-        self.Vbbp = self.Vbbp0
-
+        self._init_coupling()
 
     def _init_coupling(self):
         self.Vbbp0 = elph_construct_Vbbp(self, self.velph)
-        self.Vbbp = self.Vbbp0
+        self.Vbbp = np.array(self.Vbbp0)
 
     def add(self, velph=None, tlst_ph=None, dlst_ph=None, updateq=True, lstq=True):
         """
@@ -276,9 +273,9 @@ class PhononBaths(object):
             Dictionary, list or numpy array containing bandwidths of the phonon baths.
         """
         if tlst_ph is not None:
-            self.tlst_ph = make_array(self.tlst_ph, tlst_ph, self.si, self.si.nbaths, False)
+            self.tlst_ph[:] = make_array(self.tlst_ph, tlst_ph, self.si, self.si.nbaths, False)
         if dlst_ph is not None:
-            self.dlst_ph = make_array_dlst(self.dlst_ph, dlst_ph, self.si, self.si.nbaths, False)
+            self.dlst_ph[:] = make_array_dlst(self.dlst_ph, dlst_ph, self.si, self.si.nbaths, False)
         #
         if velph is not None:
             velph = make_velph_dict(velph, self.si, True)
@@ -310,13 +307,13 @@ class PhononBaths(object):
         indexing : string
             Specifies what kind of rotation procedure to use. Default is si.indexing.
         """
-        self.Vbbp = elph_rotate_Vbbp(self.Vbbp0, vecslst, self.si, indexing, self.mtype)
+        self.Vbbp[:] = elph_rotate_Vbbp(self.Vbbp0, vecslst, self.si, indexing, self.mtype)
 
     def use_Vbbp0(self):
         """
         Sets the Vbbp matrix for calculation to Vbbp0 in the Fock basis.
         """
-        self.Vbbp = self.Vbbp0
+        self.Vbbp[:] = self.Vbbp0
 
     def update_Vbbp0(self, nbaths, velph, mtype=complex):
         """

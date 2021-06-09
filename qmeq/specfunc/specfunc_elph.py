@@ -1,8 +1,5 @@
 """Module containing various special functions."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 from scipy import pi
 from scipy import exp
 from scipy.integrate import quad
@@ -86,14 +83,14 @@ class Func1vNElPh(object):
         self.T = T
         if self.bath_func_q:
             self.dos = self.bath_func[l]
-        if self.itype is 0:
+        if self.itype == 0:
             self.val0, err = quad(self.iplus, Rm, Rp,
                                   weight='cauchy', wvar=alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=self.limit)
             self.val0 = self.val0 + (-1.0j*pi*self.iplus(alpha) if Rm < alpha < Rp else 0)
             self.val1, err = quad(self.iminus, Rm, Rp,
                                   weight='cauchy', wvar=alpha, epsabs=1.0e-6, epsrel=1.0e-6, limit=self.limit)
             self.val1 = self.val1 + (-1.0j*pi*self.iminus(alpha) if Rm < alpha < Rp else 0)
-        elif self.itype is 2:
+        elif self.itype == 2:
             self.val0 = -1.0j*pi*self.iplus(alpha) if Rm < alpha < Rp else 0
             self.val1 = -1.0j*pi*self.iminus(alpha) if Rm < alpha < Rp else 0
 # -----------------------------------------------------------------------

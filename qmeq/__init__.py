@@ -34,13 +34,9 @@ duplicate existing calculations, check applicability of different methods, or
 simply discover new kind of physics using different approximate master equations.
 """
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-from .aprclass import Approach
-from .aprclass import ApproachElPh
-from .aprclass import ApproachBase2vN
+from .approach.aprclass import Approach
+from .approach.aprclass import ApproachElPh
+from .approach.aprclass import ApproachBase2vN
 from .builder.builder import Builder
 from .builder.builder_base import BuilderBase
 from .builder.builder_base import BuilderManyBody

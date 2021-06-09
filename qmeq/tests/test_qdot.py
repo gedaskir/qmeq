@@ -160,7 +160,7 @@ def test_make_coulomb_dict():
 def test_QuantumDot(symmetry=None):
     e1, e2, omega = 1, 2, 20
     uintra, uinter = 80, 30
-    if symmetry is 'spin':
+    if symmetry == 'spin':
         nsingle = 4
         hsingle = np.array([[e1, omega], [omega, e2]])
         coulomb = [[0,0,0,0,uintra], [1,1,1,1,uintra], [0,1,1,0,uinter]]
@@ -181,7 +181,7 @@ def test_QuantumDot(symmetry=None):
     for indexing in ['Lin', 'charge', 'sz', 'ssq']:
         si = StateIndexing(nsingle, indexing=indexing, symmetry=symmetry)
         qd = QuantumDot(hsingle, coulomb, si)
-        if symmetry is 'spin':
+        if symmetry == 'spin':
             assert qd.hsingle == {(0,0):e1, (2,2):e1, (1,1):e2, (3,3):e2, (0,1):omega, (2,3):omega}
             print(qd.coulomb)
             assert qd.coulomb == {(0,2,2,0):uintra, (1,3,3,1):uintra, (0,1,1,0):uinter, (0,3,3,0):uinter, (1,2,2,1):uinter, (2,3,3,2):uinter,
@@ -225,7 +225,7 @@ def test_QuantumDot(symmetry=None):
             assert qd.hamlst[3][1] is None
             assert qd.hamlst[4][0].tolist() == [[286.0]]
         #
-        if symmetry is 'spin':
+        if symmetry == 'spin':
             qd.add(hsingle={(0,0):1.23, (0,1):0.77}, coulomb={(0,0,0,0):0.55})
             assert norm(norm(make_hsingle_mtr(qd.hsingle, 4) - make_hsingle_mtr({(0,0):e1+1.23, (2,2):e1+1.23, (1,1):e2, (3,3):e2, (0,1):omega+0.77, (2,3):omega+0.77}, 4))) < EPS
             assert norm(qd.coulomb[(0,2,2,0)] - (uintra+0.55)) < EPS

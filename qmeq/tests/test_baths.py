@@ -117,7 +117,7 @@ def test_PhononBaths():
     assert baths.tlst_ph.tolist() == [temp_ph+2, temp_ph+2]
     #
     Tba_tmp = np.array(baths.Vbbp)
-    baths.Vbbp = None
+    baths.Vbbp.fill(0.0)
     baths.use_Vbbp0()
     assert norm(baths.Vbbp - Tba_tmp) < EPS
 
@@ -179,6 +179,6 @@ def test_PhononBaths_spin():
     assert baths.tlst_ph.tolist() == [temp_ph+2, temp_ph+2]
     #
     Tba_tmp = np.array(baths.Vbbp)
-    baths.Vbbp = None
+    baths.Vbbp.fill(0.0)
     baths.use_Vbbp0()
     assert norm(baths.Vbbp - Tba_tmp) < EPS

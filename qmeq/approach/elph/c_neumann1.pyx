@@ -1,233 +1,207 @@
+# cython: boundscheck=False
+# cython: cdivision=True
+# cython: infertypes=False
+# cython: initializedcheck=False
+# cython: nonecheck=False
+# cython: profile=False
+# cython: wraparound=False
+
 """Module containing cython functions, which generate first order 1vN kernel.
    For docstrings see documentation of module neumann1."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+# Python imports
+
 import numpy as np
 import itertools
 
-from ...aprclass import ApproachElPh
-from ...specfunc.c_specfunc_elph cimport Func1vNElPh
+from ...wrappers.mytypes import doublenp
+from ...wrappers.mytypes import complexnp
 
-from ...mytypes import doublenp
-from ...mytypes import complexnp
-
-from ..base.c_neumann1 import generate_phi1fct
-from ..base.c_neumann1 import generate_kern_1vN
-from ..base.c_neumann1 import generate_current_1vN
-from ..base.c_neumann1 import generate_vec_1vN
-from ..base.c_pauli import generate_norm_vec
+# Cython imports
 
 cimport numpy as np
 cimport cython
 
-ctypedef np.uint8_t bool_t
-ctypedef np.int_t int_t
-ctypedef np.int64_t long_t
-ctypedef np.float64_t double_t
-ctypedef np.complex128_t complex_t
+from ...specfunc.c_specfunc_elph cimport Func1vNElPh
 
+from ..c_aprclass cimport ApproachElPh
+from ..c_kernel_handler cimport KernelHandler
 
-@cython.boundscheck(False)
-def generate_w1fct_elph(self):
-    cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
-    si = self.si_elph
-    #
-    cdef bool_t bbp_bool, bb_bool
-    cdef long_t b, bp, bbp, bb
-    cdef int_t charge, l
-    cdef double_t Ebbp
-    #
-    cdef int_t nbaths = si.nbaths
-    #
-    cdef np.ndarray[complex_t, ndim=3] w1fct = np.zeros((nbaths, si.ndm0, 2), dtype=complexnp)
-    #
-    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
-    #
-    func_1vN_elph = Func1vNElPh(self.baths.tlst_ph, self.baths.dlst_ph,
-                                self.funcp.itype_ph, self.funcp.dqawc_limit,
-                                self.baths.bath_func,
-                                self.funcp.eps_elph)
-    # Diagonal elements
-    for l in range(nbaths):
-        func_1vN_elph.eval(0., l)
-        for charge in range(si.ncharge):
-            for b in si.statesdm[charge]:
-                bb = mapdm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
-                bb_bool = booldm0[lenlst[charge]*dictdm[b] + dictdm[b] + shiftlst0[charge]]
-                if bb != -1 and bb_bool:
-                    w1fct[l, bb, 0] = func_1vN_elph.val0 - 0.5j*func_1vN_elph.val0.imag
-                    w1fct[l, bb, 1] = func_1vN_elph.val1 - 0.5j*func_1vN_elph.val1.imag
-    # Off-diagonal elements
-    for charge in range(si.ncharge):
-        for b, bp in itertools.permutations(si.statesdm[charge], 2):
-            bbp = mapdm0[lenlst[charge]*dictdm[b] + dictdm[bp] + shiftlst0[charge]]
-            bbp_bool = booldm0[lenlst[charge]*dictdm[b] + dictdm[bp] + shiftlst0[charge]]
-            if bbp != -1 and bbp_bool:
+from ..base.c_neumann1 cimport Approach1vN as Approach1vNBase
+
+# ---------------------------------------------------------------------------------------------------------
+# 1 von Neumann approach
+# ---------------------------------------------------------------------------------------------------------
+cdef class Approach1vN(ApproachElPh):
+
+    kerntype = '1vN'
+
+    cdef void prepare_arrays(self):
+        ApproachElPh.prepare_arrays(self)
+        Approach1vNBase.prepare_arrays(self)
+
+        nbaths, ndm0 = self.si_elph.nbaths, self.si_elph.ndm0
+        self.w1fct = np.zeros((nbaths, ndm0, 2), dtype=complexnp)
+        self.func_1vN_elph_at_zero = np.zeros((nbaths, 2), dtype=complexnp)
+
+        self._w1fct = self.w1fct
+        self._func_1vN_elph_at_zero = self.func_1vN_elph_at_zero
+
+    cdef void clean_arrays(self):
+        ApproachElPh.clean_arrays(self)
+        Approach1vNBase.clean_arrays(self)
+        self._w1fct[::1] = 0.0
+        self._func_1vN_elph_at_zero[::1] = 0.0
+
+    cpdef void generate_fct(self):
+        Approach1vNBase.generate_fct(self)
+
+        cdef double_t [:] E = self._Ea
+
+        cdef KernelHandler kh = self._kernel_handler.elph
+        cdef long_t nbaths = kh.nbaths
+
+        cdef long_t b, bp, bbp, bb, bcharge, l, i
+        cdef double_t Ebbp
+
+        func_1vN_elph = Func1vNElPh(self._tlst_ph, self._dlst_ph,
+                                    self.funcp.itype_ph, self.funcp.dqawc_limit,
+                                    self.baths.bath_func,
+                                    self.funcp.eps_elph)
+
+        cdef complex_t [:, :, :] w1fct = self._w1fct
+
+        cdef complex_t [:, :] func_1vN_elph_at_zero = self._func_1vN_elph_at_zero
+        for l in range(nbaths):
+            func_1vN_elph.eval(0., l)
+            func_1vN_elph_at_zero[l, 0] = func_1vN_elph.val0 - 0.5j*func_1vN_elph.val0.imag
+            func_1vN_elph_at_zero[l, 1] = func_1vN_elph.val1 - 0.5j*func_1vN_elph.val1.imag
+
+        for i in range(kh.ndm0):
+            b = kh.all_bbp[i, 0]
+            bp = kh.all_bbp[i, 1]
+            bcharge = kh.all_bbp[i, 2]
+            bbp = kh.get_ind_dm0(b, bp, bcharge)
+
+            if b == bp:
+                for l in range(nbaths):
+                    w1fct[l, bbp, 0] = func_1vN_elph_at_zero[l, 0]
+                    w1fct[l, bbp, 1] = func_1vN_elph_at_zero[l, 1]
+            else:
                 Ebbp = E[b]-E[bp]
                 for l in range(nbaths):
                     func_1vN_elph.eval(Ebbp, l)
                     w1fct[l, bbp, 0] = func_1vN_elph.val0
                     w1fct[l, bbp, 1] = func_1vN_elph.val1
-    self.w1fct = w1fct
-    return 0
 
+    cdef void generate_coupling_terms(self,
+                long_t b, long_t bp, long_t bcharge,
+                KernelHandler kh) nogil:
 
-# ---------------------------------------------------------------------------------------------------------
-# 1 von Neumann approach
-# ---------------------------------------------------------------------------------------------------------
-@cython.boundscheck(False)
-def generate_kern_1vN_elph(self):
-    cdef np.ndarray[double_t, ndim=1] E = self.qd.Ea
-    cdef np.ndarray[complex_t, ndim=3] Vbbp = self.baths.Vbbp
-    cdef np.ndarray[complex_t, ndim=3] w1fct = self.w1fct
-    si, si_elph = self.si, self.si_elph
-    #
-    cdef bool_t bbp_bool, bbpi_bool
-    cdef int_t charge, l, nbaths, \
-               aap_sgn, bppbp_sgn, bbpp_sgn, ccp_sgn
-    cdef long_t b, bp, bbp, bbpi, bb, \
-                a, ap, aap, aapi, \
-                bpp, bppbp, bppbpi, bbpp, bbppi, \
-                c, cp, ccp, ccpi, \
-                bpa, bap, cbp, ba, cb, cpb
-    cdef long_t ndm0, ndm0r, npauli,
-    cdef complex_t fct_aap, fct_bppbp, fct_bbpp, fct_ccp, \
-                   gamma_ba_bpap, gamma_ba_bppa, gamma_bc_bppc, \
-                   gamma_abpp_abp, gamma_cbpp_cbp, gamma_bc_bpcp
-    #
-    cdef np.ndarray[long_t, ndim=1] lenlst = si.lenlst
-    cdef np.ndarray[long_t, ndim=1] dictdm = si.dictdm
-    cdef np.ndarray[long_t, ndim=1] shiftlst0 = si.shiftlst0
-    cdef np.ndarray[long_t, ndim=1] mapdm0 = si.mapdm0
-    cdef np.ndarray[bool_t, ndim=1] booldm0 = si.booldm0
-    cdef np.ndarray[bool_t, ndim=1] conjdm0 = si.conjdm0
-    #
-    cdef np.ndarray[long_t, ndim=1] mapdm0_ = si_elph.mapdm0
-    #
-    ndm0r, ndm0, npauli, nbaths = si.ndm0r, si.ndm0, si.npauli, si.nbaths
-    #
-    if self.kern is None:
-        self.kern_ext = np.zeros((ndm0r+1, ndm0r), dtype=doublenp)
-        self.kern = self.kern_ext[0:-1, :]
-        generate_norm_vec(self, ndm0r)
+        Approach1vNBase.generate_coupling_terms(self, b, bp, bcharge, kh)
 
-    cdef np.ndarray[double_t, ndim=2] kern = self.kern
-    for charge in range(si.ncharge):
-        for b, bp in itertools.combinations_with_replacement(si.statesdm[charge], 2):
-            bbp = mapdm0[lenlst[charge]*dictdm[b] + dictdm[bp] + shiftlst0[charge]]
-            bbp_bool = booldm0[lenlst[charge]*dictdm[b] + dictdm[bp] + shiftlst0[charge]]
-            if bbp != -1 and bbp_bool:
-                bbpi = ndm0 + bbp - npauli
-                bbpi_bool = True if bbpi >= ndm0 else False
-                # --------------------------------------------------
-                for a, ap in itertools.product(si.statesdm[charge], si.statesdm[charge]):
-                    aap = mapdm0[lenlst[charge]*dictdm[a] + dictdm[ap] + shiftlst0[charge]]
-                    if aap != -1:
-                        bpa = mapdm0_[lenlst[charge]*dictdm[bp] + dictdm[a] + shiftlst0[charge]]
-                        bap = mapdm0_[lenlst[charge]*dictdm[b] + dictdm[ap] + shiftlst0[charge]]
-                        fct_aap = 0
-                        for l in range(nbaths):
-                            gamma_ba_bpap = 0.5*(Vbbp[l, b, a]*Vbbp[l, bp, ap].conjugate() +
-                                                 Vbbp[l, a, b].conjugate()*Vbbp[l, ap, bp])
-                            fct_aap += gamma_ba_bpap*(w1fct[l, bpa, 0].conjugate() - w1fct[l, bap, 0])
-                        aapi = ndm0 + aap - npauli
-                        aap_sgn = +1 if conjdm0[lenlst[charge]*dictdm[a] + dictdm[ap] + shiftlst0[charge]] else -1
-                        kern[bbp, aap] = kern[bbp, aap] + fct_aap.imag
-                        if aapi >= ndm0:
-                            kern[bbp, aapi] = kern[bbp, aapi] + fct_aap.real*aap_sgn
-                            if bbpi_bool:
-                                kern[bbpi, aapi] = kern[bbpi, aapi] + fct_aap.imag*aap_sgn
-                        if bbpi_bool:
-                            kern[bbpi, aap] = kern[bbpi, aap] - fct_aap.real
-                # --------------------------------------------------
-                for bpp in si.statesdm[charge]:
-                    bppbp = mapdm0[lenlst[charge]*dictdm[bpp] + dictdm[bp] + shiftlst0[charge]]
-                    if bppbp != -1:
-                        fct_bppbp = 0
-                        for a in si.statesdm[charge]:
-                            bpa = mapdm0_[lenlst[charge]*dictdm[bp] + dictdm[a] + shiftlst0[charge]]
-                            for l in range(nbaths):
-                                gamma_ba_bppa = 0.5*(Vbbp[l, b, a]*Vbbp[l, bpp, a].conjugate() +
-                                                     Vbbp[l, a, b].conjugate()*Vbbp[l, a, bpp])
-                                fct_bppbp += gamma_ba_bppa*w1fct[l, bpa, 1].conjugate()
-                        for c in si.statesdm[charge]:
-                            cbp = mapdm0_[lenlst[charge]*dictdm[c] + dictdm[bp] + shiftlst0[charge]]
-                            for l in range(nbaths):
-                                gamma_bc_bppc = 0.5*(Vbbp[l, b, c]*Vbbp[l, bpp, c].conjugate() +
-                                                     Vbbp[l, c, b].conjugate()*Vbbp[l, c, bpp])
-                                fct_bppbp += gamma_bc_bppc*w1fct[l, cbp, 0]
-                        bppbpi = ndm0 + bppbp - npauli
-                        bppbp_sgn = +1 if conjdm0[lenlst[charge]*dictdm[bpp] + dictdm[bp] + shiftlst0[charge]] else -1
-                        kern[bbp, bppbp] = kern[bbp, bppbp] + fct_bppbp.imag
-                        if bppbpi >= ndm0:
-                            kern[bbp, bppbpi] = kern[bbp, bppbpi] + fct_bppbp.real*bppbp_sgn
-                            if bbpi_bool:
-                                kern[bbpi, bppbpi] = kern[bbpi, bppbpi] + fct_bppbp.imag*bppbp_sgn
-                        if bbpi_bool:
-                            kern[bbpi, bppbp] = kern[bbpi, bppbp] - fct_bppbp.real
-                    # --------------------------------------------------
-                    bbpp = mapdm0[lenlst[charge]*dictdm[b] + dictdm[bpp] + shiftlst0[charge]]
-                    if bbpp != -1:
-                        fct_bbpp = 0
-                        for a in si.statesdm[charge]:
-                            ba = mapdm0_[lenlst[charge]*dictdm[b] + dictdm[a] + shiftlst0[charge]]
-                            for l in range(nbaths):
-                                gamma_abpp_abp = 0.5*(Vbbp[l, a, bpp].conjugate()*Vbbp[l, a, bp] +
-                                                      Vbbp[l, bpp, a]*Vbbp[l, bp, a].conjugate())
-                                fct_bbpp += -gamma_abpp_abp*w1fct[l, ba, 1]
-                        for c in si.statesdm[charge]:
-                            cb = mapdm0_[lenlst[charge]*dictdm[c] + dictdm[b] + shiftlst0[charge]]
-                            for l in range(nbaths):
-                                gamma_cbpp_cbp = 0.5*(Vbbp[l, c, bpp].conjugate()*Vbbp[l, c, bp] +
-                                                      Vbbp[l, bpp, c]*Vbbp[l, bp, c].conjugate())
-                                fct_bbpp += -gamma_cbpp_cbp*w1fct[l, cb, 0].conjugate()
-                        bbppi = ndm0 + bbpp - npauli
-                        bbpp_sgn = +1 if conjdm0[lenlst[charge]*dictdm[b] + dictdm[bpp] + shiftlst0[charge]] else -1
-                        kern[bbp, bbpp] = kern[bbp, bbpp] + fct_bbpp.imag
-                        if bbppi >= ndm0:
-                            kern[bbp, bbppi] = kern[bbp, bbppi] + fct_bbpp.real*bbpp_sgn
-                            if bbpi_bool:
-                                kern[bbpi, bbppi] = kern[bbpi, bbppi] + fct_bbpp.imag*bbpp_sgn
-                        if bbpi_bool:
-                            kern[bbpi, bbpp] = kern[bbpi, bbpp] - fct_bbpp.real
-                # --------------------------------------------------
-                for c, cp in itertools.product(si.statesdm[charge], si.statesdm[charge]):
-                    ccp = mapdm0[lenlst[charge]*dictdm[c] + dictdm[cp] + shiftlst0[charge]]
-                    if ccp != -1:
-                        cbp = mapdm0_[lenlst[charge]*dictdm[c] + dictdm[bp] + shiftlst0[charge]]
-                        cpb = mapdm0_[lenlst[charge]*dictdm[cp] + dictdm[b] + shiftlst0[charge]]
-                        fct_ccp = 0
-                        for l in range(nbaths):
-                            gamma_bc_bpcp = 0.5*(Vbbp[l, b, c]*Vbbp[l, bp, cp].conjugate() +
-                                                 Vbbp[l, c, b].conjugate()*Vbbp[l, cp, bp])
-                            fct_ccp += gamma_bc_bpcp*(w1fct[l, cbp, 1] - w1fct[l, cpb, 1].conjugate())
-                        ccpi = ndm0 + ccp - npauli
-                        ccp_sgn = +1 if conjdm0[lenlst[charge]*dictdm[c] + dictdm[cp] + shiftlst0[charge]] else -1
-                        kern[bbp, ccp] = kern[bbp, ccp] + fct_ccp.imag
-                        if ccpi >= ndm0:
-                            kern[bbp, ccpi] = kern[bbp, ccpi] + fct_ccp.real*ccp_sgn
-                            if bbpi_bool:
-                                kern[bbpi, ccpi] = kern[bbpi, ccpi] + fct_ccp.imag*ccp_sgn
-                        if bbpi_bool:
-                            kern[bbpi, ccp] = kern[bbpi, ccp] - fct_ccp.real
-                # --------------------------------------------------
-    return 0
+        cdef long_t a, ap, bpp, c, cp, \
+                    ba, bap, bpa, cb, cbp, cpb
 
+        cdef complex_t fct_aap, fct_bppbp, fct_bbpp, fct_ccp, \
+                       gamma_ba_bpap, gamma_ba_bppa, gamma_bc_bppc, \
+                       gamma_abpp_abp, gamma_cbpp_cbp, gamma_bc_bpcp
 
-class Approach1vN(ApproachElPh):
+        cdef long_t i, j, l
+        cdef long_t nbaths = kh.nbaths
+        cdef long_t [:, :] statesdm = kh.statesdm
 
-    kerntype = '1vN'
-    generate_fct = generate_phi1fct
-    generate_kern = generate_kern_1vN
-    generate_current = generate_current_1vN
-    generate_vec = generate_vec_1vN
-    #
-    generate_kern_elph = generate_kern_1vN_elph
-    generate_fct_elph = generate_w1fct_elph
-# ---------------------------------------------------------------------------------------------------------
+        cdef complex_t [:, :, :] Vbbp = self._Vbbp
+        cdef complex_t [:, :, :] w1fct = self._w1fct
+
+        cdef long_t acharge = bcharge
+        cdef long_t ccharge = bcharge
+
+        cdef long_t bcount = kh.statesdm_count[bcharge]
+        cdef long_t acount = bcount
+        cdef long_t ccount = bcount
+
+        # --------------------------------------------------
+        for i in range(acount):
+            for j in range(acount):
+                a = statesdm[acharge, i]
+                ap = statesdm[acharge, j]
+                if not kh.is_included(a, ap, acharge):
+                    continue
+                bpa = kh.elph.get_ind_dm0(bp, a, acharge)
+                bap = kh.elph.get_ind_dm0(b, ap, acharge)
+                if bpa == -1 or bap == -1:
+                    continue
+                fct_aap = 0
+                for l in range(nbaths):
+                    gamma_ba_bpap = 0.5*(Vbbp[l, b, a]*Vbbp[l, bp, ap].conjugate() +
+                                         Vbbp[l, a, b].conjugate()*Vbbp[l, ap, bp])
+                    fct_aap += gamma_ba_bpap*(w1fct[l, bpa, 0].conjugate() - w1fct[l, bap, 0])
+                kh.set_matrix_element(fct_aap, b, bp, bcharge, a, ap, acharge)
+        # --------------------------------------------------
+        for i in range(bcount):
+            bpp = statesdm[bcharge, i]
+            if kh.is_included(bpp, bp, bcharge):
+                fct_bppbp = 0
+                for j in range(acount):
+                    a = statesdm[acharge, j]
+                    bpa = kh.elph.get_ind_dm0(bp, a, acharge)
+                    if bpa == -1:
+                        continue
+                    for l in range(nbaths):
+                        gamma_ba_bppa = 0.5*(Vbbp[l, b, a]*Vbbp[l, bpp, a].conjugate() +
+                                             Vbbp[l, a, b].conjugate()*Vbbp[l, a, bpp])
+                        fct_bppbp += gamma_ba_bppa*w1fct[l, bpa, 1].conjugate()
+                for j in range(ccount):
+                    c = statesdm[ccharge, j]
+                    cbp = kh.elph.get_ind_dm0(c, bp, bcharge)
+                    if cbp == -1:
+                        continue
+                    for l in range(nbaths):
+                        gamma_bc_bppc = 0.5*(Vbbp[l, b, c]*Vbbp[l, bpp, c].conjugate() +
+                                             Vbbp[l, c, b].conjugate()*Vbbp[l, c, bpp])
+                        fct_bppbp += gamma_bc_bppc*w1fct[l, cbp, 0]
+                kh.set_matrix_element(fct_bppbp, b, bp, bcharge, bpp, bp, bcharge)
+            # --------------------------------------------------
+            if kh.is_included(b, bpp, bcharge):
+                fct_bbpp = 0
+                for j in range(acount):
+                    a = statesdm[acharge, j]
+                    ba = kh.elph.get_ind_dm0(b, a, acharge)
+                    if ba == -1:
+                        continue
+                    for l in range(nbaths):
+                        gamma_abpp_abp = 0.5*(Vbbp[l, a, bpp].conjugate()*Vbbp[l, a, bp] +
+                                              Vbbp[l, bpp, a]*Vbbp[l, bp, a].conjugate())
+                        fct_bbpp += -gamma_abpp_abp*w1fct[l, ba, 1]
+                for j in range(ccount):
+                    c = statesdm[ccharge, j]
+                    cb = kh.elph.get_ind_dm0(c, b, bcharge)
+                    if cb == -1:
+                        continue
+                    for l in range(nbaths):
+                        gamma_cbpp_cbp = 0.5*(Vbbp[l, c, bpp].conjugate()*Vbbp[l, c, bp] +
+                                              Vbbp[l, bpp, c]*Vbbp[l, bp, c].conjugate())
+                        fct_bbpp += -gamma_cbpp_cbp*w1fct[l, cb, 0].conjugate()
+                kh.set_matrix_element(fct_bbpp, b, bp, bcharge, b, bpp, bcharge)
+        # --------------------------------------------------
+        for i in range(ccount):
+            for j in range(ccount):
+                c = statesdm[ccharge, i]
+                cp = statesdm[ccharge, j]
+                if not kh.is_included(c, cp, ccharge):
+                    continue
+                cbp = kh.elph.get_ind_dm0(c, bp, bcharge)
+                cpb = kh.elph.get_ind_dm0(cp, b, bcharge)
+                if cbp == -1 or cpb == -1:
+                    continue
+                fct_ccp = 0
+                for l in range(nbaths):
+                    gamma_bc_bpcp = 0.5*(Vbbp[l, b, c]*Vbbp[l, bp, cp].conjugate() +
+                                         Vbbp[l, c, b].conjugate()*Vbbp[l, cp, bp])
+                    fct_ccp += gamma_bc_bpcp*(w1fct[l, cbp, 1] - w1fct[l, cpb, 1].conjugate())
+                kh.set_matrix_element(fct_ccp, b, bp, bcharge, c, cp, ccharge)
+        # --------------------------------------------------
+
+    cpdef void generate_current(self):
+        Approach1vNBase.generate_current(self)

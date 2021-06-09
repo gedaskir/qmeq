@@ -29,7 +29,8 @@ dirs = [
     './qmeq/approach/elph/',
     './qmeq/builder/',
     './qmeq/specfunc/',
-    './qmeq/tests/'
+    './qmeq/tests/',
+    './qmeq/wrappers/',
     ]
 
 exts = ['*.o', '*.so', '*.pyd', '*.dll', '*.pyc', '*.c', '*.html']

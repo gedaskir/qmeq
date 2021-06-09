@@ -15,17 +15,22 @@ docs/run.bat
 qmeq/pylintrc
 qmeq/specfunc/c_specfunc.c
 qmeq/specfunc/c_specfunc_elph.c
+qmeq/approach/c_aprclass.c
+qmeq/approach/c_kernel_handler.c
 qmeq/approach/base/c_pauli.c
 qmeq/approach/base/c_lindblad.c
 qmeq/approach/base/c_redfield.c
 qmeq/approach/base/c_neumann1.c
 qmeq/approach/base/c_neumann2.c
+qmeq/approach/base/c_RTD.c
 qmeq/approach/base/_complex_redfield.py
 qmeq/approach/base/_complex_neumann1.py
 qmeq/approach/elph/c_pauli.c
 qmeq/approach/elph/c_lindblad.c
 qmeq/approach/elph/c_redfield.c
 qmeq/approach/elph/c_neumann1.c
+qmeq/wrappers/c_lapack.c
+qmeq/wrappers/c_mytypes.c
 
 ### Directories
 

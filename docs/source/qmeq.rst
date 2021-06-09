@@ -8,10 +8,9 @@ Modules
 
    approach/qmeq.approach
    builder/qmeq.builder
-   specfunc/qmeq.specfunc
-   qmeq.aprclass
+   specfunc/qmeq.specfunc  
+   wrappers/qmeq.wrappers
    qmeq.baths
    qmeq.indexing
    qmeq.leadstun
-   qmeq.mytypes
    qmeq.qdot

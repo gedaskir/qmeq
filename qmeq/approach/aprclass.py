@@ -1,13 +1,15 @@
 """Module containing sample classes for approach definitions."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
+import itertools
 
 import numpy as np
 from scipy import optimize
 
-from .mytypes import doublenp
+from ..wrappers.mytypes import doublenp
+from ..wrappers.mytypes import complexnp
+
+from .kernel_handler import KernelHandler
+from .kernel_handler import KernelHandlerMatrixFree
 
 
 class Approach(object):
@@ -27,10 +29,6 @@ class Approach(object):
     bvec : array
         Right hand side column vector for master equation.
         The entry funcp.norm_row is 1 representing normalization condition.
-    kern_ext : array
-        Same as kern, only with one additional row added.
-    bvec_ext : array
-        Same as bvec, only with one additional entry added.
     sol0 : array
         Least squares solution for the master equation.
     phi0 : array
@@ -57,23 +55,51 @@ class Approach(object):
     """
 
     kerntype = 'not defined'
+    dtype = doublenp
     indexing_class_name = 'StateIndexingDM'
 
-    @staticmethod
-    def generate_fct(self):
-        pass
+    #region Properties
 
-    @staticmethod
-    def generate_kern(self):
-        pass
+    @property
+    def solmethod(self):
+        return self.funcp.solmethod
+    @solmethod.setter
+    def solmethod(self, value):
+        self.funcp.solmethod = value
+        self.prepare_solver()
 
-    @staticmethod
-    def generate_current(self):
-        pass
+    @property
+    def mfreeq(self):
+        return self.funcp.mfreeq
+    @mfreeq.setter
+    def mfreeq(self, value):
+        self.funcp.mfreeq = value
 
-    @staticmethod
-    def generate_vec(self):
-        pass
+    @property
+    def symq(self):
+        return self.funcp.symq
+    @symq.setter
+    def symq(self, value):
+        if value == self.funcp.symq:
+            return
+        self.is_prepared = False
+        self.funcp.symq = value
+
+    @property
+    def norm_row(self):
+        return self.funcp.norm_row
+    @norm_row.setter
+    def norm_row(self, value):
+        self.funcp.norm_row = value
+
+    @property
+    def itype(self):
+        return self.funcp.itype
+    @itype.setter
+    def itype(self, value):
+        self.funcp.itype = value
+
+    #endregion Properties
 
     def __init__(self, builder):
         """
@@ -92,47 +118,201 @@ class Approach(object):
 
     def restart(self):
         """Restart values of some variables."""
+        self.is_prepared = False
+        self.make_kern_copy = False
+
         self.kern, self.bvec, self.norm_vec = None, None, None
-        self.kern_ext, self.bvec_ext = None, None
         self.sol0, self.phi0, self.phi1 = None, None, None
+        self.dphi0_dt = None
         self.current = None
         self.energy_current = None
         self.heat_current = None
         self.phi1fct, self.paulifct = None, None
         self.phi1fct_energy = None
         self.tLba = None
+        self.kernel_handler = None
 
-    def set_phi0_init(self):
-        if self.kerntype in {'Pauli', 'pyPauli'}:
-            phi0_init = np.zeros(self.si.npauli, dtype=doublenp)
+    #region Preparation
+
+    def get_kern_size(self):
+        return self.si.ndm0r
+
+    def prepare_kern(self):
+        if self.is_prepared and not self.si.states_changed:
+            self.clean_arrays()
+            return
+
+        self.prepare_kernel_handler()
+        self.prepare_arrays()
+        self.prepare_solver()
+
+        self.si.states_changed = False
+        self.is_prepared = True
+
+    def clean_arrays(self):
+        if not self.mfreeq:
+            self.kern.fill(0.0)
+            self.bvec.fill(0.0)
+
+        self.current.fill(0.0)
+        self.energy_current.fill(0.0)
+        self.heat_current.fill(0.0)
+
+    def prepare_arrays(self):
+        kern_size = self.get_kern_size()
+        nleads = self.si.nleads
+
+        self.current = np.zeros(nleads, dtype=doublenp)
+        self.energy_current = np.zeros(nleads, dtype=doublenp)
+        self.heat_current = np.zeros(nleads, dtype=doublenp)
+
+        self.phi0 = np.zeros(kern_size, dtype=self.dtype)
+        self.kernel_handler.set_phi0(self.phi0)
+
+        if self.funcp.mfreeq:
+            self.dphi0_dt = np.zeros(kern_size, dtype=self.dtype)
+            self.kernel_handler.set_dphi0_dt(self.dphi0_dt)
         else:
-            phi0_init = np.zeros(self.si.ndm0r, dtype=doublenp)
-        phi0_init[0] = 1.0
-        return phi0_init
+            kern_size_rows = kern_size if self.funcp.symq else kern_size+1
 
-    def solve_kern(self):
-        """Finds the stationary state using least squares or by inverting the matrix."""
+            self.kern = np.zeros((kern_size_rows, kern_size), dtype=self.dtype, order='F')
+
+            self.kernel_handler.set_kern(self.kern)
+
+            self.bvec = np.zeros(kern_size_rows, dtype=self.dtype)
+
+            self.replaced_eq = np.zeros(kern_size, dtype=self.dtype)
+
+            self.norm_vec = np.zeros(kern_size, dtype=self.dtype)
+
+            self.generate_norm_vec()
+
+    def prepare_kernel_handler(self):
+        if self.funcp.mfreeq:
+            self.kernel_handler = KernelHandlerMatrixFree(self.si)
+        else:
+            self.kernel_handler = KernelHandler(self.si)
+
+    def prepare_solver(self):
         solmethod = self.funcp.solmethod
-        symq = self.funcp.symq
-        norm_row = self.funcp.norm_row
-        replaced_eq = None
-
         # Determine the proper solution method
+        if self.funcp.mfreeq:
+            solmethod = solmethod if solmethod is not None else 'krylov'
+            self.funcp.solmethod = solmethod
+            return
+
+        symq = self.funcp.symq
         if solmethod is None:
             solmethod = 'solve' if symq else 'lsqr'
         if not symq and solmethod != 'lsqr' and solmethod != 'lsmr':
             print("WARNING: Using solmethod=lsqr, because the kernel is not symmetric, symq=False.")
             solmethod = 'lsqr'
+
         self.funcp.solmethod = solmethod
+
+    #endregion Preparation
+
+    #region Generation
+
+    def generate_norm_vec(self):
+        """
+        Generates normalisation condition for 1vN approach.
+
+        Parameters
+        ----------
+        norm_vec : array
+            (Modifies) Left hand side of the normalisation condition.
+        """
+        si = self.si
+
+        for charge in range(si.ncharge):
+            for b in si.statesdm[charge]:
+                bb = si.get_ind_dm0(b, b, charge)
+                self.norm_vec[bb] += 1
+
+    def generate_fct(self):
+        pass
+
+    def generate_kern(self):
+        """
+        Generates a kernel (Liouvillian) matrix corresponding to first order von Neumann approach (1vN).
+
+        Parameters
+        ----------
+        kern : array
+            (Modifies) Kernel matrix for 1vN approach.
+        """
+        E = self.qd.Ea
+        si, kh = self.si, self.kernel_handler
+        ncharge, statesdm = si.ncharge, si.statesdm
+
+        for bcharge in range(ncharge):
+            for b, bp in itertools.combinations_with_replacement(statesdm[bcharge], 2):
+                if not (kh.is_included(b, bp, bcharge) and kh.is_unique(b, bp, bcharge)):
+                    continue
+                kh.set_energy(E[b]-E[bp], b, bp, bcharge)
+                self.generate_coupling_terms(b, bp, bcharge)
+
+    def generate_coupling_terms(self, b, bp, bcharge):
+        pass
+
+    def generate_current(self):
+        pass
+
+    def generate_vec(self, phi0):
+        """
+        Acts on given phi0 with Liouvillian of first-order approach.
+
+        Parameters
+        ----------
+        phi0 : array
+            Some values of zeroth order density matrix elements.
+        self : Approach
+            Approach object.
+
+        Returns
+        -------
+        dphi0_dt : array
+            Values of zeroth order density matrix elements
+            after acting with Liouvillian, i.e., dphi0_dt=L(phi0p).
+        """
+        norm_row = self.funcp.norm_row
+
+        kh = self.kernel_handler
+        kh.set_phi0(phi0)
+        norm = kh.get_phi0_norm()
+
+        self.dphi0_dt.fill(0.0)
+
+        # Here dphi0_dt and norm will be implicitly calculated by using KernelHandlerMatrixFree
+        self.generate_kern()
+
+        self.dphi0_dt[norm_row] = norm-1
+
+        return self.dphi0_dt
+
+    #endregion Generation
+
+    #region Solution
+
+    def solve_kern(self):
+        """Finds the stationary state using least squares or using LU decomposition."""
+        solmethod = self.funcp.solmethod
+        symq = self.funcp.symq
+        norm_row = self.funcp.norm_row
+        replaced_eq = self.replaced_eq
+
+        kern = self.kern
+        bvec = self.bvec
 
         # Replace one equation by the normalisation condition
         if symq:
-            kern, bvec = self.kern, self.bvec
-            replaced_eq = np.array(kern[norm_row])
+            replaced_eq[:] = kern[norm_row]
             kern[norm_row] = self.norm_vec
+            bvec[norm_row] = 1
         else:
-            kern, bvec = self.kern_ext, self.bvec_ext
             kern[-1] = self.norm_vec
+            bvec[-1] = 1
 
         # Try to solve the master equation
         try:
@@ -141,11 +321,11 @@ class Approach(object):
             elif solmethod == 'lsqr':
                 self.sol0 = np.linalg.lstsq(kern, bvec, rcond=-1)
 
-            self.phi0 = self.sol0[0]
+            self.phi0[:] = self.sol0[0]
             self.success = True
         except Exception as exept:
             self.funcp.print_error(exept)
-            self.phi0 = np.zeros(self.si.ndm0r)
+            self.phi0.fill(0.0)
             self.success = False
 
         # Return back the replaced equation
@@ -155,24 +335,30 @@ class Approach(object):
     def solve_matrix_free(self):
         """Finds the stationary state using matrix free methods like broyden, krylov, etc."""
         solmethod = self.funcp.solmethod
-        #
         phi0_init = self.funcp.phi0_init
+
         if phi0_init is None:
             self.funcp.print_warning(0, "WARNING: For mfreeq=True no phi0_init is specified. " +
                                      "Using phi0_init[0]=1.0 as a default. " +
                                      "This warning will not be shown again.")
             phi0_init = self.set_phi0_init()
-        #
-        solmethod = solmethod if solmethod is not None else 'krylov'
+
         try:
-            self.sol0 = optimize.root(self.generate_vec, phi0_init, args=(self), method=solmethod)
-            self.phi0 = self.sol0.x
+            self.sol0 = optimize.root(self.generate_vec, phi0_init, method=solmethod)
+            self.phi0[:] = self.sol0.x
             self.success = self.sol0.success
         except Exception as exept:
             self.funcp.print_error(exept)
-            self.phi0 = 0 * phi0_init
+            self.phi0.fill(0.0)
             self.success = False
-        self.funcp.solmethod = solmethod
+
+    def set_phi0_init(self):
+        phi0_init = np.zeros(self.get_kern_size(), dtype=self.dtype)
+        phi0_init[0] = 1.0
+        return phi0_init
+
+    def rotate(self):
+        self.leads.rotate(self.qd.vecslst)
 
     def solve(self, qdq=True, rotateq=True, masterq=True, currentq=True, *args, **kwargs):
         """
@@ -193,52 +379,36 @@ class Approach(object):
         if qdq:
             self.qd.diagonalise()
             if rotateq:
-                self.leads.rotate(self.qd.vecslst)
+                self.rotate()
         #
         if masterq:
-            self.generate_fct(self)
-            if self.funcp.mfreeq:
-                self.solve_matrix_free()
-            else:
-                self.generate_kern(self)
+            self.prepare_kern()
+            self.generate_fct()
+            if not self.funcp.mfreeq:
+                self.generate_kern()
                 self.solve_kern()
+            else:
+                self.solve_matrix_free()
             if currentq:
-                self.generate_current(self)
+                self.generate_current()
 
+    #endregion Solution
 
 class ApproachElPh(Approach):
-
-    @staticmethod
-    def generate_fct_elph(self):
-        pass
-
-    @staticmethod
-    def generate_kern_elph(self):
-        pass
 
     def __init__(self, builder):
         Approach.__init__(self, builder)
         self.baths = builder.baths
         self.si_elph = builder.si_elph
 
-    def solve(self, qdq=True, rotateq=True, masterq=True, currentq=True, *args, **kwargs):
-        if qdq:
-            self.qd.diagonalise()
-            if rotateq:
-                self.leads.rotate(self.qd.vecslst)
-                self.baths.rotate(self.qd.vecslst)
-        #
-        if masterq:
-            self.generate_fct(self)
-            self.generate_fct_elph(self)
-            if self.funcp.mfreeq:
-                self.solve_matrix_free()
-            else:
-                self.generate_kern(self)
-                self.generate_kern_elph(self)
-                self.solve_kern()
-            if currentq:
-                self.generate_current(self)
+    def restart(self):
+        Approach.restart(self)
+        self.w1fct, self.paulifct_elph = None, None
+        self.tLbbp = None
+
+    def rotate(self):
+        self.leads.rotate(self.qd.vecslst)
+        self.baths.rotate(self.qd.vecslst)
 
 
 class Iterations2vN(object):
@@ -248,11 +418,11 @@ class Iterations2vN(object):
 
     def __init__(self, appr):
         self.niter = appr.niter
-        self.phi0 = appr.phi0
-        self.phi1 = appr.phi1
-        self.current = appr.current
-        self.energy_current = appr.energy_current
-        self.heat_current = appr.heat_current
+        self.phi0 = np.copy(appr.phi0)
+        self.phi1 = np.copy(appr.phi1)
+        self.current = np.copy(appr.current)
+        self.energy_current = np.copy(appr.energy_current)
+        self.heat_current = np.copy(appr.heat_current)
 
 
 class ApproachBase2vN(Approach):
@@ -295,23 +465,8 @@ class ApproachBase2vN(Approach):
     """
 
     kerntype = 'not defined'
+    dtype = complexnp
     indexing_class_name = 'StateIndexingDMc'
-
-    @staticmethod
-    def iterate(self):
-        pass
-
-    @staticmethod
-    def get_phi1_phi0(self):
-        pass
-
-    @staticmethod
-    def kern_phi0(self):
-        pass
-
-    @staticmethod
-    def generate_current(self):
-        pass
 
     def __init__(self, builder):
         """
@@ -335,56 +490,85 @@ class ApproachBase2vN(Approach):
         if type(self.si).__name__ != self.indexing_class_name:
             raise TypeError('The state indexing class for 2vN approach has to be StateIndexingDMc')
 
-    def make_Ek_grid(self):
-        """Make an energy grid on which 2vN equations are solved. """
-        if self.funcp.kpnt is None:
-            raise ValueError('kpnt needs to be specified.')
-        if self.si.nleads > 0:
-            dmin = np.min(self.leads.dlst)
-            dmax = np.max(self.leads.dlst)
-            Ek_grid, kpnt = self.Ek_grid, self.funcp.kpnt
-            if Ek_grid[0] != dmin or Ek_grid[-1] != dmax or Ek_grid.shape[0] != kpnt:
-                self.funcp.dmin = dmin
-                self.funcp.dmax = dmax
-                self.Ek_grid = np.linspace(dmin, dmax, kpnt)
-                #
-                if self.niter != -1:
-                    print("WARNING: Ek_grid has changed. Restarting the calculation.")
-                    self.restart()
-                #
-                if ((dmin * np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[0].tolist() or
-                        (dmax * np.ones(self.si.nleads)).tolist() != self.leads.dlst.T[1].tolist()):
-                    print("WARNING: The bandwidth and Ek_grid for all leads will be the same: from " +
-                          "dmin=" + str(dmin) + " to dmax=" + str(dmax) + ".")
-
     def restart(self):
         """Restart values of some variables for new calculations."""
-        self.kern, self.bvec = None, None
-        self.sol0, self.phi0, self.phi1 = None, None, None
-        self.current = None
-        self.energy_current = None
-        self.heat_current = None
-        #
-        self.niter = -1
+        Approach.restart(self)
+        self.is_zeroth_iteration = True
+
+        self.h_phi1 = None
+
+        self.phi1_phi0 = None
+        self.e_phi1_phi0 = None
+
         self.phi1k = None
         self.phi1k_delta = None
         self.hphi1k_delta = None
         self.kern1k_inv = None
-        self.phi1_phi0 = None
-        self.e_phi1_phi0 = None
-        #
+
+        self.niter = -1
         self.iters = []
+
+    #region Preparation
+
+    def get_kern_size(self):
+        return self.si.ndm0
+
+    def prepare_arrays(self):
+        Approach.prepare_arrays(self)
+        nleads, ndm0, ndm1 = self.si.nleads, self.si.ndm0, self.si.ndm1
+
+        self.phi1 = np.zeros((nleads, ndm1), dtype=complexnp)
+        self.h_phi1 = np.zeros((nleads, ndm1), dtype=complexnp)
+
+        self.phi1_phi0 = np.zeros((nleads, ndm1, ndm0), dtype=complexnp)
+        self.e_phi1_phi0 = np.zeros((nleads, ndm1, ndm0), dtype=complexnp)
+
+        if self.is_zeroth_iteration:
+            Eklen = len(self.Ek_grid)
+            self.phi1k = np.zeros((Eklen, nleads, ndm1, ndm0), dtype=complexnp)
+            self.phi1k_delta = np.zeros((Eklen, nleads, ndm1, ndm0), dtype=complexnp)
+            self.kern1k_inv = np.zeros((Eklen, nleads, ndm1, ndm1), dtype=complexnp)
+
+    def clean_arrays(self):
+        Approach.clean_arrays(self)
+
+        self.phi1.fill(0.0)
+        self.h_phi1.fill(0.0)
+
+        self.phi1_phi0.fill(0.0)
+        self.e_phi1_phi0.fill(0.0)
+
+    #endregion Preparation
+
+    #region Generation
+
+    def iterate(self):
+        pass
+
+    def determine_phi1_phi0(self):
+        pass
+
+    def generate_kern(self):
+        pass
+
+    def generate_current(self):
+        pass
+
+    #endregion Generation
 
     def iteration(self):
         """Makes one iteration for solution of the 2vN integral equation."""
-        self.iterate(self)
-        self.phi1k = self.phi1k_delta if self.phi1k is None else self.phi1k + self.phi1k_delta
-        self.get_phi1_phi0(self)
+        self.prepare_kern()
+
+        self.iterate()
+        self.phi1k += self.phi1k_delta
+        self.determine_phi1_phi0()
         self.niter += 1
-        self.kern_phi0(self)
+
+        self.generate_kern()
         self.solve_kern()
-        self.generate_current(self)
-        #
+        self.generate_current()
+
         self.iters.append(Iterations2vN(self))
 
     def solve(self,
@@ -417,13 +601,11 @@ class ApproachBase2vN(Approach):
             self.qd.diagonalise()
             if rotateq:
                 self.leads.rotate(self.qd.vecslst)
-        #
+
         if masterq:
-            # Exception
             if niter is None:
                 raise ValueError('Number of iterations niter needs to be specified')
-            self.make_Ek_grid()
-            #
+
             for it in range(niter):
                 self.iteration()
                 if func_iter is not None:

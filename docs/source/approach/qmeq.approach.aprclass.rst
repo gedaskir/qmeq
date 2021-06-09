@@ -1,7 +1,7 @@
-qmeq.specfunc.specfuncc module
+qmeq.approach.aprclass module
 ==============================
 
-.. automodule:: qmeq.specfunc.specfuncc
+.. automodule:: qmeq.approach.aprclass
     :members:
     :undoc-members:
     :show-inheritance:

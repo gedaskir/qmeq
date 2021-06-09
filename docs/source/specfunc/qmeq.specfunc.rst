@@ -7,15 +7,15 @@ Submodules
 .. toctree::
 
    qmeq.specfunc.specfunc
-   qmeq.specfunc.specfuncc
+   qmeq.specfunc.specfunc_elph
 
 Cython submodules
 -----------------
 
 .. toctree::
 
-    qmeq.specfunc.specfunc_elph
-    qmeq.specfunc.specfuncc_elph
+   qmeq.specfunc.c_specfunc
+   qmeq.specfunc.c_specfunc_elph
 
 Module contents
 ---------------

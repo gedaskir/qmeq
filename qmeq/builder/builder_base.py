@@ -1,15 +1,11 @@
 """Module containing BuilderBase and BuilderManyBody classes."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
 import copy
 import numpy as np
 
-from ..mytypes import longnp
+from ..wrappers.mytypes import longnp
 
-from ..aprclass import Approach
+from ..approach.aprclass import Approach
 from ..indexing import StateIndexingDM
 from ..indexing import StateIndexingDMc
 from ..qdot import QuantumDot
@@ -32,11 +28,12 @@ from .validation import validate_indexing
 # -----------------------------------------------------------
 # Python modules
 
-from ..approach.base.pauli import ApproachPyPauli
-from ..approach.base.lindblad import ApproachPyLindblad
-from ..approach.base.redfield import ApproachPyRedfield
-from ..approach.base.neumann1 import ApproachPy1vN
-from ..approach.base.neumann2 import ApproachPy2vN
+from ..approach.base.pauli import ApproachPauli as ApproachPyPauli
+from ..approach.base.lindblad import ApproachLindblad as ApproachPyLindblad
+from ..approach.base.redfield import ApproachRedfield as ApproachPyRedfield
+from ..approach.base.neumann1 import Approach1vN as ApproachPy1vN
+from ..approach.base.neumann2 import Approach2vN as ApproachPy2vN
+from ..approach.base.RTD import ApproachPyRTD as ApproachPyRTD
 
 # Cython compiled modules
 
@@ -46,13 +43,15 @@ try:
     from ..approach.base.c_redfield import ApproachRedfield
     from ..approach.base.c_neumann1 import Approach1vN
     from ..approach.base.c_neumann2 import Approach2vN
-except ImportError:
+    from ..approach.base.c_RTD import ApproachRTD
+except ImportError as ie:
     print("WARNING: Cannot import Cython compiled modules for the approaches (builder_base.py).")
     ApproachPauli = ApproachPyPauli
     ApproachLindblad = ApproachPyLindblad
     ApproachRedfield = ApproachPyRedfield
     Approach1vN = ApproachPy1vN
     Approach2vN = ApproachPy2vN
+    ApproachRTD = ApproachPyRTD
 # -----------------------------------------------------------
 
 attribute_map = dict(
@@ -62,15 +61,15 @@ attribute_map = dict(
     hsingle='qd', coulomb='qd', Ea='qd',
     # LeadsTunneling
     tleads='leads', mulst='leads', tlst='leads', dlst='leads',
-    Tba='leads',
+    Tba='leads', tleads_array='leads',
     # Approach
     solve='appr', current='appr', energy_current='appr',
     heat_current='appr', phi0='appr', phi1='appr', niter='appr',
-    iters='appr', kern='appr', success='appr',
+    iters='appr', kern='appr', success='appr', make_kern_copy='appr',
     # FunctionProperties
-    kpnt='funcp', symq='funcp', norm_row='funcp', solmethod='funcp',
-    itype='funcp', dqawc_limit='funcp',
-    mfreeq='funcp', phi0_init='funcp',
+    kpnt='funcp', symq='appr', norm_row='appr', solmethod='appr',
+    itype='appr', dqawc_limit='funcp',
+    mfreeq='appr', phi0_init='funcp', off_diag_corrections='funcp'
     )
 
 
@@ -110,9 +109,9 @@ class BuilderBase(object):
 
     def _init_validate_data(self):
         data = self.data
-        data.itype = validate_itype(data.itype)
+        data.itype = validate_itype(data.itype, data.kerntype)
         data.kerntype = validate_kerntype(data.kerntype)
-        data.indexing = validate_indexing(data.indexing,
+        data.indexing, data.symmetry = validate_indexing(data.indexing,
                                           data.symmetry,
                                           data.kerntype)
 
@@ -170,6 +169,7 @@ class BuilderBase(object):
             self.si = self.globals[icn](si.nsingle, si.indexing, si.symmetry, si.nleads)
             self.qd.si = self.si
             self.leads.si = self.si
+        self.si.states_changed = True
 
     # kerntype
     def get_kerntype(self):

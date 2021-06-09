@@ -3,6 +3,7 @@ import sys
 import os
 
 sys.path.insert(0, os.path.abspath('../../qmeq/'))
+sys.path.insert(0, os.path.abspath('../..'))
 
 # -- General configuration ------------------------------------------------
 needs_sphinx = '1.3'

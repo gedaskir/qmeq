@@ -1,132 +1,95 @@
 """Module containing python functions, which generate first order Lindblad kernels."""
 
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
 import numpy as np
 import itertools
 
-from ...aprclass import ApproachElPh
+from ...wrappers.mytypes import doublenp
+
 from ...specfunc.specfunc_elph import FuncPauliElPh
 
-from ...mytypes import doublenp
-
-from ..base.lindblad import generate_tLba
-from ..base.lindblad import generate_kern_lindblad
-from ..base.lindblad import generate_current_lindblad
-from ..base.lindblad import generate_vec_lindblad
-from ..base.pauli import generate_norm_vec
+from ..aprclass import ApproachElPh
+from ..base.lindblad import ApproachLindblad as ApproachLindbladBase
 
 
 # ---------------------------------------------------------------------------------------------------------
 # Lindblad approach
 # ---------------------------------------------------------------------------------------------------------
-def generate_tLbbp_elph(self):
-    (Vbbp, E, si) = (self.baths.Vbbp, self.qd.Ea, self.si)
-    mtype = self.baths.mtype
-    func_pauli = FuncPauliElPh(self.baths.tlst_ph, self.baths.dlst_ph,
-                               self.baths.bath_func, self.funcp.eps_elph)
-    #
-    tLbbp_shape = Vbbp.shape + (2,)
-    tLbbp = np.zeros(tLbbp_shape, dtype=mtype)
-    # Diagonal elements
-    for l in range(si.nbaths):
-        func_pauli.eval(0., l)
-        for charge in range(si.ncharge):
-            for b in si.statesdm[charge]:
-                tLbbp[l, b, b, 0] = np.sqrt(0.5*func_pauli.val)*Vbbp[l, b, b]
-                tLbbp[l, b, b, 1] = tLbbp[l, b, b, 0].conjugate()
-    # Off-diagonal elements
-    for charge in range(si.ncharge):
-        for b, bp in itertools.permutations(si.statesdm[charge], 2):
-            Ebbp = E[b]-E[bp]
-            for l in range(si.nbaths):
-                func_pauli.eval(Ebbp, l)
-                tLbbp[l, b, bp, 0] = np.sqrt(0.5*func_pauli.val)*Vbbp[l, b, bp]
-                tLbbp[l, b, bp, 1] = np.sqrt(0.5*func_pauli.val)*Vbbp[l, bp, b].conjugate()
-    self.tLbbp = tLbbp
-    return 0
-
-
-def generate_kern_lindblad_elph(self):
-    (E, tLbbp, si) = (self.qd.Ea, self.tLbbp, self.si)
-
-    if self.kern is None:
-        self.kern_ext = np.zeros((si.ndm0r+1, si.ndm0r), dtype=doublenp)
-        self.kern = self.kern_ext[0:-1, :]
-        generate_norm_vec(self, si.ndm0r)
-
-    kern = self.kern
-    for charge in range(si.ncharge):
-        for b, bp in itertools.combinations_with_replacement(si.statesdm[charge], 2):
-            bbp = si.get_ind_dm0(b, bp, charge)
-            bbp_bool = si.get_ind_dm0(b, bp, charge, 2)
-            if bbp != -1 and bbp_bool:
-                bbpi = si.ndm0 + bbp - si.npauli
-                bbpi_bool = True if bbpi >= si.ndm0 else False
-                # --------------------------------------------------
-                # Here letter convention is not used
-                # For example, the label `a' has the same charge as the label `b'
-                for a, ap in itertools.product(si.statesdm[charge], si.statesdm[charge]):
-                    aap = si.get_ind_dm0(a, ap, charge)
-                    if aap != -1:
-                        fct_aap = 0
-                        for (l, q) in itertools.product(range(si.nbaths), range(2)):
-                            fct_aap += tLbbp[l, b, a, q]*tLbbp[l, bp, ap, q].conjugate()
-                        aapi = si.ndm0 + aap - si.npauli
-                        aap_sgn = +1 if si.get_ind_dm0(a, ap, charge, maptype=3) else -1
-                        kern[bbp, aap] += fct_aap.real
-                        if aapi >= si.ndm0:
-                            kern[bbp, aapi] -= fct_aap.imag*aap_sgn
-                            if bbpi_bool:
-                                kern[bbpi, aapi] += fct_aap.real*aap_sgn
-                        if bbpi_bool:
-                            kern[bbpi, aap] += fct_aap.imag
-                # --------------------------------------------------
-                for bpp in si.statesdm[charge]:
-                    bppbp = si.get_ind_dm0(bpp, bp, charge)
-                    if bppbp != -1:
-                        fct_bppbp = 0
-                        for a in si.statesdm[charge]:
-                            for (l, q) in itertools.product(range(si.nbaths), range(2)):
-                                fct_bppbp += -0.5*tLbbp[l, a, b, q].conjugate()*tLbbp[l, a, bpp, q]
-                        bppbpi = si.ndm0 + bppbp - si.npauli
-                        bppbp_sgn = +1 if si.get_ind_dm0(bpp, bp, charge, maptype=3) else -1
-                        kern[bbp, bppbp] += fct_bppbp.real
-                        if bppbpi >= si.ndm0:
-                            kern[bbp, bppbpi] -= fct_bppbp.imag*bppbp_sgn
-                            if bbpi_bool:
-                                kern[bbpi, bppbpi] += fct_bppbp.real*bppbp_sgn
-                        if bbpi_bool:
-                            kern[bbpi, bppbp] += fct_bppbp.imag
-                    # --------------------------------------------------
-                    bbpp = si.get_ind_dm0(b, bpp, charge)
-                    if bbpp != -1:
-                        fct_bbpp = 0
-                        for a in si.statesdm[charge]:
-                            for (l, q) in itertools.product(range(si.nbaths), range(2)):
-                                fct_bbpp += -0.5*tLbbp[l, a, bpp, q].conjugate()*tLbbp[l, a, bp, q]
-                        bbppi = si.ndm0 + bbpp - si.npauli
-                        bbpp_sgn = +1 if si.get_ind_dm0(b, bpp, charge, maptype=3) else -1
-                        kern[bbp, bbpp] += fct_bbpp.real
-                        if bbppi >= si.ndm0:
-                            kern[bbp, bbppi] -= fct_bbpp.imag*bbpp_sgn
-                            if bbpi_bool:
-                                kern[bbpi, bbppi] += fct_bbpp.real*bbpp_sgn
-                        if bbpi_bool:
-                            kern[bbpi, bbpp] += fct_bbpp.imag
-                # --------------------------------------------------
-    return 0
-
-
-class ApproachPyLindblad(ApproachElPh):
+class ApproachLindblad(ApproachElPh):
 
     kerntype = 'pyLindblad'
-    generate_fct = staticmethod(generate_tLba)
-    generate_kern = staticmethod(generate_kern_lindblad)
-    generate_current = staticmethod(generate_current_lindblad)
-    generate_vec = staticmethod(generate_vec_lindblad)
-    #
-    generate_kern_elph = staticmethod(generate_kern_lindblad_elph)
-    generate_fct_elph = staticmethod(generate_tLbbp_elph)
-# ---------------------------------------------------------------------------------------------------------
+
+    def prepare_arrays(self):
+        ApproachLindbladBase.prepare_arrays(self)
+        Vbbp, mtype = self.baths.Vbbp, self.baths.mtype
+        tLbbp_shape = Vbbp.shape + (2,)
+        self.tLbbp = np.zeros(tLbbp_shape, dtype=mtype)
+
+    def clean_arrays(self):
+        ApproachLindbladBase.clean_arrays(self)
+        self.tLbbp.fill(0.0)
+
+    def generate_fct(self):
+        ApproachLindbladBase.generate_fct(self)
+
+        Vbbp, E = self.baths.Vbbp, self.qd.Ea,
+        si = self.si
+        ncharge, nbaths, statesdm = si.ncharge, si.nbaths, si.statesdm
+
+        func_pauli = FuncPauliElPh(self.baths.tlst_ph, self.baths.dlst_ph,
+                                   self.baths.bath_func, self.funcp.eps_elph)
+
+        tLbbp = self.tLbbp
+        # Diagonal elements
+        for l in range(nbaths):
+            func_pauli.eval(0., l)
+            for charge in range(ncharge):
+                for b in si.statesdm[charge]:
+                    tLbbp[l, b, b, 0] = np.sqrt(0.5*func_pauli.val)*Vbbp[l, b, b]
+                    tLbbp[l, b, b, 1] = tLbbp[l, b, b, 0].conjugate()
+        # Off-diagonal elements
+        for charge in range(ncharge):
+            for b, bp in itertools.permutations(statesdm[charge], 2):
+                Ebbp = E[b]-E[bp]
+                for l in range(nbaths):
+                    func_pauli.eval(Ebbp, l)
+                    tLbbp[l, b, bp, 0] = np.sqrt(0.5*func_pauli.val)*Vbbp[l, b, bp]
+                    tLbbp[l, b, bp, 1] = np.sqrt(0.5*func_pauli.val)*Vbbp[l, bp, b].conjugate()
+        self.tLbbp = tLbbp
+
+    def generate_coupling_terms(self, b, bp, bcharge):
+        ApproachLindbladBase.generate_coupling_terms(self, b, bp, bcharge)
+
+        tLbbp = self.tLbbp
+        si, kh = self.si, self.kernel_handler
+        nbaths, statesdm = si.nbaths, si.statesdm
+
+        acharge = bcharge
+
+        # --------------------------------------------------
+        # Here letter convention is not used
+        # For example, the label `a' has the same charge as the label `b'
+        for a, ap in itertools.product(statesdm[acharge], statesdm[acharge]):
+            if kh.is_included(a, ap, acharge):
+                fct_aap = 0
+                for (l, q) in itertools.product(range(si.nbaths), range(2)):
+                    fct_aap += tLbbp[l, b, a, q]*tLbbp[l, bp, ap, q].conjugate()
+                kh.set_matrix_element(1j*fct_aap, b, bp, bcharge, a, ap, acharge)
+        # --------------------------------------------------
+        for bpp in statesdm[bcharge]:
+            if kh.is_included(bpp, bp, bcharge):
+                fct_bppbp = 0
+                for a in statesdm[acharge]:
+                    for (l, q) in itertools.product(range(si.nbaths), range(2)):
+                        fct_bppbp += -0.5*tLbbp[l, a, b, q].conjugate()*tLbbp[l, a, bpp, q]
+                kh.set_matrix_element(1j*fct_bppbp, b, bp, bcharge, bpp, bp, bcharge)
+            # --------------------------------------------------
+            if kh.is_included(b, bpp, bcharge):
+                fct_bbpp = 0
+                for a in statesdm[acharge]:
+                    for (l, q) in itertools.product(range(si.nbaths), range(2)):
+                        fct_bbpp += -0.5*tLbbp[l, a, bpp, q].conjugate()*tLbbp[l, a, bp, q]
+                kh.set_matrix_element(1j*fct_bbpp, b, bp, bcharge, b, bpp, bcharge)
+        # --------------------------------------------------
+
+    def generate_current(self):
+        ApproachLindbladBase.generate_current(self)
